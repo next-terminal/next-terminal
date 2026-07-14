@@ -1,13 +1,12 @@
 import React from 'react';
 import {Button, Form, Input, InputNumber, message, Radio, Select} from "antd";
-import {useMutation, useQuery} from "@tanstack/react-query";
+import {useMutation} from "@tanstack/react-query";
 import {useTranslation} from "react-i18next";
 import {RefreshCwIcon} from "lucide-react";
 import ProFormTreeSelect from "@/components/ProFormTreeSelect";
 import websiteApi from "@/api/website-api";
 import GatewayView from "@/pages/assets/website-drawer/GatewayView";
-import LogoSelector from "@/pages/assets/website-drawer/LogoSelector";
-import assetsApi from "@/api/asset-api";
+import LogoSelector from "@/pages/assets/components/LogoSelector";
 
 interface WebsiteBasicFieldsProps {
     showLogo?: boolean;
@@ -24,12 +23,7 @@ const WebsiteBasicFields: React.FC<WebsiteBasicFieldsProps> = ({
     const scheme = Form.useWatch('scheme', form);
     const host = Form.useWatch('host', form);
     const port = Form.useWatch('port', form);
-
-    const logosQuery = useQuery({
-        queryKey: ['get-logos'],
-        queryFn: assetsApi.getLogos,
-        enabled: showLogo
-    });
+    const originHostMode = Form.useWatch('originHostMode', form);
 
     const transformGroupData = (data: any[]): any[] => {
         return data.map(item => ({
@@ -81,24 +75,26 @@ const WebsiteBasicFields: React.FC<WebsiteBasicFieldsProps> = ({
 
     return (
         <>
-            {showLogo && (
-                <LogoSelector
-                    logo={logo}
-                    onLogoChange={handleLogoChange}
-                    logosData={logosQuery.data}
-                    extra={
-                        <Button
-                            icon={<RefreshCwIcon className="h-3.5 w-3.5"/>}
-                            loading={faviconMutation.isPending}
-                            onClick={handleFetchFavicon}
-                        >
-                            {t('assets.auto_fetch_favicon')}
-                        </Button>
-                    }
-                />
-            )}
+            <div className={showLogo ? "grid grid-cols-1 gap-4 md:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)]" : "grid grid-cols-1 gap-4 md:grid-cols-2"}>
+                {showLogo && (
+                    <LogoSelector
+                        logo={logo}
+                        onLogoChange={handleLogoChange}
+                        extra={
+                            <Button
+                                block
+                                color="default"
+                                variant="filled"
+                                icon={<RefreshCwIcon className="h-4 w-4"/>}
+                                loading={faviconMutation.isPending}
+                                onClick={handleFetchFavicon}
+                            >
+                                {t('assets.auto_fetch_favicon')}
+                            </Button>
+                        }
+                    />
+                )}
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <Form.Item label={t('general.name')} name="name" rules={[{required: true}]}>
                     <Input placeholder={t('general.name')}/>
                 </Form.Item>
@@ -145,37 +141,41 @@ const WebsiteBasicFields: React.FC<WebsiteBasicFieldsProps> = ({
                 </div>
             </div>
 
-            <Form.Item label={t('assets.origin_host', '回源主机名')} name="originHostMode" rules={[{required: true}]}>
+            <Form.Item label={t('assets.origin_host')} name="originHostMode" rules={[{required: true}]}>
                 <Radio.Group
                     optionType="button"
                     buttonStyle="solid"
                     options={[
                         {
-                            label: t('assets.origin_host_follow_service', '跟随访问域名'),
+                            label: t('assets.origin_host_follow_service'),
                             value: 'service'
                         },
                         {
-                            label: t('assets.origin_host_follow_origin', '跟随源站'),
+                            label: t('assets.origin_host_follow_origin'),
                             value: 'origin'
                         },
                         {
-                            label: t('assets.origin_host_custom', '自定义'),
+                            label: t('assets.origin_host_custom'),
                             value: 'custom'
                         }
                     ]}
                 />
             </Form.Item>
 
-            <Form.Item noStyle={true} shouldUpdate={true}>{formInstance => {
-                if (formInstance.getFieldValue('originHostMode') !== 'custom') {
-                    return null;
-                }
-                return (
-                    <Form.Item label={t('assets.origin_host_custom', '自定义回源主机名')} name="originHostCustom" rules={[{required: true}]}>
-                        <Input placeholder="origin.example.com"/>
-                    </Form.Item>
-                );
-            }}</Form.Item>
+            {originHostMode === 'custom' && (
+                <Form.Item label={t('assets.origin_host_custom_name')} name="originHostCustom" rules={[{required: true}]}>
+                    <Input placeholder="origin.example.com"/>
+                </Form.Item>
+            )}
+
+            <Form.Item
+                label={t('assets.origin_timeout')}
+                name="originTimeout"
+                extra={t('assets.origin_timeout_tip')}
+                rules={[{required: true}]}
+            >
+                <InputNumber precision={0} min={1} max={3600} addonAfter={t('general.second')} style={{width: "100%"}}/>
+            </Form.Item>
 
             <GatewayView/>
         </>

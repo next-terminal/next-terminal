@@ -1,19 +1,20 @@
-import React, {useRef, useState} from 'react';
-import {
-    App,
-    Button,
-    Dropdown,
-    Popconfirm,
-    Space,
-    Switch,
-    Tag} from "antd";
-import NTable, {type NTableActionType, type NColumn} from "@/components/NTable";
-import oidcClientApi, {OidcClient, OidcClientCreateResponse} from "@/api/oidc-client-api";
-import {useTranslation} from "react-i18next";
-import {getSort} from "@/utils/sort";
-import {useMutation} from "@tanstack/react-query";
+import oidcClientApi,{ OidcClient,OidcClientCreateResponse } from "@/api/oidc-client-api";
 import NButton from "@/components/NButton";
+import NTable,{ type NColumn,type NTableActionType } from "@/components/NTable";
+import { getSort } from "@/utils/sort";
+import { useMutation } from "@tanstack/react-query";
+import {
+App,
+Button,
+Dropdown,
+Popconfirm,
+Space,
+Switch,
+Tag
+} from "antd";
 import copy from 'copy-to-clipboard';
+import { useRef,useState } from 'react';
+import { useTranslation } from "react-i18next";
 import OidcClientModal from "./OidcClientModal";
 
 const api = oidcClientApi;
@@ -180,7 +181,7 @@ const OidcClientPage = () => {
             title: t('actions.label'),
             valueType: 'option',
             fixed: 'right',
-            render: (text, record) => (
+            render: (_text, record) => (
                 <Space>
                     <NButton key="edit" onClick={() => {
                         setSelectedRowKey(record.id);

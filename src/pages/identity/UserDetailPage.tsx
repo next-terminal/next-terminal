@@ -1,8 +1,12 @@
-import React, {useState} from 'react';
+import {useState} from 'react';
 import {Tabs} from "antd";
 import UserInfo from "./UserInfo";
 import UserLoginPolicy from "./UserLoginPolicy";
 import UserClientCert from "./UserClientCert";
+import UserExternalIdentity from "./UserExternalIdentity";
+import UserAuthentication from "./UserAuthentication";
+import UserAccessToken from "./UserAccessToken";
+import UserOidcServerAuthorization from "./UserOidcServerAuthorization";
 import {useParams, useSearchParams} from "react-router-dom";
 import {maybe} from "../../utils/maybe";
 import {useTranslation} from "react-i18next";
@@ -27,6 +31,26 @@ const UserDetailPage = () => {
             label: t('actions.detail'),
             key: 'info',
             children: <UserInfo active={activeKey === 'info'} id={id}/>
+        },
+        {
+            label: t('identity.user.admin_auth.title'),
+            key: 'authentication',
+            children: <UserAuthentication active={activeKey === 'authentication'} userId={id}/>
+        },
+        {
+            label: t('identity.user.external_identity.title'),
+            key: 'external-identities',
+            children: <UserExternalIdentity active={activeKey === 'external-identities'} userId={id}/>
+        },
+        {
+            label: t('account.access_token'),
+            key: 'access-token',
+            children: <UserAccessToken active={activeKey === 'access-token'} userId={id}/>
+        },
+        {
+            label: t('account.oidc_server_authorizations'),
+            key: 'oidc-server-authorizations',
+            children: <UserOidcServerAuthorization active={activeKey === 'oidc-server-authorizations'} userId={id}/>
         },
         {
             label: t('identity.options.login_policy'),

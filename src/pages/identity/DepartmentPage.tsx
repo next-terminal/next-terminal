@@ -1,15 +1,16 @@
-import React, {useRef, useState} from 'react';
+import { useRef,useState } from 'react';
 
-import {Button, Dropdown, message, Space, Tag, Tree} from "antd";
-import NTable, {type NColumn, type NTableActionType} from "@/components/NTable";
-import DepartmentModal from "./DepartmentModal";
-import {useNavigate} from "react-router-dom";
-import departmentApi, {Department} from '@/api/department-api';
-import {useTranslation} from "react-i18next";
-import {getSort} from "@/utils/sort";
-import {useMutation, useQuery} from "@tanstack/react-query";
+import departmentApi,{ Department } from '@/api/department-api';
 import NButton from "@/components/NButton";
+import NLink from "@/components/NLink";
+import NTable,{ type NColumn,type NTableActionType } from "@/components/NTable";
 import DepartmentUserModal from "@/pages/identity/DepartmentUserModal";
+import { getSort } from "@/utils/sort";
+import { useMutation,useQuery } from "@tanstack/react-query";
+import { Button,Dropdown,message,Space,Tag,Tree } from "antd";
+import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
+import DepartmentModal from "./DepartmentModal";
 
 const api = departmentApi;
 
@@ -84,17 +85,14 @@ const DepartmentPage = () => {
             title: t('general.name'),
             dataIndex: 'name',
             render: (text, record) => {
-                return <a onClick={() => {
-                    setOpen(true);
-                    setSelectedRowKey(record.id);
-                }}>{text}</a>;
+                return <NLink to={`/department/${record.id}`}>{text}</NLink>;
             },
         },
         {
             title: t('identity.department.parent'),
             dataIndex: 'parentId',
             hideInSearch: true,
-            render: (text, record) => {
+            render: (_text, record) => {
                 return record.parentId ? (
                     <Tag color="blue">{record.parentName}</Tag>
                 ) : (
@@ -127,7 +125,7 @@ const DepartmentPage = () => {
             valueType: 'option',
             key: 'option',
             width: 160,
-            render: (text, record) => (
+            render: (_text, record) => (
                 <Space>
                     <NButton key="edit" onClick={() => {
                         setSelectedRowKey(record.id);
@@ -205,7 +203,7 @@ const DepartmentPage = () => {
             <NTable
                 columns={columns}
                 actionRef={actionRef}
-                request={async (params = {}, sort, filter) => {
+                request={async (params = {}, sort, _filter) => {
                     let [sortOrder, sortField] = getSort(sort);
 
                     let queryParams = {

@@ -1,7 +1,7 @@
 import {Descriptions, Spin, Tree} from "antd";
 import roleApi, {TreeNode} from "../../api/role-api";
 import {useQuery} from "@tanstack/react-query";
-import React, {useState} from "react";
+import {useState} from "react";
 import {useTranslation} from "react-i18next";
 import {useNTTheme} from "@/hook/use-theme";
 import strings from "@/utils/strings";
@@ -28,19 +28,23 @@ const RoleInfo = ({id}: RoleInfoProps) => {
 
     const deepT = (parent: string, menus: TreeNode[]) => {
         for (let i = 0; i < menus.length; i++) {
-            if (menus[i].isLeaf) {
-                menus[i].title = t('permissions.' + menus[i].key);
+            const menu = menus[i];
+            if (!menu) {
+                continue;
+            }
+            if (menu.isLeaf) {
+                menu.title = t('permissions.' + menu.key);
             } else {
                 let parentKey = parent.replace(/-/g, '_');
-                let key = menus[i].key.replace(/-/g, '_');
+                let key = menu.key.replace(/-/g, '_');
                 if (strings.hasText(parent)) {
-                    menus[i].title = t(`menus.${parentKey}.submenus.${key}`);
+                    menu.title = t(`menus.${parentKey}.submenus.${key}`);
                 } else {
-                    menus[i].title = t(`menus.${key}.label`);
+                    menu.title = t(`menus.${key}.label`);
                 }
             }
-            if (menus[i].children) {
-                deepT(menus[i].key, menus[i].children);
+            if (menu.children) {
+                deepT(menu.key, menu.children);
             }
         }
     }
@@ -54,7 +58,7 @@ const RoleInfo = ({id}: RoleInfoProps) => {
         queryKey: ['role', id],
         queryFn: async () => {
             let data = await api.getById(id);
-            let strings = data.menus?.filter(item => item.checked === true).map(item => item.key);
+            let strings = data.menus?.filter(item => item.checked === true).map(item => item.key) ?? [];
             setRoleMenus(strings);
             return data;
         },
@@ -77,7 +81,7 @@ const RoleInfo = ({id}: RoleInfoProps) => {
                                 checkable
                                 disabled={true}
                                 checkedKeys={roleMenus}
-                                treeData={menusQuery.data}
+                                treeData={menusQuery.data ?? []}
                                 style={{
                                     backgroundColor: theme.backgroundColor,
                                 }}

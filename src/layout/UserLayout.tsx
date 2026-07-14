@@ -1,4 +1,4 @@
-import React, {Suspense, useEffect} from 'react';
+import {Suspense, useEffect} from 'react';
 import {Outlet} from "react-router-dom";
 import {App as AntdApp, ConfigProvider, Modal} from "antd";
 import Landing from "../components/Landing";

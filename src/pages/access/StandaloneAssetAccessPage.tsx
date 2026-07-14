@@ -1,4 +1,3 @@
-import React from 'react';
 import {useSearchParams} from "react-router-dom";
 import {App, ConfigProvider, theme} from "antd";
 import strings from "@/utils/strings";
@@ -18,16 +17,18 @@ const StandaloneAssetAccessPage = () => {
         return <div>Error</div>;
     }
 
+    const currentAssetId = assetId ?? '';
+
     const content = (() => {
         if (terminalProtocols.has(protocol || '')) {
-            return <AccessTerminal assetId={assetId} standalone/>;
+            return <AccessTerminal assetId={currentAssetId} standalone/>;
         }
 
         if (guacamoleProtocols.has(protocol || '')) {
-            return <AccessGuacamole assetId={assetId} standalone/>;
+            return <AccessGuacamole assetId={currentAssetId} standalone/>;
         }
 
-        return <AccessGuacamole assetId={assetId} standalone/>;
+        return <AccessGuacamole assetId={currentAssetId} standalone/>;
     })();
 
     return (

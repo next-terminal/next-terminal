@@ -1,27 +1,27 @@
-import React, {useEffect, useState} from 'react';
-import {
-    ArrowUpDownIcon,
-    CpuIcon,
-    EyeIcon,
-    EyeOffIcon,
-    HardDriveIcon,
-    MemoryStickIcon,
-    MonitorCogIcon,
-    MonitorPlayIcon
-} from "lucide-react";
-import {Tooltip} from "antd";
-import {ChartConfig, ChartContainer} from "@/components/ui/chart";
-import {Pie, PieChart} from "recharts";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {useTranslation} from "react-i18next";
-import portalApi, {CPUUsage, Stats} from "@/api/portal-api";
-import {useQuery} from "@tanstack/react-query";
+import portalApi,{ CPUUsage,Stats } from "@/api/portal-api";
+import { CpuProgressBar } from '@/components/CpuProgressBar';
+import { ChartConfig,ChartContainer } from "@/components/ui/chart";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Table,TableBody,TableCell,TableHead,TableHeader,TableRow } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 import strings from "@/utils/strings";
-import {renderSize} from "@/utils/utils";
-import {ScrollArea} from "@/components/ui/scroll-area";
-import {Skeleton} from "@/components/ui/skeleton";
-import {cn} from "@/lib/utils";
-import {CpuProgressBar} from '@/components/CpuProgressBar';
+import { renderSize } from "@/utils/utils";
+import { useQuery } from "@tanstack/react-query";
+import { Tooltip } from "antd";
+import {
+ArrowUpDownIcon,
+CpuIcon,
+EyeIcon,
+EyeOffIcon,
+HardDriveIcon,
+MemoryStickIcon,
+MonitorCogIcon,
+MonitorPlayIcon
+} from "lucide-react";
+import { useEffect,useState } from 'react';
+import { useTranslation } from "react-i18next";
+import { Pie,PieChart } from "recharts";
 
 
 const defaultStats = {
@@ -91,7 +91,7 @@ const AccessStats = ({sessionId, open}: Props) => {
 
     let statsQuery = useQuery({
         queryKey: ['stats', sessionId],
-        queryFn: context => {
+        queryFn: _context => {
             return portalApi.stats(sessionId)
         },
         refetchInterval: 2000,

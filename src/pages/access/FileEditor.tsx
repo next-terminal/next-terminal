@@ -86,7 +86,8 @@ const FileEditor: React.FC<Props> = ({
             // 通知父级标记文件为已保存
             onFileSaved(activeFile.key);
         } catch (error) {
-            message.error(`Failed to save file: ${error.message}`);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            message.error(`Failed to save file: ${errorMessage}`);
         } finally {
             setEditorSaving(false);
         }

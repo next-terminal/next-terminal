@@ -2,6 +2,7 @@
   "general": {
     "created_at": "Created At",
     "updated_at": "Updated At",
+    "expired_at": "Expires At",
     "creator": "Created By",
     "enabled": "Enabled",
     "disabled": "Disabled",
@@ -56,6 +57,7 @@
   },
   "actions": {
     "new": "New",
+    "add": "Add",
     "edit": "Edit",
     "delete": "Delete",
     "clear": "Clear",
@@ -66,11 +68,14 @@
     "copy": "Copy",
     "view_private_key": "View Private Key",
     "import": "Import",
+    "export": "Export",
+    "download": "Download",
     "download_import_sample": "Download Sample",
     "cancel": "Cancel",
     "save": "Save",
     "label": "Actions",
     "more": "More",
+    "config": "Configure",
     "batch_delete": "Batch Delete",
     "refresh": "Refresh",
     "retry": "Retry",
@@ -119,16 +124,20 @@
   "facade": {
     "asset_placeholder": "Asset name, protocol, tags, network address",
     "database_asset_placeholder": "Asset name, username, tag, type",
-    "database_access_tip": "Connect via the database proxy or submit SQL with work orders.",
     "database_access_work_order": "Go to SQL Work Orders",
     "website_placeholder": "Website name, tag, type",
     "processing": "Processing...",
     "in_use": "In use",
-    "clear_search": "Clear search"
+    "clear_search": "Clear search",
+    "list_view": "List",
+    "card_view": "Cards"
   },
   "menus": {
     "dashboard": {
       "label": "Overview"
+    },
+    "ai": {
+      "label": "AI Assistant"
     },
     "resource": {
       "label": "Resource Management",
@@ -139,8 +148,14 @@
         "snippet": "Command Snippets",
         "storage": "Storage",
         "website": "Web Assets",
-        "db_work_order": "SQL Work Orders",
         "certificate": "Certificate Management"
+      }
+    },
+    "work_order": {
+      "label": "Work Order Management",
+      "submenus": {
+        "db_work_order": "SQL Work Orders",
+        "access_request": "Access Requests"
       }
     },
     "gateway": {
@@ -161,6 +176,7 @@
         "access_log_stats": "Access Log Stats",
         "login_log": "Login Logs",
         "operation_log": "Operation Logs",
+        "exec_command_log": "Remote Command Records",
         "database_sql_log": "SQL Logs"
       }
     },
@@ -169,7 +185,8 @@
       "submenus": {
         "scheduled_task": "Scheduled Tasks",
         "tools": "Tools",
-        "monitoring": "Monitoring"
+        "monitoring": "Monitoring",
+        "system_event": "System Events"
       }
     },
     "identity": {
@@ -362,6 +379,28 @@
         "action": "Reset 2FA",
         "confirm_title": "Confirm reset user 2FA?",
         "confirm_content": "After reset, user can log in without 2FA."
+      },
+      "external_identity": {
+        "title": "External Accounts",
+        "provider": "Type",
+        "provider_oidc": "OIDC",
+        "provider_wechat": "WeCom",
+        "provider_ldap": "LDAP",
+        "external_account": "External Account",
+        "account_identifier": "Account ID",
+        "display_name": "Display Name",
+        "identifier": "Identifier",
+        "last_login_at": "Last Login",
+        "legacy": "Legacy",
+        "empty": "No linked external accounts",
+        "unbind_confirm": "Unlink this external account? If this is the user's last login method, the system will reject the unlink."
+      },
+      "admin_auth": {
+        "title": "Authentication",
+        "password_set": "Set",
+        "password_not_set": "Not Set",
+        "passkey_empty": "No Passkeys",
+        "access_token_empty": "No access tokens"
       }
     },
     "options": {
@@ -370,14 +409,14 @@
     "oidc_client": {
       "created_success": "OIDC client created successfully",
       "created_copy_tip": "⚠️ Please copy and save the secret immediately; it won't be shown again after closing.",
-      "secret_regenerated": "Client secret regenerated successfully",
+      "secret_regenerated": "Client secret rotated successfully",
       "new_secret_label": "New Secret",
       "new_secret_tip": "⚠️ Please copy and save the new secret immediately; it won't be shown again after closing.",
       "redirect_uris": "Redirect URIs",
       "grant_types": "Grant Types",
       "scopes": "Scopes",
-      "regenerate_secret": "Regenerate Secret",
-      "regenerate_secret_confirm": "Are you sure you want to regenerate this client's secret? The old secret will be invalid immediately.",
+      "regenerate_secret": "Rotate Secret",
+      "regenerate_secret_confirm": "Are you sure you want to rotate this client's secret? The old secret will be invalid immediately.",
       "title": "OIDC Client List",
       "selected_count": "Selected {{count}} items",
       "client_id_label": "Client ID",
@@ -402,6 +441,9 @@
       "bound_departments": "Authorized Departments",
       "bound_departments_placeholder": "Please select departments authorized for this client",
       "bound_departments_required": "Please select at least one department",
+      "skip_consent": "Skip Authentication",
+      "skip_consent_enabled": "Enable skip authentication",
+      "skip_consent_tip": "After enabled, users who are logged in and pass access control will not see the authorization confirmation page.",
       "description_placeholder": "Please enter client description"
     }
   },
@@ -466,12 +508,142 @@
     "spec_tooltip": "Supports second-level scheduling. Unlike standard cron, the first field is seconds (Quartz compatible), but the year field is not supported.",
     "last_exec_at": "Last Run At",
     "command": "Command",
+    "system_event": {
+      "title": "System Events",
+      "detail": "Event Details",
+      "id": "Event ID",
+      "type": "Event Type",
+      "category": "Category",
+      "severity": "Severity",
+      "title_field": "Title",
+      "summary": "Summary",
+      "actor": "Actor",
+      "target": "Target",
+      "ip": "IP",
+      "source": "Source",
+      "args": "Args",
+      "metadata": "Metadata",
+      "created_at": "Occurred At",
+      "actors": {
+        "system": "System"
+      },
+      "categories": {
+        "system": "System",
+        "identity": "Identity",
+        "auth": "Authentication",
+        "access": "Access",
+        "database": "Database",
+        "backup": "Backup",
+        "agent": "Agent"
+      }
+    },
     "options": {
       "exec": "Run Now",
       "logs": "View Logs"
     },
     "monitoring": {
-      "todo": "Not finished yet..."
+      "title": "System Monitoring",
+      "description": "View CPU, memory, local storage, and key backend service status in one place.",
+      "generated_at": "Data Time",
+      "load_failed": "Failed to load monitoring data",
+      "health_title": "Health Checks",
+      "alert_title": "Alert Overview",
+      "protocol_title": "Online Protocols",
+      "database_in_use": "In Use",
+      "database_idle": "Idle",
+      "database_wait": "Wait Count",
+      "metrics": {
+        "cpu": "CPU",
+        "memory": "Memory",
+        "storage": "Local Storage"
+      },
+      "storage_volumes": {
+        "storage": "Storage",
+        "recording": "Recording Storage"
+      },
+      "levels": {
+        "warning": "Warning",
+        "critical": "Critical"
+      },
+      "alert_status": {
+        "active": "Active",
+        "acknowledged": "Acknowledged",
+        "resolved": "Resolved"
+      },
+      "logical_cores": "logical cores",
+      "available": "Available",
+      "swap": "Swap",
+      "service_runtime": "Service Runtime",
+      "access_runtime": "Access Runtime",
+      "database_runtime": "Database Connections",
+      "version": "Version",
+      "goroutines": "Goroutines",
+      "runtime_memory": "Runtime Memory",
+      "last_triggered_at": "Last Triggered",
+      "acknowledge": "Acknowledge",
+      "critical_alert": "Critical system alert exists",
+      "critical_alert_desc": "Handle CPU, memory, or local storage issues as soon as possible to avoid service impact.",
+      "global_critical_title": "Critical System Alert",
+      "global_critical_desc": "The backend environment has reached a critical threshold. Open system monitoring and handle it soon.",
+      "go_monitoring": "Go to Monitoring",
+      "remind_later": "Remind Later",
+      "no_alerts": "No alerts",
+      "no_online_protocols": "No online session protocol data",
+      "status": {
+        "ok": "OK",
+        "warning": "Warning",
+        "critical": "Critical",
+        "error": "Error"
+      },
+      "cards": {
+        "service": {
+          "metrics": {
+            "uptime": "Uptime"
+          }
+        },
+        "session": {
+          "metrics": {
+            "active": "Active Sessions",
+            "recording": "Recording"
+          }
+        },
+        "database": {
+          "metrics": {
+            "connections": "Connections"
+          }
+        }
+      },
+      "health": {
+        "gateway": "Security Gateway",
+        "storage": "Recording Storage",
+        "scheduler": "Scheduled Tasks",
+        "cpu": "CPU",
+        "memory": "Memory"
+      },
+      "health_messages": {
+        "scheduler": {
+          "ok": "Scheduler is initialized"
+        },
+        "gateway": {
+          "ok": "Gateway is active",
+          "not_configured": "No gateway is configured",
+          "warning": "All gateways are offline"
+        },
+        "storage": {
+          "ok": "Storage path is available",
+          "warning": "Recording path is not configured or not accessible"
+        },
+        "cpu": {
+          "ok": "CPU usage is normal",
+          "warning": "CPU usage is high",
+          "error": "CPU usage is critically high"
+        },
+        "memory": {
+          "ok": "Memory usage is normal",
+          "warning": "Memory usage is high",
+          "error": "Memory usage is critically high"
+        }
+      }
     },
     "logs": {
       "label": "Logs",
@@ -525,6 +697,22 @@
     "login_status": "Login Status",
     "login_reason": "Failure Reason",
     "user_agent": "Client",
+    "exec_command": {
+      "scope_tip": "Only non-interactive commands executed through SSH exec are recorded here, for example ssh user@host asset \"ls -la\". Commands entered in interactive terminals are available in offline session playback.",
+      "command": "Command",
+      "result": "Result",
+      "exit_code": "Exit Code",
+      "duration_ms": "Duration(ms)",
+      "started_at": "Executed At",
+      "risk_level": "Risk Level",
+      "status": {
+        "forbidden": "Blocked"
+      },
+      "risk": {
+        "high": "High",
+        "normal": "Normal"
+      }
+    },
     "accessLog": {
       "uri": "Request URI",
       "statusCode": "Status Code",
@@ -593,27 +781,131 @@
     },
     "operation": {
       "account": "Account",
-      "at": "Operation Time"
+      "module": "Module",
+      "resource": "Resource",
+      "request": "Request",
+      "at": "Operation Time",
+      "modules": {
+        "identity": "Identity",
+        "assets": "Assets",
+        "authorised": "Authorization",
+        "access": "Access",
+        "dbproxy": "Database Proxy",
+        "sysconf": "System Config",
+        "sysops": "Operations",
+        "backup": "Backup",
+        "entrance": "Portal"
+      },
+      "actions": {
+        "create": "Create",
+        "delete": "Delete",
+        "update": "Update",
+        "enable": "Enable",
+        "disable": "Disable",
+        "clear": "Clear",
+        "import": "Import",
+        "export": "Export",
+        "upload": "Upload",
+        "download": "Download",
+        "renew": "Renew",
+        "sort": "Sort",
+        "move": "Move",
+        "bind": "Bind",
+        "unbind": "Unbind",
+        "approve": "Approve",
+        "reject": "Reject",
+        "share": "Share",
+        "cancel_share": "Cancel Share",
+        "disconnect": "Disconnect",
+        "execute": "Execute",
+        "generate": "Generate",
+        "revoke": "Revoke",
+        "set_default": "Set Default",
+        "sync": "Sync",
+        "test": "Test",
+        "access": "Access",
+        "allow": "Allow",
+        "audit": "Audit",
+        "reset_password": "Reset Password",
+        "reset_otp": "Reset OTP",
+        "authorize": "Authorize"
+      },
+      "resources": {
+        "user": "User",
+        "user_client_cert": "User Client Certificate",
+        "user_ssh_key": "User SSH Key",
+        "webauthn_credential": "WebAuthn Credential",
+        "access_token": "Access Token",
+        "role": "Role",
+        "department": "Department",
+        "login_policy": "Login Policy",
+        "login_lock": "Login Lock",
+        "login_log": "Login Log",
+        "oidc_client": "OIDC Client",
+        "oidc_consent": "OIDC Consent",
+        "asset": "Asset",
+        "asset_group": "Asset Group",
+        "database_asset": "Database Asset",
+        "credential": "Credential",
+        "snippet": "Snippet",
+        "storage": "Storage",
+        "website": "Website",
+        "website_group": "Website Group",
+        "certificate": "Certificate",
+        "dns_provider": "DNS Provider",
+        "ssh_gateway": "SSH Gateway",
+        "agent_gateway": "Agent Gateway",
+        "agent_gateway_token": "Agent Gateway Token",
+        "gateway_group": "Gateway Group",
+        "strategy": "Strategy",
+        "command_filter": "Command Filter",
+        "command_filter_rule": "Command Filter Rule",
+        "authorised_asset": "Asset Authorization",
+        "authorised_website": "Website Authorization",
+        "authorised_database_asset": "Database Asset Authorization",
+        "session": "Session",
+        "session_share": "Session Share",
+        "session_audit": "Session Audit",
+        "filesystem": "Filesystem",
+        "filesystem_log": "Filesystem Log",
+        "access_setting": "Access Setting",
+        "access_log": "Access Log",
+        "website_temp_allow": "Website Temporary Allow",
+        "database_sql_log": "Database SQL Log",
+        "database_work_order": "Database Work Order",
+        "property": "System Property",
+        "license": "License",
+        "operation_log": "Operation Log",
+        "logo": "Logo",
+        "backup": "Backup",
+        "job": "Scheduled Job",
+        "job_log": "Job Log",
+        "tool": "Tool"
+      }
     },
     "options": {
       "playback": "Playback",
-      "audit": "Audit",
       "disconnect": {
         "action": "Disconnect",
         "confirm": "Are you sure you want to disconnect this session?"
       }
     },
-    "audit_analyzing": "Analyzing session recording, please wait...",
-    "audit_failed": "Audit failed",
     "unknown_protocol": "Unknown protocol: {{protocol}}",
-    "audit_status": {
-      "label": "Audit Status",
-      "pending": "Analyzing",
-      "completed": "Completed",
-      "start": "Start Analysis",
-      "pending_tip": "AI is analyzing the session recording in the background. Refresh the page to see the result.",
-      "view": "View Report",
-      "retry": "Retry"
+    "recording": "Recording",
+    "original_recording": "Original Recording",
+    "video_recording": "Video",
+    "command_count": "Commands",
+    "rdp_proxy": {
+      "label": "RDP Proxy",
+      "unsupported_online_action": "RDP Proxy sessions do not support online monitoring or disconnect yet"
+    },
+    "recording_convert_status": {
+      "pending": "Waiting for transcoding",
+      "processing": "Transcoding",
+      "failed": "Transcoding failed",
+      "start": "Transcode",
+      "retry": "Retry transcoding",
+      "trigger_failed": "Failed to submit transcoding"
     }
   },
   "access": {
@@ -683,18 +975,6 @@
       "failed": "Wake failed",
       "check_now": "Check Now",
       "connect": "Connect Now"
-    },
-    "shell_assistant": {
-      "title": "IT Operations Assistant",
-      "placeholder": "Describe the operations command you need, e.g., find files larger than 100MB",
-      "use_snippets": "Prefer command snippets",
-      "shortcut_tip": "Enter to send • Shift+Enter for newline",
-      "ask": "Ask",
-      "command_label": "Operations Command",
-      "request_failed": "Request failed",
-      "request_failed_retry": "Request failed, please try again later",
-      "ready_title": "IT Operations Assistant Ready",
-      "ready_subtitle": "Enter your request, I'll generate a suitable command"
     },
     "terminal": {
       "search": "Search terminal content",
@@ -767,16 +1047,35 @@
       "back": "Back",
       "processing": "Processing login...",
       "failed": "Login failed",
+      "oidc_error": "OIDC login failed, please try again",
       "wechat_work_error": "WeCom login failed, please try again",
       "back_to_login": "Back to Login"
+    },
+    "external_binding": {
+      "title": "Link a local account",
+      "provider_wechat": "This WeCom identity is not linked to a local account",
+      "provider_oidc": "This OIDC identity is not linked to a local account",
+      "create": "Create account",
+      "bind": "Link existing account",
+      "username": "Username",
+      "nickname": "Display name",
+      "password_optional": "Local password (optional)",
+      "password_mismatch": "The passwords do not match",
+      "totp_optional": "Authenticator code (required when enabled)",
+      "create_and_login": "Create and sign in",
+      "bind_and_login": "Link and sign in",
+      "or": "Or",
+      "bind_with_passkey": "Sign in with Passkey and link"
     },
     "passkey": "Passkey",
     "ssh_key": "SSH Key",
     "ssh_key_desc": "Manage SSH public keys used by desktop clients to log in to the bastion host.",
     "ssh_key_add": "Add SSH Key",
+    "ssh_key_edit_name": "Edit SSH Key Name",
     "ssh_key_empty": "No SSH keys",
     "ssh_key_name": "Name",
     "ssh_key_name_tip": "Optional. If empty, the server will generate a name from the key comment or fingerprint.",
+    "ssh_key_name_required": "Please enter the name",
     "ssh_key_name_placeholder": "For example: MacBook-Pro",
     "ssh_key_algorithm": "Algorithm",
     "ssh_key_fingerprint": "Key Fingerprint",
@@ -866,6 +1165,7 @@
         "openid": "Access your basic identity info",
         "profile": "Access your profile (nickname, username)",
         "email": "Access your email address",
+        "phone": "Access your phone number",
         "offline_access": "Offline access to your account",
         "default": "Access related information"
       },
@@ -902,10 +1202,10 @@
     "content": "Content",
     "sort": "Sort",
     "group": "Group",
+    "default_group": "Default Group",
     "new_group": "New group",
     "expand_group_tree": "Expand groups",
     "collapse_group_tree": "Collapse groups",
-    "group_tip": "Right-click to edit/delete (except Default group)",
     "width": "Width",
     "height": "Height",
     "passphrase": "Private Key Passphrase",
@@ -918,10 +1218,8 @@
     "asset_count": "Asset Count",
     "private_key": "Private Key",
     "password": "Password",
+    "gateway": "Gateway",
     "gateway_type": "Gateway Type",
-    "no_gateway": "No Gateway",
-    "select_gateway_type": "Please select gateway type",
-    "select_gateway_group": "Please select gateway group",
     "display_settings": "Display Settings",
     "color_depth": "Color Depth",
     "force_lossless": "Force Lossless",
@@ -953,12 +1251,32 @@
     "scheme": "Asset Protocol",
     "forward_host_or_ip": "Asset IP or Domain",
     "forward_port": "Asset Port",
+    "origin_host": "Origin Host Header",
+    "origin_host_follow_service": "Follow Access Domain",
+    "origin_host_follow_origin": "Follow Origin",
+    "origin_host_custom": "Specify Host Header",
+    "origin_host_custom_name": "Custom Origin Host Header",
+    "origin_timeout": "Origin Timeout",
+    "origin_timeout_tip": "Maximum time the proxy waits for the origin to respond before returning an error.",
     "entrance": "Entry Path",
     "entrance_tip": "Entry path is the page opened automatically on first access",
     "change_group": "Change Group",
     "change_gateway": "Configure Gateway",
-    "select_agent_gateway": "Please select security gateway",
-    "select_ssh_gateway": "Please select SSH gateway",
+    "batch_edit": {
+      "title": "Batch Edit",
+      "scope_tip": "AI settings apply only to selected SSH assets; assets using other protocols are skipped. Gateway settings apply to all selected assets. Unchecked settings remain unchanged.",
+      "update_gateway": "Change gateway",
+      "gateway_mode": "Gateway settings",
+      "gateway_inherit": "Use group default gateway",
+      "gateway_custom": "Custom gateway chain",
+      "gateway_required": "Add at least one gateway or use the group default gateway",
+      "success_ai": "Updated AI settings for {{count}} SSH assets and skipped {{skippedCount}} non-SSH assets",
+      "success_gateway": "Updated gateway settings for {{count}} assets",
+      "success_ai_gateway": "Updated AI settings for {{aiCount}} SSH assets and skipped {{skippedCount}} non-SSH assets; updated gateway settings for {{gatewayCount}} assets",
+      "no_ssh_asset": "No SSH assets were selected, so no AI settings were changed"
+    },
+    "group_default_gateway": "Group Default Gateway",
+    "ssh_gateway_required_after_first_hop": "Only SSH gateway can be used after the first hop",
     "general": "General",
     "custom_header": "Custom Headers",
     "custom_header_tip": "You can add multiple headers in the format: Key: Value.",
@@ -967,6 +1285,7 @@
     "header_value": "Value",
     "active": "Active",
     "access": "Access",
+    "rdp_proxy_access": "Download RDP File",
     "import": "Import Assets",
     "copy": "Copy Asset",
     "import_asset_tip": "When importing assets, account/password and key/passphrase are mutually exclusive; if both are provided, key/passphrase takes precedence.",
@@ -974,6 +1293,9 @@
     "import_asset_error": "Failed to import assets",
     "import_asset_error_title": "Please check the import file; the following assets failed to import:",
     "copy_public_key": "Copy Public Key",
+    "credential_delete_referenced_title": "Credential is in use and cannot be deleted",
+    "credential_delete_referenced_assets": "Referenced assets:",
+    "credential_delete_referenced_ssh_gateways": "Referenced SSH gateways:",
     "filesystem": "Filesystem",
     "conn_test": "Network Connectivity Test",
     "generate_private_key": "Generate Private Key",
@@ -1065,12 +1387,27 @@
     },
     "dns_provider_config": "DNS Provider Config",
     "terminal_settings": "Terminal Settings",
-    "disable_alive_check": "Disable Keepalive Check",
-    "disable_alive_check_extra": "Frontend sends heartbeats to keep connection alive, and backend requests the target server to respond.",
-    "disable_detect_os": "Disable OS Auto-detection",
-    "disable_detect_os_extra": "When asset logo is empty, the system auto-detects the OS and sets an appropriate logo.",
+    "enable_alive_check": "Keepalive Check",
+    "enable_alive_check_extra": "Periodically checks whether the target asset is online during a connection to detect connection issues promptly. Some hardware switches may not support this check; turn it off if connections fail or disconnect frequently.",
+    "enable_detect_os": "Auto-detect Operating System",
+    "enable_detect_os_extra": "When the asset logo is empty, the system attempts to identify the operating system and apply a matching icon automatically. Some hardware switches may not support this detection; turn it off if connections fail or detection behaves unexpectedly.",
+    "connect_timeout": "Connection Timeout",
+    "backspace_mode": "Backspace Mode",
+    "backspace_mode_del": "Del",
+    "backspace_mode_bs": "Ctrl+H(BS)",
     "env": "Environment Variables",
     "env_placeholder": "Format: name=value per line.",
+    "ai": {
+      "settings": "AI Settings",
+      "enabled": "Enable AI",
+      "enabled_extra": "When enabled, global AI can search and operate this SSH asset.",
+      "restricted_shell": "Restricted Shell",
+      "restricted_shell_extra": "For network devices, firewalls, switches, and other environments that need stricter command confirmation.",
+      "restricted_shell_tip": "Restricted Shell forces every AI command to require confirmation.",
+      "command_policy": "AI command policy",
+      "command_policy_extra": "Empty means following the global AI setting.",
+      "follow_global": "Follow global setting"
+    },
     "wol": {
       "settings": "WOL Settings",
       "enabled": "Enable WOL",
@@ -1112,9 +1449,6 @@
       }
     },
     "website_response_modify": {
-      "save_success": "Save successful",
-      "save_success_desc": "HTTP response modification rules saved successfully",
-      "save_failed": "Save failed, please try again",
       "header_key_required": "Please enter key",
       "header_value_required": "Please enter value",
       "rule_name_required": "Please enter rule name",
@@ -1127,7 +1461,6 @@
       "match_method_placeholder": "Select request method",
       "match_status": "Response Status Code",
       "match_status_tip": "HTTP status code to match, e.g., 200, 404 (0 matches all status codes)",
-      "actions_title": "Modification Actions",
       "header_operations": "Header Operations",
       "set_headers_label": "Set Headers",
       "set_headers_tip": "Set or override response headers",
@@ -1141,7 +1474,6 @@
       "remove_header_name_placeholder": "Header name to remove",
       "add_remove_header_button": "Add header to remove",
       "body_replace_title": "Body Replacement",
-      "replace_rule_title": "Replace Rule {{index}}",
       "search_text_label": "Search Text",
       "search_text_required": "Please enter search text",
       "search_text_placeholder": "Text to search",
@@ -1167,18 +1499,22 @@
     "public_path_whitelist": "Path whitelist",
     "public_path_whitelist_tip": "Allow traffic if it matches any path; regular expressions are supported.",
     "public_path_whitelist_placeholder": "For example: ^/public/.* or /health",
-    "auto_detect_logo": "Auto Detect Icon",
     "detect_os_success": "OS detected and icon updated",
     "detect_os_failed": "OS detection failed",
     "wol_send": "Send WOL",
     "wol_send_success": "WOL magic packet sent",
     "wol_send_failed": "Failed to send WOL packet"
   },
-  "websites": {
-    "group_tip": "Drag to reorder",
-    "add_group": "Add Group",
-    "edit_group": "Edit Group",
-    "group_name_required": "Group name is required"
+  "group_tree": {
+    "title": "Group",
+    "tip": "Drag to reorder; right-click to create, edit, or delete (except the Default group)",
+    "add_title": "Add Group",
+    "edit_title": "Edit Group",
+    "name": "Group Name",
+    "name_placeholder": "Please enter a group name",
+    "name_required": "Group name is required",
+    "parent": "Parent Group",
+    "parent_placeholder": "Please select a parent group"
   },
   "gateway_group": {
     "name": "Group Name",
@@ -1205,8 +1541,14 @@
     "username": "Username",
     "account_type": {},
     "register": "Register",
-    "free_limit_tip": "Free edition supports only 1 security gateway. Upgrade for more.",
     "token_manage": "Token Management",
+    "gateway_delete_referenced_title": "Gateway is in use and cannot be deleted",
+    "gateway_delete_referenced_assets": "Referenced assets:",
+    "gateway_delete_referenced_websites": "Referenced websites:",
+    "gateway_delete_referenced_database_assets": "Referenced database assets:",
+    "gateway_delete_referenced_asset_groups": "Referenced asset groups:",
+    "gateway_delete_referenced_website_groups": "Referenced website groups:",
+    "gateway_delete_referenced_gateway_groups": "Referenced gateway groups:",
     "install_shell": "Install Script",
     "download_binary": "Download Binary",
     "stat": {
@@ -1262,23 +1604,23 @@
   },
   "settings": {
     "system": {
+      "setting": "System",
       "name": "System Name",
       "logo": "System Logo",
       "copyright": "Copyright",
       "icp": "ICP Filing No.",
       "ip": {
         "extractor": "IP Address Extraction",
-        "trust_list": "Trusted IPs (CIDR)",
+        "trust_list": "Trusted Proxy IP/CIDR List",
         "trust_placeholder": "Press Enter to confirm"
       },
       "asset_access": {
-        "setting": "Asset Access",
-        "mode": "Asset Access Mode",
-        "access_page": "Access Page",
+        "mode": "Asset Access Entry",
+        "access_page": "Unified Access Page",
         "standalone_page": "Standalone Tab"
       },
       "watermark": {
-        "setting": "Access Watermark",
+        "enabled_tip": "When enabled, watermark information is shown in terminal or remote desktop sessions for SSH, RDP, VNC, and TELNET assets.",
         "content": "Watermark Content",
         "append": {},
         "font": {},
@@ -1287,10 +1629,21 @@
         "font_color": "Font Color",
         "font_size": "Font Size"
       },
-      "basic_info_title": "Basic Info"
+      "recording_convert": {
+        "enabled": "Recording Transcoding",
+        "mode": "Transcoding Schedule",
+        "immediate": "Transcode right after disconnect",
+        "idle": "Transcode during idle hours",
+        "idle_time_range": "Idle Hours",
+        "idle_time_required": "Select idle hours",
+        "keep_raw": "Keep Original Recording File",
+        "tip": "After transcoding, recordings are saved as MP4 and can be downloaded for local playback. Recordings that are not transcoded can only be replayed in the system web page."
+      },
+      "basic": "Basic Info",
+      "network": "Network"
     },
     "security": {
-      "setting": "Security Settings",
+      "setting": "Security",
       "protection": "Login Protection",
       "captcha": "Captcha",
       "force_otp": "Force MFA",
@@ -1305,6 +1658,7 @@
       },
       "client_cert_valid_days": "Client certificate validity",
       "password": {
+        "policy": "Password Policy",
         "complexity": "Password Complexity",
         "recommend": "Recommended",
         "customize": "Custom",
@@ -1335,8 +1689,174 @@
       },
       "session_management": "Session Management"
     },
+    "asset_access": {
+      "setting": "Asset Access",
+      "entry": "Access Entry",
+      "watermark": "Watermark",
+      "recording": "Session Recording",
+      "recording_tip": "When enabled, sessions for SSH, RDP, VNC, and TELNET assets are saved for later audit and playback.",
+      "recording_storage_tip": "Settings saved here take precedence over startup configuration. The local recording directory is always read from the configuration file, and WebDAV is only configured here.",
+      "recording_storage_type": "Storage Type",
+      "recording_storage_local": "Local Storage",
+      "recording_path": "Recording Directory",
+      "recording_path_readonly_tip": "The local recording directory cannot be changed here. Update the configuration file and restart the service.",
+      "recording_s3_endpoint": "S3 Endpoint",
+      "recording_s3_endpoint_required": "Enter S3 Endpoint",
+      "recording_s3_access_key_id": "S3 Access Key ID",
+      "recording_s3_access_key_id_required": "Enter S3 Access Key ID",
+      "recording_s3_secret_access_key": "S3 Secret Access Key",
+      "recording_s3_secret_access_key_required": "Enter S3 Secret Access Key",
+      "recording_s3_bucket": "S3 Bucket",
+      "recording_s3_bucket_required": "Enter S3 Bucket",
+      "recording_s3_use_ssl": "Use SSL",
+      "recording_s3_path_style": "Path Style",
+      "recording_webdav_endpoint": "WebDAV Endpoint",
+      "recording_webdav_endpoint_required": "Enter WebDAV Endpoint",
+      "recording_webdav_username": "WebDAV Username",
+      "recording_webdav_username_required": "Enter WebDAV username",
+      "recording_webdav_password": "WebDAV Password",
+      "recording_webdav_directory": "WebDAV Directory",
+      "recording_convert": "Recording Transcoding"
+    },
+    "ai": {
+      "setting": "AI Assistant",
+      "enabled": "Enable AI Assistant",
+      "disclaimer_title": "AI Assistant Disclaimer",
+      "disclaimer_description": "Content and commands generated by the AI assistant may be incorrect, incomplete, misleading, or dangerous. After enabling it, evaluate outputs yourself and confirm the intent and impact before running any command. Any risks and consequences arising from use of the AI assistant are borne by the user.",
+      "disclaimer_accepted": "I understand the risk",
+      "disclaimer_required": "Please check I understand the risk first",
+      "profile": "AI Environment",
+      "profile_active": "Active",
+      "profile_empty": "No AI environment yet. Create one first.",
+      "new_profile": "New AI Environment",
+      "edit_profile": "Edit AI Environment",
+      "model_count": "{{count}} models",
+      "add_profile": "New AI Environment",
+      "profile_name": "Profile Name",
+      "api_preset": "Provider Preset",
+      "api_type": "API Type",
+      "api_type_openai": "OpenAI Chat Completions",
+      "api_type_openai_responses": "OpenAI Responses",
+      "api_type_tip": "Select the API type supported by the model provider.",
+      "base_url": "Base URL",
+      "base_url_tip": "OpenAI-compatible API endpoint. Trailing slashes are removed automatically.",
+      "api_key_edit_tip": "Leave this blank while editing to keep the current API Key. Enter a new value to replace it.",
+      "model": "Model",
+      "models": "Model List",
+      "models_tip": "Enter model names manually, or load the model list from the provider.",
+      "add_model": "Add Model",
+      "load_models": "Load Model List",
+      "models_loaded": "Model list loaded",
+      "models_empty": "The model provider did not return any available models",
+      "models_load_failed": "Failed to load model list",
+      "models_load_config_required": "Please fill Base URL and API Key first",
+      "advanced_profile": "Advanced Profile",
+      "reasoning_protocol": "Reasoning Protocol",
+      "reasoning_protocol_default": "Do not send reasoning parameters",
+      "reasoning_protocol_openai": "OpenAI reasoning_effort",
+      "reasoning_protocol_thinking_object": "thinking parameter (DeepSeek/Kimi/GLM)",
+      "reasoning_protocol_qwen": "Qwen enable_thinking",
+      "reasoning_protocol_tip": "Keep the default when the model protocol is unclear; the backend will not attach reasoning fields.",
+      "thinking_mode": "Thinking Mode",
+      "thinking_mode_default": "Provider default",
+      "thinking_mode_default_enabled": "Enabled by protocol default",
+      "thinking_mode_tip": "The thinking-parameter protocol enables thinking by default; reasoning_effort is omitted when thinking is disabled.",
+      "thinking_mode_qwen_tip": "Qwen omits enable_thinking by default; enabled or disabled is sent as enable_thinking.",
+      "reasoning_effort": "Reasoning Effort",
+      "reasoning_effort_default": "Provider default",
+      "reasoning_effort_tip": "Only applies to models that support reasoning_effort.",
+      "reasoning_effort_thinking_object_tip": "The thinking-parameter protocol only supports high or max.",
+      "thinking_budget": "Thinking Budget",
+      "thinking_budget_tip": "thinking_budget for Qwen enable_thinking. 0 uses provider defaults.",
+      "context_window": "Context Window (tokens)",
+      "context_window_tip": "Maximum context length of the selected model, used for AI session context control.",
+      "max_retries": "Max Retries",
+      "max_retries_tip": "Maximum automatic retries when model provider requests fail.",
+      "user_agent_tip": "Leave empty to use the built-in default User-Agent.",
+      "http_proxy": "HTTP Proxy",
+      "http_proxy_tip": "Leave empty for direct access. Chat and model list requests for this API profile use the proxy when set.",
+      "behavior": "Behavior",
+      "command_policy": "AI command policy",
+      "command_policy_auto": "Auto",
+      "command_policy_balanced": "Balanced",
+      "command_policy_always": "Strict",
+      "command_timeout": "Command timeout",
+      "recent_output_lines": "Recent terminal output lines",
+      "include_command_snippets": "Include command snippets",
+      "include_command_snippets_tip": "When enabled, AI can read summaries of command snippets visible to the current user, and request specific content only when needed.",
+      "custom_system_prompt": "Custom system prompt",
+      "custom_system_prompt_tip": "Appended after the built-in system prompt. Maximum 8000 characters."
+    },
+    "access_request": {
+      "setting": "Access Requests",
+      "enabled": "Enable access requests",
+      "enabled_tip": "When enabled, users can submit access requests from the resource portal. When disabled, the user entry is hidden and user-side access request APIs are blocked."
+    },
+    "proxy_service": {
+      "setting": "Proxy Service"
+    },
+    "http_proxy": {
+      "setting": "HTTP Reverse Proxy",
+      "readonly_tip": "Runtime settings come from config.yaml and are read-only here. Restart the service after changing the file.",
+      "enabled": "Reverse Proxy Service",
+      "http_enabled": "HTTP Listener",
+      "http_addr": "HTTP Listen Address",
+      "http_redirect_https": "Redirect HTTP to HTTPS",
+      "https_enabled": "HTTPS Listener",
+      "https_addr": "HTTPS Listen Address",
+      "self_proxy_enabled": "Proxy This System",
+      "self_domain": "System Domain",
+      "ip_extractor": "Client IP Extraction",
+      "ip_trust_list": "Trusted Proxy IP/CIDR",
+      "mtls_mode": "mTLS Client Authentication Mode",
+      "custom_pages": "Custom Pages",
+      "template_tip": "Templates are returned directly as HTML. Keep required placeholders and ensure the password page contains a form field named password. Changes take effect immediately.",
+      "error_page": "General Error Page",
+      "error_page_help": "Available placeholders: {{status}}, {{statusText}}, {{error}}",
+      "error_502_page": "502 Error Page",
+      "error_502_page_help": "Available placeholders: {{remoteAddr}}, {{requestHost}}, {{requestId}}",
+      "password_page": "Password Verification Page",
+      "password_page_help": "The page must submit a field named password using POST.",
+      "reset_default": "Reset to Original"
+    },
+    "log_retention": {
+      "setting": "Log Retention"
+    },
+    "identity_auth": {
+      "setting": "Authentication"
+    },
+    "notification_integration": {
+      "setting": "Notifications & Integrations"
+    },
+    "maintenance": {
+      "setting": "System Maintenance"
+    },
+    "geodata": {
+      "setting": "GEO Database",
+      "current_database": "Current database",
+      "unavailable": "No GEO database is available. Region lookup is currently unavailable.",
+      "database_type": "Database type",
+      "file_size": "File size",
+      "build_time": "Data build time",
+      "modified_at": "Updated at",
+      "upload_title": "Upload update",
+      "upload_tip": "Click or drag an .mmdb file here, up to 200 MB",
+      "mmdb_only": "Only .mmdb files are allowed",
+      "file_too_large": "The file must be larger than 0 and no more than 200 MB",
+      "upload_success": "The GEO database was uploaded and loaded",
+      "online_update": "Online update",
+      "auto_update": "Automatic online update",
+      "auto_update_time": "Daily update time",
+      "check_update": "Check for updates",
+      "update_now": "Update now",
+      "update_available": "A new GEO data version is available",
+      "already_latest": "The current database is up to date",
+      "update_started": "The GEO update task has started",
+      "update_success": "The GEO database was updated",
+      "update_failed": "Failed to update the GEO database"
+    },
     "sshd": {
-      "setting": "SSH Proxy Server",
+      "setting": "SSH Proxy",
       "tip": "When enabled, a local port will be listened on. You can use an SSH client to access authorized SSH assets with the same account and password as this system.",
       "enabled": "SSH Service",
       "addr": "Listen Address",
@@ -1351,7 +1871,7 @@
         "host_port": "Allowed forwarding targets",
         "host_port_tip": "Separate targets with commas, using host:port. Use * as the port to allow any port. VS Code Remote-SSH requires 127.0.0.1:*."
       },
-      "usage": "Usage Example",
+      "usage": "Usage",
       "usage_tip": "The SSH service can open the asset picker or connect directly to a specified asset.",
       "mode_proxy": "Proxy Mode",
       "mode_proxy_tip": "Log in with the bastion account first, then choose a target asset from the terminal asset list.",
@@ -1363,7 +1883,7 @@
       "private_key_required_to_enable": "Set an auth private key before enabling SSH service."
     },
     "rdp": {
-      "setting": "RDP Settings",
+      "setting": "RDP",
       "enable": {
         "wallpaper": "Enable Wallpaper",
         "theming": "Enable Themes",
@@ -1377,8 +1897,23 @@
         "offscreen_caching": "Disable Off-screen Caching"
       }
     },
+    "rdp_proxy": {
+      "setting": "RDP Proxy",
+      "tip": "When enabled, users can download .rdp files with short-lived tickets and access authorized RDP assets through a fixed proxy address.",
+      "enabled": "RDP Proxy Service",
+      "addr": "Listen Address",
+      "public_addr": "Public Address",
+      "public_addr_extra": "Address used in generated .rdp files. When empty, it is inferred from the listen address and current request.",
+      "ticket_ttl": "Ticket TTL (seconds)",
+      "ticket_ttl_extra": "Defaults to 300 seconds. A ticket is marked as used after successful resolution.",
+      "usage": "Usage",
+      "usage_tip": "Users choose an RDP asset in the web UI to create a ticket. The RDP client connects to the proxy address, and the proxy resolves it to the real asset.",
+      "ticket_flow": "Ticket Format",
+      "ticket_flow_tip": "The .rdp username is NTICKET:<ticketId>, and the password is the ticket secret entered during connection.",
+      "rdp_file": ".rdp File Example"
+    },
     "vnc": {
-      "setting": "VNC Settings",
+      "setting": "VNC",
       "cursor": {
         "setting": "Cursor Settings",
         "remote": "Remote"
@@ -1386,7 +1921,7 @@
       "swap_red_blue": "Swap Red/Blue"
     },
     "mail": {
-      "setting": "Email Settings",
+      "setting": "Email Service",
       "enabled": "Email Service",
       "host": "Mail Server",
       "port": "Mail Port",
@@ -1399,12 +1934,107 @@
       "content": "Email Body",
       "send": "Send Email"
     },
+    "notification": {
+      "channels": "Notification Channels",
+      "rules": "Notification Rules",
+      "deliveries": "Delivery Records",
+      "channel": "Channel",
+      "channel_types": {
+        "mail": "Email",
+        "wecom": "WeCom Bot",
+        "wecomApp": "WeCom App",
+        "feishu": "Feishu Bot",
+        "dingtalk": "DingTalk Bot",
+        "webhook": "Custom Webhook"
+      },
+      "language": "Notification Language",
+      "languages": {
+        "zh-CN": "简体中文",
+        "zh-TW": "繁體中文",
+        "en-US": "English",
+        "ja-JP": "日本語"
+      },
+      "severities": {
+        "info": "Info",
+        "warning": "Warning",
+        "critical": "Critical"
+      },
+      "event_types": {
+        "identity.user.created": "User Created",
+        "identity.admin.created": "Admin Created",
+        "identity.user.disabled": "User Disabled",
+        "identity.user.deleted": "User Deleted",
+        "auth.login.failed": "Login Failed",
+        "auth.admin.login.success": "Admin Login Succeeded",
+        "access.session.started": "Session Started",
+        "access.session.ended": "Session Ended",
+        "access.command.risk_detected": "High-Risk Command",
+        "access.command.blocked": "Command Blocked",
+        "access.recording.failed": "Recording Processing Failed",
+        "database.sql.blocked": "Database SQL Blocked",
+        "database.sql.failed": "Database SQL Failed",
+        "backup.succeeded": "Backup Succeeded",
+        "backup.failed": "Backup Failed",
+        "agent.online": "Agent Online",
+        "agent.offline": "Agent Offline",
+        "system.cpu.warning": "High CPU Usage",
+        "system.cpu.critical": "Critical CPU Usage",
+        "system.cpu.recovered": "CPU Usage Recovered",
+        "system.memory.warning": "High Memory Usage",
+        "system.memory.critical": "Critical Memory Usage",
+        "system.memory.recovered": "Memory Usage Recovered",
+        "system.storage.warning": "High Local Storage Usage",
+        "system.storage.critical": "Critical Local Storage Usage",
+        "system.storage.recovered": "Local Storage Usage Recovered",
+        "system.notification.test": "Test Notification"
+      },
+      "event_groups": {
+        "identity": "Identity",
+        "access": "Access Sessions",
+        "database": "Database",
+        "backup": "Backup",
+        "agent": "Agent",
+        "system": "System"
+      },
+      "new_rule": "New Rule",
+      "edit_rule": "Edit Rule",
+      "recipients": "Recipients",
+      "recipients_placeholder": "Separate multiple recipients with commas, semicolons, or new lines",
+      "webhook_url": "Webhook URL",
+      "robot_webhook_url": "Full Bot Webhook URL",
+      "webhook_url_required": "Please enter the full Webhook URL",
+      "webhook_url_invalid": "Please enter a full URL starting with http:// or https://",
+      "sign_secret": "Signing Secret",
+      "wecom_app_origin": "WeCom API URL",
+      "wecom_app_origin_required": "Please enter the WeCom API URL",
+      "wecom_app_corp_id": "Corp ID (corpid)",
+      "wecom_app_corp_id_required": "Please enter the WeCom Corp ID",
+      "wecom_app_corp_id_placeholder": "Enter your WeCom corpid",
+      "wecom_app_corp_secret": "App Secret (corpsecret)",
+      "wecom_app_corp_secret_required": "Please enter the WeCom App Secret",
+      "wecom_app_corp_secret_placeholder": "Enter your WeCom App Secret",
+      "wecom_app_agent_id": "App ID (agentid)",
+      "wecom_app_agent_id_required": "Please enter the WeCom App ID",
+      "wecom_app_agent_id_placeholder": "Enter your WeCom app agentid",
+      "wecom_app_to_user": "Recipients (touser)",
+      "wecom_app_to_user_required": "Please enter message recipients",
+      "wecom_app_to_user_placeholder": "Enter recipients, or @all for everyone",
+      "recipients_required": "Please enter recipients",
+      "test": "Test",
+      "test_success": "Test notification sent",
+      "event_types_label": "Event Types",
+      "severities_label": "Severities",
+      "quiet_minutes": "Quiet Period (minutes)",
+      "event_type": "Event Type",
+      "severity": "Severity",
+      "result": "Response Result",
+      "error": "Error"
+    },
     "webauthn": {
-      "setting": "Passkey Settings"
+      "setting": "Passkey"
     },
     "ldap": {
-      "setting": "LDAP Auth",
-      "tip": "When enabled, LDAP will be used for user authentication.",
+      "setting": "LDAP",
       "url": "LDAP URL",
       "user": "LDAP User",
       "password": "LDAP Password",
@@ -1418,8 +2048,7 @@
       "user_property_mapping": "LDAP user attribute mapping"
     },
     "wechat_work": {
-      "setting": "WeCom Auth",
-      "tip": "When enabled, users can log in via WeCom QR code.",
+      "setting": "WeCom",
       "enabled": "Enable WeCom login",
       "corp_id": "Corp ID",
       "corp_id_placeholder": "Please enter WeCom Corp ID",
@@ -1429,8 +2058,7 @@
       "redirect_uri_placeholder": "https://your-domain.com/wechat-work/callback"
     },
     "oidc": {
-      "setting": "OIDC Auth",
-      "tip": "When enabled, users can log in with an OIDC identity provider.",
+      "setting": "OIDC",
       "enabled": "Enable OIDC login",
       "issuer": "Issuer",
       "issuer_placeholder": "Please enter OIDC Issuer URL",
@@ -1444,7 +2072,6 @@
       "department_placeholder": "Please select default department"
     },
     "log": {
-      "setting": "Log Settings",
       "session": {
         "saved_limit_days": "Session retention days"
       },
@@ -1456,17 +2083,76 @@
       },
       "access_log": {
         "saved_limit_days": "Access log retention days"
+      },
+      "database_sql_log": {
+        "saved_limit_days": "SQL log retention days"
       }
     },
     "backup": {
       "setting": "Backup & Restore",
-      "tip": "When restoring data, if users with the same login account exist, the original system data will be kept. Since passwords are irreversible, restored account passwords will be random.",
       "recovery": "Restore Backup",
-      "restore_success": "Restore successful"
+      "restore_success": "Restore successful",
+      "source": {
+        "auto": "Automatic",
+        "manual": "Manual",
+        "before_restore": "Before restore"
+      },
+      "create_task_success": "Backup task created",
+      "restore_task_success": "Restore task created",
+      "task_failed": "Task failed",
+      "restore_confirm_title": "Confirm Restore",
+      "restore_confirm_content": "Restore will overwrite the current PostgreSQL database. The system will automatically create a safety backup before restoring.",
+      "backup_file": "Backup file: {{name}}",
+      "exclude_tip": "Excludes: session recordings and Windows mounted disk files",
+      "restore": "Restore",
+      "file_name": "File Name",
+      "backup_time": "Backup Time",
+      "source_label": "Source",
+      "size": "Size",
+      "version": "Version",
+      "delete_confirm_title": "Confirm delete backup file?",
+      "backup_directory_tip": "Backup directory: {{directory}}. Backups exclude session recordings and Windows mounted disk files.",
+      "schedule_enabled": "Enable scheduled backup",
+      "retention_days": "Automatic backup retention",
+      "save_settings": "Save Backup Settings",
+      "backup_now": "Back Up Now",
+      "upload_restore": "Upload and Restore",
+      "upload_restore_task_success": "Local backup restore task created",
+      "upload_restore_confirm_title": "Confirm Upload and Restore",
+      "upload_restore_confirm_content": "This will upload a local backup file and overwrite the current PostgreSQL database. Use it for cross-server migration. The system will automatically create a safety backup before restoring.",
+      "legacy_import": "Legacy JSON Data Import",
+      "legacy_import_tip": "Only used to import JSON data exported from older versions. It is not suitable for full backup restore in the current version.",
+      "success_actions": "Actions After Backup Success",
+      "success_actions_tip": "Upload the backup file to remote storage after it is created. Remote upload failures will not delete the local backup file.",
+      "saved_secret_placeholder": "Saved, leave blank to keep unchanged",
+      "upload_to_s3": "Upload to S3",
+      "upload_to_sftp": "Upload to SFTP",
+      "upload_to_webdav": "Upload to WebDAV",
+      "s3_endpoint": "Endpoint",
+      "s3_bucket": "Bucket",
+      "s3_access_key_id": "Access Key ID",
+      "s3_secret_access_key": "Secret Access Key",
+      "s3_region": "Region",
+      "s3_prefix": "Object Prefix",
+      "s3_use_ssl": "Use HTTPS",
+      "s3_path_style": "Path Style",
+      "sftp_mode": "Connection Mode",
+      "sftp_mode_asset": "Use Asset",
+      "sftp_mode_custom": "Custom",
+      "sftp_asset": "SSH Asset",
+      "sftp_directory": "Remote Directory",
+      "sftp_host": "Host",
+      "sftp_port": "Port",
+      "sftp_username": "Username",
+      "sftp_auth_type": "Auth Type",
+      "webdav_endpoint": "Endpoint",
+      "webdav_username": "Username",
+      "webdav_password": "Password",
+      "webdav_directory": "Remote Directory",
+      "webdav_chinese_path_tip": "Do not use Chinese paths to avoid upload failures caused by WebDAV path encoding or permission mapping."
     },
     "license": {
       "setting": "License",
-      "device": "Device Info",
       "machine_id": "Machine ID",
       "import": "Import License",
       "request": "Update License",
@@ -1474,10 +2160,15 @@
       "info": "License Info",
       "name": "License Name",
       "user_name": "Licensed User Name",
+      "domain": "License Domain",
+      "domain_tip": "Used to request a domain-bound license and verify the current access domain. Enter a domain without scheme, port, or path.",
+      "domain_error": "Enter a valid domain without scheme, port, path, or wildcard",
+      "auto_detect_domain": "Auto Detect",
+      "license_binding_type": "License Method",
+      "binding_type_machine": "Machine ID",
+      "binding_type_domain": "Domain",
       "max": {
         "asset_count": "Max Asset Count",
-        "database_count": "Max Database Count",
-        "concurrent_count": "Max Concurrent",
         "user_count": "Max User Count"
       },
       "expired_at": "License Expiry",
@@ -1504,57 +2195,12 @@
       "setting": "About",
       "current_version": "Current Version",
       "latest_version": "Latest Version",
-      "update_content": "Update Notes",
-      "upgrade": {
-        "action": "Update Now",
-        "title": "Upgrade System",
-        "content": "Are you sure you want to upgrade the system version?",
-        "failed": "Update failed",
-        "success": "Update successful",
-        "success_content": "Update successful. Refresh now?"
-      }
-    },
-    "llm": {
-      "title": "LLM Settings",
-      "base_config": "Base Config",
-      "enable": "Enable LLM",
-      "api_key": "API Key",
-      "api_key_placeholder": "Enter your API Key",
-      "api_key_required": "Please enter API Key",
-      "base_url": "Base URL",
-      "base_url_required": "Please enter Base URL",
-      "proxy_url": "Proxy",
-      "proxy_url_placeholder": "E.g., http://127.0.0.1:7890",
-      "model": "Model",
-      "model_required": "Please enter model name",
-      "temperature": "Temperature",
-      "max_tokens": "Max Tokens",
-      "shell_config": "IT Operations Assistant Config",
-      "shell_enable": "Enable IT Operations Assistant",
-      "shell_prompt": "IT Operations Assistant Prompt",
-      "shell_prompt_placeholder": "Enter IT operations assistant prompt...",
-      "shell_prompt_default": "You are an IT operations assistant responsible for converting user requests directly into Linux shell commands.\n\nRules:\n\n1. **Output commands only**, no explanations, no Markdown, no extra text.\n2. If multiple ways exist, output the most common and safe one.\n3. Use Bash syntax compatible with common distros like Ubuntu/Debian/CentOS.\n4. For dangerous operations (e.g., `rm -rf /`, `:(){:|:&};:`), output: \"This operation is risky, please proceed with caution\".\n5. If the user input is incomplete, auto-complete to the most common reasonable full command.",
-      "audit_config": "SSH/Telnet Audit Assistant Config",
-      "audit_config_desc": "Analyzes SSH/Telnet session asciinema recordings to identify dangerous commands and security risks",
-      "audit_enable": "Enable SSH/Telnet Audit Assistant",
-      "audit_prompt": "SSH/Telnet Audit Prompt",
-      "audit_prompt_placeholder": "Enter SSH/Telnet audit assistant prompt...",
-      "audit_prompt_default": "You are a professional **Linux/Unix operations behavior audit expert**, specializing in analyzing **command-line actions executed by users in the terminal**.\n\nThe following is a **SSH/Telnet session recording** (from asciinema terminal recording, ANSI control characters have been removed).\n\nPlease focus on analyzing **the commands executed and operations performed by the user**, reconstructing the user's operation process, and identifying any critical or high-risk operations.\n\nPlease generate a **Markdown-formatted command behavior audit report**.\n\n---\n\n# SSH Session Command Behavior Audit Report\n\n## 1. Operation Summary\n\nBriefly summarize the **user's main operational behaviors** in this session, including:\n\n* What the user mainly did (e.g., viewing logs, modifying configurations, deleting files, installing software)\n* Whether there are obvious high-risk operations\n* Overall nature of operations (e.g., routine maintenance / troubleshooting / system maintenance / suspicious behavior)\n\nSummarize in **2–4 sentences**.\n\n---\n\n## 2. Timeline of Operations\n\nList **key commands and behaviors executed by the user** in chronological order.\n\n| No. | User Command | Operation Type | Description |\n| -- | ---- | ---- | ---- |\n| 1  |      |      |      |\n| 2  |      |      |      |\n| 3  |      |      |      |\n\nNotes:\n\n* **User Command**: Record the commands entered by the user\n* **Operation Type**: e.g., file operation / system management / network access / privilege operation / software installation\n* **Description**: Explain what the command does\n\nIf there are obvious **consecutive operations (e.g., bulk deletion, bulk download)**, they can be merged.\n\n---\n\n## 3. Key Operation Analysis\n\nIdentify **important or high-risk operations** in this session and analyze them in detail.\n\n| Risk Level | User Command | Operation Description | Risk Analysis |\n| :----: | :--- | :--- | :--- |\n| 🔴 High Risk |      |      |      |\n| 🟠 Medium Risk |      |      |      |\n| 🟡 Low Risk |      |      |      |\n\nKey areas to focus on:\n\n* **Privilege Escalation**\n\n  * sudo\n  * su\n  * Modifying sudoers\n  * Changing user passwords\n\n* **Dangerous File Operations**\n\n  * rm -rf\n  * Overwriting files\n  * Bulk deletion\n\n* **Critical System Configuration Changes**\n\n  * /etc/passwd\n  * /etc/shadow\n  * /etc/sudoers\n  * crontab\n  * SSH configuration\n\n* **External Downloads or Execution**\n\n  * curl\n  * wget\n  * Downloading and executing scripts\n\n* **Sensitive Information Access**\n\n  * Private keys\n  * .env files\n  * Database configurations\n\n* **Data Packaging or Transfer**\n\n  * tar\n  * scp\n  * rsync\n  * Database exports\n\nIf no obvious risk operations are found, please state so.\n\n---\n\n## Audit Principles\n\n1. **Only analyze user command behaviors; do not analyze system vulnerabilities or host security configurations.**\n2. **Do not speculate on user intent; analyze only based on command behaviors.**\n3. **If information is insufficient, explicitly state \"Insufficient Information\".**\n4. Keep descriptions **objective, professional, and concise**.",
-      "audit_rdp_config": "RDP/VNC Audit Assistant Config",
-      "audit_rdp_config_desc": "Analyzes RDP/VNC graphical remote desktop sessions to identify suspicious behavior and security risks",
-      "audit_rdp_enable": "Enable RDP/VNC Audit Assistant",
-      "audit_rdp_prompt": "RDP/VNC Audit Prompt",
-      "audit_rdp_prompt_placeholder": "Enter RDP/VNC audit assistant prompt...",
-      "test": "Connection Test",
-      "test_button": "Test Connection",
-      "test_tip": "Sends a short request to the LLM with the current form values (API key / base URL / model) to verify the configuration.",
-      "test_failed": "Test failed",
-      "test_response": "Model response",
-      "test_response_empty": "The model returned no content.",
-      "audit_rdp_prompt_default": "You are a professional remote desktop security auditor. The following contains information from an RDP/VNC graphical remote session.\n\nPlease perform a security audit and output a Markdown audit report with the following structure:\n\n## 1. Executive Summary\n- **Overall Risk Level**: Low / Medium / High / Critical\n- **Key Findings**: 2–3 sentence summary\n\n## 2. Behavior Analysis\nAnalyze identifiable behaviors including:\n- Applications used (browsers, editors, terminals, admin tools)\n- File management (copy, move, delete, download)\n- System configuration changes\n- Network access and data transfer\n\n## 3. Security Risk Matrix\n| Risk Level | Behavior | Description |\n|:----------:|:--------|:------------|\n| 🔴 Critical | | |\n| 🟠 High | | |\n| 🟡 Medium | | |\n\n## 4. Compliance Assessment\nIdentify policy violations and provide improvement recommendations.\n\n## 5. Audit Conclusion\nOverall evaluation and remediation recommendations.\n\nNote: If information is insufficient, state so explicitly. Do not speculate."
+      "update_content": "Update Notes"
     },
     "oidc_server": {
-      "description": "Configure OIDC Server to make Next Terminal an OpenID Connect provider, allowing other apps to use this system for SSO.",
+      "setting": "Identity Provider Service",
+      "server": "OIDC Server",
+      "description": "Configure OIDC Server to make this system an OpenID Connect provider, allowing other apps to use this system for SSO.",
       "manage_tip_prefix": "After enabling, you can manage apps in \"",
       "manage_link": "Identity - OIDC Clients",
       "manage_tip_suffix": "\".",
@@ -1568,7 +2214,7 @@
       },
       "enable_label": "Enable OIDC Server",
       "issuer_label": "Issuer URL",
-      "issuer_tooltip": "OIDC issuer identifier, usually Next Terminal access address + /api",
+      "issuer_tooltip": "OIDC issuer identifier, usually this system's access address + /api",
       "issuer_required": "Please enter Issuer URL",
       "ttl_required": "Please enter validity",
       "access_token_ttl_label": "Access Token TTL (seconds)",
@@ -1580,15 +2226,84 @@
       "auth_code_ttl_label": "Authorization Code TTL (seconds)",
       "auth_code_ttl_tooltip": "Authorization code validity, default 600 seconds (10 minutes)"
     },
-    "identity_methods": "Authentication Methods",
-    "identity_source": {
-      "setting": "Identity Service"
-    },
     "network": {
-      "setting": "Network Settings",
       "not_detected": "Not Detected",
-      "trust_ip_tip": "Configure trusted proxy IPs, CIDR supported"
+      "trust_ip_tip": "Determines whether forwarded IP headers are trusted",
+      "custom_header": "Custom Header",
+      "custom_header_name": "Header Name",
+      "custom_header_placeholder": "For example: CF-Connecting-IP",
+      "custom_header_required": "Please enter header name"
     }
+  },
+  "access_request": {
+    "new": "New Request",
+    "resource": "Resource",
+    "resource_type": "Resource Type",
+    "request_reason": "Reason",
+    "request_reason_placeholder": "Enter the reason for requesting access",
+    "duration_minutes": "Duration (minutes)",
+    "approved_duration_minutes": "Approved Duration (minutes)",
+    "requester": "Requester",
+    "approver": "Approver",
+    "approve": "Approve",
+    "reject_reason": "Enter rejection reason",
+    "cancel_confirm": "Cancel this access request?",
+    "resource_type_asset": "Asset",
+    "resource_type_database": "Database Asset",
+    "resource_type_website": "Web Asset",
+    "authorised": "Authorised",
+    "requestable_resource_empty": "No requestable resources",
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled",
+      "closed": "Closed"
+    }
+  },
+  "ai_assistant": {
+    "title": "AI Assistant",
+    "history": "History",
+    "new_chat": "New Chat",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "connection_error": "AI connection failed",
+    "unknown_error": "AI request failed",
+    "empty": "Ask a question to start",
+    "placeholder": "Ask a question. Shift + Enter for newline",
+    "select_asset": "Select target asset",
+    "command_confirm": "Confirm command execution",
+    "command_shortcut_hint": "Enter to run, Esc to reject",
+    "pending_placeholder": "Press Enter to run or Esc to reject",
+    "approve": "Run",
+    "reject": "Reject",
+    "send": "Send",
+    "cancel": "Stop generating",
+    "reasoning": "Reasoning",
+    "queued": "Queued",
+    "tool_pending": "Pending",
+    "tool_rejected": "Rejected",
+    "tool_cancelled": "Cancelled",
+    "tool_timed_out": "Timed out",
+    "tool_done": "Done",
+    "tool_failed": "Failed",
+    "full_command": "Full command",
+    "tool_output": "Output",
+    "no_output": "No output",
+    "connecting": "Connecting",
+    "context_usage": "Context {{percent}}%",
+    "context_usage_detail": "{{used}} / {{total}} tokens used",
+    "thinking": "Thinking",
+    "generating": "Generating",
+    "running_tool": "Running tool",
+    "history_search": "Search conversations",
+    "no_history": "No conversations",
+    "delete_confirm": "Delete this conversation?",
+    "clear_confirm": "Clear all AI conversations?",
+    "history_load_error": "Failed to load conversation: {{message}}",
+    "history_delete_error": "Failed to delete conversation: {{message}}",
+    "history_clear_error": "Failed to clear conversations: {{message}}",
+    "invalid_response": "Received an invalid AI response"
   },
   "db": {
     "asset": {
@@ -1620,7 +2335,6 @@
       "sql": "SQL",
       "duration_ms": "Duration (ms)",
       "rows_affected": "Rows Affected",
-      "saved_limit_days": "SQL log retention days",
       "status": {
         "blocked": "Blocked"
       },
@@ -1636,11 +2350,13 @@
       "block_dml_tip": "When enabled, only read-only SQL is allowed.",
       "tip": "Enable proxy to allow client connections and execute SQL.",
       "usage_title": "Usage",
+      "usage_tip": "Users connect to the proxy address from a database client, and the proxy forwards traffic to authorized database assets.",
       "usage_client": "Client Connection",
+      "public_addr": "Public Address",
+      "public_addr_extra": "Address shown in the quick access entry for regular users. When empty, it is inferred from the listen address.",
       "password_tip_prefix": "Go to ",
       "password_tip_link": "Profile - Access Token",
-      "password_tip_suffix": " to generate a database password.",
-      "external_quick_access_tip": "External Host/Port is only for quick access entry for regular users and does not affect the actual proxy listen address."
+      "password_tip_suffix": " to generate a database password."
     }
   }
 }

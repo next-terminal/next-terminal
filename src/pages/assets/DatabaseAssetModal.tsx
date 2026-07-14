@@ -1,15 +1,13 @@
 import {useFormRequest} from "@/hook/use-antd-form-query";
-import QuerySelect from "@/components/QuerySelect";
-import React, {useEffect, useState} from 'react';
-import {App, Button, Col, Form, Input, InputNumber, Modal, Radio, Row, Select, Space} from 'antd';
+import {useEffect, useState} from 'react';
+import {App, Button, Col, Form, Input, InputNumber, Modal, Row, Select, Space} from 'antd';
 import {useTranslation} from "react-i18next";
 import {useMutation} from "@tanstack/react-query";
 import databaseAssetApi from "@/api/database-asset-api";
-import sshGatewayApi from "@/api/ssh-gateway-api";
-import agentGatewayApi from "@/api/agent-gateway-api";
-import gatewayGroupApi from "@/api/gateway-group-api";
 import {EyeInvisibleOutlined, EyeTwoTone} from "@ant-design/icons";
 import MultiFactorAuthentication from "@/pages/account/MultiFactorAuthentication";
+import {useLicense} from "@/hook/LicenseContext";
+import GatewayChainEditor from "@/pages/assets/components/GatewayChainEditor";
 
 const api = databaseAssetApi;
 
@@ -31,10 +29,11 @@ const DatabaseAssetModal = ({
     const {t} = useTranslation();
     const {message} = App.useApp();
     const [form] = Form.useForm();
-    const gatewayType = Form.useWatch('gatewayType', form);
     const [decrypted, setDecrypted] = useState(false);
     const [mfaOpen, setMfaOpen] = useState(false);
     const formItemStyle = {marginBottom: 12};
+    const {license, isLoading: licenseLoading} = useLicense();
+    const hasPremiumFeatures = !licenseLoading && license.hasPremiumFeatures();
 
     useEffect(() => {
         if (!open) {
@@ -44,41 +43,20 @@ const DatabaseAssetModal = ({
     }, [open]);
     const get = async () => {
         if (id) {
-            return await api.getById(id);
+            const asset = await api.getById(id);
+            return {...asset, gatewayChain: hasPremiumFeatures ? asset.gatewayChain || [] : []};
         }
         return {
             type: 'mysql',
             port: 3306,
-            gatewayType: '',
+            gatewayChain: [],
             tags: []
         };
     };
-    const sshGatewayRequest = async () => {
-        const items = await sshGatewayApi.getAll();
-        return items.map(item => ({
-            label: item.name,
-            value: item.id
-        }));
-    };
-    const agentGatewayRequest = async () => {
-        const items = await agentGatewayApi.getAll();
-        return items.map(item => ({
-            label: item.name,
-            value: item.id
-        }));
-    };
-    const gatewayGroupRequest = async () => {
-        const items = await gatewayGroupApi.getAll();
-        return items.map(item => ({
-            label: item.name,
-            value: item.id
-        }));
-    };
     const handleSave = () => {
         form.validateFields().then(async values => {
-            if (!values.gatewayType) {
-                values.gatewayType = '';
-                values.gatewayId = '';
+            if (!hasPremiumFeatures) {
+                values.gatewayChain = [];
             }
             handleOk(values);
         });
@@ -91,9 +69,8 @@ const DatabaseAssetModal = ({
     });
     const handleTest = () => {
         form.validateFields().then(values => {
-            if (!values.gatewayType) {
-                values.gatewayType = '';
-                values.gatewayId = '';
+            if (!hasPremiumFeatures) {
+                values.gatewayChain = [];
             }
             testMutation.mutate(values);
         });
@@ -110,7 +87,7 @@ const DatabaseAssetModal = ({
         </Button>
     </Space>;
 
-    useFormRequest(form, ["form-request", "web/src/pages/assets/DatabaseAssetModal.tsx", open, id], get, open);
+    useFormRequest(form, ["form-request", "web/src/pages/assets/DatabaseAssetModal.tsx", open, id], get, {enabled: open && !licenseLoading});
     return <Modal title={id ? t('actions.edit') : t('actions.new')}
                   open={open}
                   onCancel={handleCancel}
@@ -120,7 +97,7 @@ const DatabaseAssetModal = ({
                   }}
                   footer={footer}
     >
-        <Form form={form} layout="vertical">
+        <Form form={form} clearOnDestroy={true} layout="vertical">
             <Form.Item hidden={true} name={'id'}>
                 <Input/>
             </Form.Item>
@@ -192,45 +169,7 @@ const DatabaseAssetModal = ({
                     </Col>
                 </Row>
 
-                <Form.Item label={t('assets.gateway_type')} name='gatewayType' style={formItemStyle}>
-                    <Radio.Group options={[{
-                        label: t('assets.no_gateway'),
-                        value: ''
-                    }, {
-                        label: t('menus.gateway.submenus.ssh_gateway'),
-                        value: 'ssh'
-                    }, {
-                        label: t('menus.gateway.submenus.agent_gateway'),
-                        value: 'agent'
-                    }, {
-                        label: t('menus.gateway.submenus.gateway_group'),
-                        value: 'group'
-                    }]}/>
-                </Form.Item>
-
-                {gatewayType === 'ssh' && <Form.Item label={t('menus.gateway.submenus.ssh_gateway')} name='gatewayId'
-                                                      rules={[{required: true}]}
-                                                      style={formItemStyle}>
-                    <QuerySelect showSearch params={{
-                        gatewayType
-                    }} request={sshGatewayRequest}/>
-                </Form.Item>}
-                {gatewayType === 'agent' && <Form.Item label={t('menus.gateway.submenus.agent_gateway')}
-                                                       name='gatewayId'
-                                                       rules={[{required: true}]}
-                                                       style={formItemStyle}>
-                    <QuerySelect showSearch params={{
-                        gatewayType
-                    }} request={agentGatewayRequest}/>
-                </Form.Item>}
-                {gatewayType === 'group' && <Form.Item label={t('menus.gateway.submenus.gateway_group')}
-                                                       name='gatewayId'
-                                                       rules={[{required: true}]}
-                                                       style={formItemStyle}>
-                    <QuerySelect showSearch params={{
-                        gatewayType
-                    }} request={gatewayGroupRequest}/>
-                </Form.Item>}
+                <GatewayChainEditor disabled={!hasPremiumFeatures}/>
             </Space>
         </Form>
 

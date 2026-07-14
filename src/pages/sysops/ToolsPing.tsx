@@ -1,5 +1,5 @@
 import {Button, Form, Input, InputNumber} from 'antd';
-import React, {useState} from 'react';
+import {useState} from 'react';
 import {baseUrl} from "@/api/core/requests";
 import {useTranslation} from "react-i18next";
 
@@ -30,7 +30,7 @@ const ToolsPing = () => {
     }
 
     return (
-        <div className={'flex flex-col gap-4 min-h-[75vh]'}>
+        <div className={'flex min-h-[calc(100vh-240px)] flex-col gap-4'}>
             <Form layout="inline" className="w-full">
                 <Form.Item
                     label={t('sysops.tools.target')}
@@ -67,8 +67,8 @@ const ToolsPing = () => {
                 </Form.Item>
             </Form>
 
-            <div className='border rounded-lg p-4 flex-grow'>
-                <pre>{logs.join("\n")}</pre>
+            <div className='min-h-0 flex-grow overflow-auto rounded-lg border p-4'>
+                <pre className='m-0'>{logs.join("\n")}</pre>
             </div>
         </div>
     );

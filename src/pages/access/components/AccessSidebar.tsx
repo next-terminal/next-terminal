@@ -21,7 +21,7 @@ interface AccessSidebarProps {
     isCollapsed: boolean;
     leftPanelSize: number;
     onResize: (size: number) => void;
-    leftRef: React.RefObject<ImperativePanelHandle>;
+    leftRef: React.RefObject<ImperativePanelHandle | null>;
     onNodeDoubleClick: (node: TreeDataNodeWithExtra) => void;
 }
 

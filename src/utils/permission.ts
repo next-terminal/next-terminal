@@ -3,7 +3,7 @@ import {AccountInfo} from "@/api/account-api";
 
 export function isAdmin() {
     let user = getCurrentUser();
-    return user['type'] === 'admin';
+    return user?.type === 'admin';
 }
 
 export function clearCurrentUser() {

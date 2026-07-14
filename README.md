@@ -12,7 +12,7 @@ Next Terminal 是一个简洁、安全、易用的运维审计系统，支持多
 
 ## 快速安装
 
-[👉 安装文档](https://docs.next-terminal.typesafe.cn)
+[👉 安装文档](https://docs.next-terminal.com)
 
 ## 屏幕截图
 

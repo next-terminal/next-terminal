@@ -12,6 +12,7 @@ import {useNTTheme} from "@/hook/use-theme";
 import {useThemeToggle} from "@/layout/hooks/use-theme-toggle.ts";
 import {useBreadcrumb} from "@/layout/hooks/use-breadcrumb.tsx";
 import {useManagerEventListeners} from "@/layout/hooks/use-manager-event-listeners.ts";
+import {useGlobalMonitorStatus} from "@/layout/hooks/use-global-monitor-status.tsx";
 import {useSidebarState} from "@/layout/hooks/use-sidebar-state.ts";
 import {useFilteredMenus} from "@/layout/hooks/use-filtered-menus.ts";
 import {useUserDropdownMenu} from "@/layout/hooks/use-user-dropdown-menu.tsx";
@@ -59,6 +60,7 @@ const ManagerLayout: React.FC = () => {
 
     // 事件监听
     const {contextHolder} = useManagerEventListeners();
+    const {contextHolder: globalMonitorContextHolder} = useGlobalMonitorStatus();
 
     // 用户信息
     const infoQuery = useQuery({
@@ -66,7 +68,7 @@ const ManagerLayout: React.FC = () => {
         queryFn: accountApi.getUserInfo,
     });
 
-    const current = location.pathname.split('/')[1];
+    const current = location.pathname.split('/')[1] ?? '';
 
     // 菜单点击处理
     const handleMenuClick = (e: any) => {
@@ -108,7 +110,7 @@ const ManagerLayout: React.FC = () => {
                                 stateOpenKeys={stateOpenKeys}
                                 onSubMenuChange={subMenuChange}
                                 onMenuClick={handleMenuClick}
-                                backgroundColor={ntTheme.backgroundColor}
+                                backgroundColor={ntTheme.backgroundColor ?? '#fff'}
                             />
                         )}
 
@@ -155,6 +157,7 @@ const ManagerLayout: React.FC = () => {
                             <FooterComponent/>
                         </div>
                         {contextHolder}
+                        {globalMonitorContextHolder}
                     </Layout>
                 </AntdApp>
             </ConfigProvider>

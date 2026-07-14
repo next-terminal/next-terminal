@@ -1,6 +1,5 @@
 import { useFormRequest } from "@/hook/use-antd-form-query";
-import { FormInstance, Modal, Form, Input } from 'antd';
-import React, { useRef } from 'react';
+import {Modal, Form, Input} from 'antd';
 import { useTranslation } from "react-i18next";
 import agentGatewayApi from "@/api/agent-gateway-api";
 const api = agentGatewayApi;
@@ -18,7 +17,7 @@ const AgentGatewayModal = ({
   confirmLoading,
   id
 }: Props) => {
-  const formRef = useRef<FormInstance>(null);
+  const [form] = Form.useForm();
   let {
     t
   } = useTranslation();
@@ -28,18 +27,18 @@ const AgentGatewayModal = ({
     }
     return {};
   };
-  useFormRequest(formRef, ["form-request", "web/src/pages/gateway/AgentGatewayModal.tsx", open, id], get, open);
+  useFormRequest(form, ["form-request", "web/src/pages/gateway/AgentGatewayModal.tsx", open, id], get, {enabled: open});
   return <Modal title={t('actions.edit')} open={open} mask={{
     closable: false
   }} destroyOnHidden={true} onOk={() => {
-    formRef.current?.validateFields().then(async values => {
+    form.validateFields().then(async values => {
       handleOk(values);
     });
   }} onCancel={() => {
     handleCancel();
   }} confirmLoading={confirmLoading}>
 
-            <Form ref={formRef} layout="vertical">
+            <Form form={form} clearOnDestroy={true} layout="vertical">
                 <Form.Item hidden={true} name={'id'}>
     <Input />
       </Form.Item>

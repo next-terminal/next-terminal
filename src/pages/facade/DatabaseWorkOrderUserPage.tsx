@@ -1,10 +1,11 @@
-import React, {useRef, useState} from 'react';
+import {useRef, useState} from 'react';
 import {
     App,
     Button,
     Tag,
     Tooltip,
     Typography} from "antd";
+import {Plus} from "lucide-react";
 import NTable, {type NTableActionType, type NColumn} from "@/components/NTable";
 import {useTranslation} from "react-i18next";
 import {useMutation} from "@tanstack/react-query";
@@ -14,7 +15,7 @@ import {getSort} from "@/utils/sort";
 import {useMobile} from "@/hook/use-mobile";
 import {cn} from "@/lib/utils";
 import {debounce} from "@/utils/debounce";
-import FacadeSearchBar from "@/pages/facade/components/FacadeSearchBar";
+import FacadeCompactSearch from "@/pages/facade/components/FacadeCompactSearch";
 
 const {Text} = Typography;
 
@@ -152,19 +153,16 @@ const DatabaseWorkOrderUserPage = () => {
     ];
 
     return (
-        <div className={cn('px-4 lg:px-20', isMobile && 'px-2')}>
-            <div className={cn('py-6', isMobile && 'p-4')}>
-                <div className={'rounded-2xl border border-slate-200/70 dark:border-slate-700/70 p-4 lg:p-5'}>
-                    <div className={'flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3'}>
-                        <div className={'flex flex-col gap-1'}>
-                            <div className={'text-xl font-bold text-slate-900 dark:text-slate-100'}>
-                                {t('menus.resource.submenus.db_work_order')}
-                            </div>
-                        </div>
+        <div className={cn('min-h-full px-4 py-5 lg:px-20 lg:py-6', isMobile && 'px-3 py-3')}>
+            <div className={'mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between'}>
+                <div className={'flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center'}>
+                    <div className={'truncate text-lg font-semibold leading-7 text-slate-900 dark:text-slate-100'}>
+                        {t('menus.work_order.submenus.db_work_order')}
                     </div>
-                    <div className={'pt-3'}>
-                        <FacadeSearchBar
+                    <div className={'w-full sm:w-72 lg:w-80'}>
+                        <FacadeCompactSearch
                             value={keyword}
+                            placeholder={t('general.search_placeholder')}
                             onChange={(value) => {
                                 setKeyword(value);
                                 reloadTable();
@@ -172,57 +170,54 @@ const DatabaseWorkOrderUserPage = () => {
                         />
                     </div>
                 </div>
+                <Button
+                    type="primary"
+                    icon={<Plus className={'h-4 w-4'} />}
+                    size="middle"
+                    onClick={() => setOpen(true)}
+                >
+                    {t('db.work_order.new')}
+                </Button>
             </div>
-            <div className={'rounded-xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 p-1'}>
-                <NTable
-                    columns={columns}
-                    actionRef={actionRef}
-                    request={async (params = {}, sort) => {
-                        const [sortOrder, sortField] = getSort(sort);
-                        const queryParams = {
-                            pageIndex: params.current,
-                            pageSize: params.pageSize,
-                            sortOrder: sortOrder,
-                            sortField: sortField,
-                            keyword: keyword.trim() || undefined,
-                        };
-                        const result = await dbWorkOrderApi.paging(queryParams);
-                        return {
-                            data: result['items'],
-                            success: true,
-                            total: result['total']
-                        };
-                    }}
-                    rowKey="id"
-                    search={false}
-                    pagination={{
-                        defaultPageSize: 10,
-                        showSizeChanger: !isMobile,
-                        simple: isMobile,
-                    }}
-                    scroll={{
-                        x: 'max-content',
-                    }}
-                    dateFormatter="string"
-                    headerTitle={null}
-                    toolBarRender={() => [
-                        <Button
-                            key="button"
-                            type="primary"
-                            size={isMobile ? 'middle' : 'middle'}
-                            onClick={() => setOpen(true)}
-                        >
-                            {t('db.work_order.new')}
-                        </Button>,
-                    ]}
-                    options={{
-                        density: !isMobile,
-                        fullScreen: !isMobile,
-                        reload: true,
-                        setting: !isMobile,
-                    }}
-                />
-            </div>
+
+            <NTable
+                columns={columns}
+                actionRef={actionRef}
+                request={async (params = {}, sort) => {
+                    const [sortOrder, sortField] = getSort(sort);
+                    const queryParams = {
+                        pageIndex: params.current,
+                        pageSize: params.pageSize,
+                        sortOrder: sortOrder,
+                        sortField: sortField,
+                        keyword: keyword.trim() || undefined,
+                    };
+                    const result = await dbWorkOrderApi.paging(queryParams);
+                    return {
+                        data: result['items'],
+                        success: true,
+                        total: result['total']
+                    };
+                }}
+                rowKey="id"
+                search={false}
+                pagination={{
+                    defaultPageSize: 10,
+                    showSizeChanger: !isMobile,
+                    simple: isMobile,
+                }}
+                scroll={{
+                    x: 'max-content',
+                }}
+                dateFormatter="string"
+                headerTitle={false}
+                options={{
+                    density: !isMobile,
+                    fullScreen: !isMobile,
+                    reload: false,
+                    setting: !isMobile,
+                }}
+            />
 
             <DatabaseWorkOrderModal
                 open={open}

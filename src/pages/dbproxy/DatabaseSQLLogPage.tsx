@@ -1,4 +1,4 @@
-import React, {useRef} from 'react';
+import {useRef} from 'react';
 import {
     App,
     Button,
@@ -11,6 +11,7 @@ import {useMutation} from "@tanstack/react-query";
 import databaseSQLLogApi, {DatabaseSQLLog} from "@/api/database-sql-log-api";
 import {getSort} from "@/utils/sort";
 import {DatabaseAssetSelect, UserSelect} from "@/components/shared/QuerySelects";
+import IPRegion from "@/components/IPRegion";
 
 const {Text} = Typography;
 
@@ -148,6 +149,7 @@ const DatabaseSQLLogPage = () => {
             dataIndex: 'clientIp',
             hideInSearch: true,
             width: 140,
+            render: (_, record) => <IPRegion ip={record.clientIp} regionInfo={record.regionInfo}/>,
         },
         {
             title: t('db.sql_log.sql'),

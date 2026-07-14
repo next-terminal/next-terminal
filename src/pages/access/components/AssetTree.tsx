@@ -34,7 +34,7 @@ const AssetTree = React.memo(({
             <div
                 className={clsx(
                     `w-4 h-4 rounded flex items-center justify-center text-white`,
-                    getImgColor(node.extra?.protocol)
+                    getImgColor(node.extra?.protocol ?? '')
                 )}
                 style={{
                     fontSize: 9,

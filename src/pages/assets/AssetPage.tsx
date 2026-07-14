@@ -1,8 +1,23 @@
-import {
-    useEffect,
-    useState} from 'react';
+import {useEffect, useState} from 'react';
 
-import {App,
+import assetsApi, {Asset, SortPositionRequest} from '@/api/asset-api';
+import {baseUrl} from "@/api/core/requests";
+import portalApi, {AssetAccessMode} from "@/api/portal-api";
+import DraggableTable, {DragHandle} from "@/components/DraggableTable";
+import NButton from "@/components/NButton";
+import {getImgColor, getProtocolColor} from "@/helper/asset-helper";
+import {useMobile} from "@/hook/use-mobile";
+import {cn} from "@/lib/utils";
+import AssetBatchEditDrawer from "@/pages/assets/AssetBatchEditDrawer";
+import AssetPostDrawer from "@/pages/assets/AssetPostDrawer";
+import AssetTree from "@/pages/assets/AssetTree";
+import AssetTreeChoose from "@/pages/assets/AssetTreeChoose";
+import {safeEncode} from "@/utils/codec";
+import {getSort} from "@/utils/sort";
+import {browserDownload} from "@/utils/utils";
+import {useMutation, useQuery} from "@tanstack/react-query";
+import {
+    App,
     Badge,
     Button,
     Dropdown,
@@ -14,32 +29,22 @@ import {App,
     type TableProps,
     Tag,
     Tooltip,
-    Upload} from "antd";
-import {useNavigate} from "react-router-dom";
-import {useMutation, useQuery} from "@tanstack/react-query";
-import {useTranslation} from "react-i18next";
-import assetsApi, {Asset, SortPositionRequest} from '@/api/asset-api';
-import NButton from "@/components/NButton";
-import DraggableTable, {DragHandle} from "@/components/DraggableTable";
-import AssetTree from "@/pages/assets/AssetTree";
+    Upload
+} from "antd";
 import clsx from "clsx";
-import {getImgColor, getProtocolColor} from "@/helper/asset-helper";
-import AssetTreeChoose from "@/pages/assets/AssetTreeChoose";
-import AssetGatewayChoose from "@/pages/assets/AssetGatewayChoose";
-import {browserDownload} from "@/utils/utils";
-import {useMobile} from "@/hook/use-mobile";
-import {cn} from "@/lib/utils";
+import i18n from "i18next";
 import {PanelLeftCloseIcon, PanelLeftOpenIcon, RefreshCw} from "lucide-react";
-import {safeEncode} from "@/utils/codec";
-import AssetPostDrawer from "@/pages/assets/AssetPostDrawer";
-import {baseUrl} from "@/api/core/requests";
-import {getSort} from "@/utils/sort";
-import portalApi, {AssetAccessMode} from "@/api/portal-api";
+import {useTranslation} from "react-i18next";
+import {useNavigate} from "react-router-dom";
 
 const api = assetsApi;
 
 function downloadImportExampleCsv() {
-    browserDownload(`${baseUrl()}/admin/assets/sample`)
+    browserDownload(`${baseUrl()}/admin/assets/sample?language=${encodeURIComponent(i18n.language)}`)
+}
+
+function downloadAssets() {
+    browserDownload(`${baseUrl()}/admin/assets/export?language=${encodeURIComponent(i18n.language)}`)
 }
 
 interface PostParams {
@@ -58,12 +63,11 @@ const AssetPage = () => {
     let [dataSource, setDataSource] = useState<Asset[]>([]);
     let [pagination, setPagination] = useState({current: 1, pageSize: 10, total: 0});
     let [sort, setSort] = useState<Record<string, string | null>>({});
-    let [reloadKey, setReloadKey] = useState(0);
     let [keyword, setKeyword] = useState('');
     let [selectedTags, setSelectedTags] = useState<string[]>([]);
     let [selectedStatus, setSelectedStatus] = useState<string>('');
     let [groupChooserOpen, setGroupChooserOpen] = useState(false);
-    let [gatewayChooserOpen, setGatewayChooserOpen] = useState(false);
+    let [batchEditorOpen, setBatchEditorOpen] = useState(false);
     let [params, setParams] = useState<PostParams>({
         open: false,
         assetId: undefined,
@@ -75,13 +79,8 @@ const AssetPage = () => {
     let {t} = useTranslation();
     let {modal, message} = App.useApp();
 
-    const reloadTable = () => {
-        setReloadKey((value) => value + 1);
-    };
-
     const resetTableToFirstPage = () => {
         setPagination((prev) => ({...prev, current: 1}));
-        reloadTable();
     };
 
     const [isTreeCollapsed, setIsTreeCollapsed] = useState<boolean>(() => {
@@ -109,7 +108,7 @@ const AssetPage = () => {
     let testingMutation = useMutation({
         mutationFn: assetsApi.checking,
         onSuccess: () => {
-            reloadTable();
+            assetPagingQuery.refetch();
         }
     });
 
@@ -120,7 +119,17 @@ const AssetPage = () => {
         }
     });
 
-    const handleDragSortEnd = (beforeIndex: number, afterIndex: number, newDataSource: Asset[]) => {
+    const createRdpProxyTicketMutation = useMutation({
+        mutationFn: (assetId: string) => portalApi.createRdpProxyTicket(assetId),
+        onSuccess: (ticket) => {
+            browserDownload(ticket.rdpFileUrl);
+        },
+        onError: (error: any) => {
+            message.error(error?.message || t('general.failed'));
+        }
+    });
+
+    const handleDragSortEnd = (_beforeIndex: number, afterIndex: number, newDataSource: Asset[]) => {
         setDataSource(newDataSource);
         const draggedItem = newDataSource[afterIndex];
         const req: SortPositionRequest = {
@@ -136,11 +145,11 @@ const AssetPage = () => {
         <div>{t('assets.import_asset_tip')}</div>
     </>
 
-    const openAssetEditor = (assetId: string, options?: Partial<PostParams>) => {
+    const openAssetEditor = (assetId?: string, options?: Partial<PostParams>) => {
         setParams({
             open: true,
             assetId,
-            groupId: options?.groupId,
+            groupId: options?.groupId ?? (!assetId ? groupId : undefined),
             copy: options?.copy ?? false,
         });
     };
@@ -159,6 +168,10 @@ const AssetPage = () => {
             wolEnabled: record.attrs?.['wol-enabled'] || false,
         };
         return `/access?asset=${safeEncode(msg)}`;
+    };
+
+    const handleRdpProxyAccess = (record: Asset) => {
+        createRdpProxyTicketMutation.mutate(record.id);
     };
 
     const handleGroupChange = (newGroupId: string) => {
@@ -194,7 +207,7 @@ const AssetPage = () => {
     };
 
     const assetPagingQuery = useQuery({
-        queryKey: ['assets', pagination.current, pagination.pageSize, sort, groupId, selectedTags, selectedStatus, keyword, reloadKey],
+        queryKey: ['assets', pagination.current, pagination.pageSize, sort, groupId, selectedTags, selectedStatus, keyword],
         queryFn: async () => {
             let [sortOrder, sortField] = getSort(sort);
             if (sortOrder === "" && sortField === "") {
@@ -243,7 +256,7 @@ const AssetPage = () => {
             title: t('assets.logo'),
             dataIndex: 'logo',
             width: isMobile ? 40 : 60,
-            render: (text, record) => {
+            render: (_text, record) => {
                 return renderAssetLogo(record);
             },
             fixed: 'left',
@@ -254,11 +267,10 @@ const AssetPage = () => {
             sorter: true,
             width: isMobile ? 120 : 200,
             render: (text, record) => {
-                const handleOpen = () => navigate(`/asset/${record.id}`);
                 return <div className={'flex flex-col'}>
                     <span
                         className={'cursor-pointer text-blue-600 hover:underline'}
-                        onClick={handleOpen}
+                        onClick={() => openAssetEditor(record.id)}
                     >
                         {text}
                     </span>
@@ -303,7 +315,7 @@ const AssetPage = () => {
             key: 'protocol',
             sorter: true,
             width: isMobile ? 60 : 80,
-            render: (text, record) => {
+            render: (_text, record) => {
                 return <span
                     className={clsx('rounded-md px-1.5 py-1 text-white font-bold', getProtocolColor(record.protocol))}
                     style={{fontSize: isMobile ? 8 : 9}}>
@@ -317,7 +329,7 @@ const AssetPage = () => {
             key: 'network',
             width: isMobile ? 90 : 160,
             hidden: isMobile,
-            render: (text, record) => {
+            render: (_text, record) => {
                 return `${record['ip'] + ':' + record['port']}`;
             }
         },
@@ -343,7 +355,7 @@ const AssetPage = () => {
             key: 'status',
             sorter: true,
             width: isMobile ? 70 : 100,
-            render: (status, record) => {
+            render: (_status, record) => {
                 return getStatusBadge(record);
             },
         },
@@ -351,7 +363,7 @@ const AssetPage = () => {
             title: t('actions.label'),
             key: 'option',
             width: isMobile ? 80 : 120,
-            render: (text, record) => {
+            render: (_text, record) => {
                 return renderAssetActions(record, isMobile);
             },
             fixed: 'right'
@@ -384,7 +396,7 @@ const AssetPage = () => {
 
             })
         }
-        reloadTable();
+        assetPagingQuery.refetch();
         return false;
     }
 
@@ -402,6 +414,8 @@ const AssetPage = () => {
 
     const renderAssetActions = (record: Asset, compact = false) => {
         const id = record.id;
+        const isRdpAsset = record.protocol?.toLowerCase() === 'rdp';
+        const isCreatingRdpProxyTicket = createRdpProxyTicketMutation.isPending && createRdpProxyTicketMutation.variables === id;
         return (
             <div className={cn('flex items-center gap-2', compact && 'gap-1')}>
                 <a
@@ -418,6 +432,11 @@ const AssetPage = () => {
                     trigger={compact ? ['click'] : ['hover']}
                     menu={{
                         items: [
+                            ...(isRdpAsset ? [{
+                                key: 'rdp-proxy',
+                                label: t('assets.rdp_proxy_access'),
+                                disabled: isCreatingRdpProxyTicket,
+                            }] : []),
                             {key: 'copy', label: t('assets.copy')},
                             {key: 'edit', label: t('actions.edit')},
                             {
@@ -428,11 +447,14 @@ const AssetPage = () => {
                         ],
                         onClick: ({key}) => {
                             switch (key) {
+                                case 'rdp-proxy':
+                                    handleRdpProxyAccess(record);
+                                    break;
                                 case "copy":
                                     openAssetEditor(record.id, {groupId: record.groupId, copy: true});
                                     break;
                                 case "edit":
-                                    navigate(`/asset/${record.id}`);
+                                    openAssetEditor(record.id);
                                     break;
                                 case 'view-authorised-asset':
                                     navigate(`/authorised-asset?assetId=${record.id}`);
@@ -443,7 +465,7 @@ const AssetPage = () => {
                                         okText: t('actions.delete'),
                                         onOk: async () => {
                                             await api.deleteById(record.id);
-                                            reloadTable();
+                                            assetPagingQuery.refetch();
                                         },
                                     });
                                     break;
@@ -469,7 +491,7 @@ const AssetPage = () => {
         selections: [Table.SELECTION_ALL, Table.SELECTION_INVERT],
     };
 
-    const handleTableChange: TableProps<Asset>['onChange'] = (nextPagination, filters, sorter) => {
+    const handleTableChange: TableProps<Asset>['onChange'] = (nextPagination, _filters, sorter) => {
         const activeSorter = Array.isArray(sorter) ? sorter.find((item) => item.order) : sorter;
         const field = activeSorter?.field;
         const fieldName = Array.isArray(field) ? field.join('.') : field ? String(field) : '';
@@ -496,75 +518,70 @@ const AssetPage = () => {
     );
 
     const toolbarActions = [
-                <Button
-                    key="refresh"
-                    loading={assetPagingQuery.isFetching}
-                    icon={<RefreshCw className="h-4 w-4"/>}
-                    onClick={reloadTable}
-                >
-                    {t('actions.refresh')}
-                </Button>,
-                <Button
-                    key="auth"
-                    onClick={() => {
-                        navigate('/authorised-asset');
-                    }}
-                    color={'purple'}
-                    variant={'dashed'}
-                >
-                    {t('actions.authorized')}
-                </Button>,
-                groupId && (
-                    <Button
-                        key="group-auth"
-                        onClick={() => navigate(`/authorised-asset?assetGroupId=${groupId}`)}
-                    >
-                        {`${t('authorised.label.asset_group')}${t('actions.authorized')}`}
-                    </Button>
-                ),
-                <Button key="add"
-                        type="primary"
-                        onClick={() => {
-                            setParams({
-                                open: true,
-                                assetId: undefined,
-                                groupId: groupId,
-                                copy: false,
-                            })
-                        }}
-                >
-                    {t('actions.new')}
-                </Button>,
-                <Popover key="import" content={importExampleContent}>
-                    <Upload
-                        maxCount={1}
-                        beforeUpload={handleImportAsset}
-                        showUploadList={false}
-                    >
-                        <Button>{t('assets.import')}</Button>
-                    </Upload>
-                </Popover>,
-            ].filter(Boolean);
+        <Button
+            key="refresh"
+            loading={assetPagingQuery.isFetching}
+            icon={<RefreshCw className="h-4 w-4"/>}
+            onClick={() => assetPagingQuery.refetch()}
+        >
+            {t('actions.refresh')}
+        </Button>,
+        <Button
+            key="auth"
+            onClick={() => {
+                navigate('/authorised-asset');
+            }}
+            color={'purple'}
+            variant={'dashed'}
+        >
+            {t('actions.authorized')}
+        </Button>,
+        groupId && (
+            <Button
+                key="group-auth"
+                onClick={() => navigate(`/authorised-asset?assetGroupId=${groupId}`)}
+            >
+                {`${t('authorised.label.asset_group')}${t('actions.authorized')}`}
+            </Button>
+        ),
+        <Button key="add"
+                type="primary"
+                onClick={() => openAssetEditor()}
+        >
+            {t('actions.new')}
+        </Button>,
+        <Popover key="import" content={importExampleContent}>
+            <Upload
+                maxCount={1}
+                beforeUpload={handleImportAsset}
+                showUploadList={false}
+            >
+                <Button>{t('assets.import')}</Button>
+            </Upload>
+        </Popover>,
+        <Button key="export" onClick={downloadAssets}>{t('actions.export')}</Button>,
+    ].filter(Boolean);
 
     const batchActions = selectedRowKeys.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 py-3 dark:border-gray-800">
+        <div
+            className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 py-3 dark:border-gray-800">
             <span className="text-sm text-gray-500">
                 {t('identity.oidc_client.selected_count', {count: selectedRowKeys.length})}
             </span>
             <Space size={16} wrap>
                 <NButton
                     onClick={() => {
+                        setBatchEditorOpen(true);
+                    }}
+                >
+                    {t('assets.batch_edit.title')}
+                </NButton>
+                <NButton
+                    onClick={() => {
                         setGroupChooserOpen(true);
                     }}
                 >
                     {t('assets.change_group')}
-                </NButton>
-                <NButton
-                    onClick={() => {
-                        setGatewayChooserOpen(true);
-                    }}
-                >
-                    {t('assets.change_gateway')}
                 </NButton>
                 <NButton
                     onClick={() => {
@@ -581,7 +598,7 @@ const AssetPage = () => {
                             onOk: async () => {
                                 await api.deleteById(selectedRowKeys.join(','));
                                 setSelectedRowKeys([]);
-                                reloadTable();
+                                assetPagingQuery.refetch();
                             }
                         })
                     }}
@@ -679,7 +696,7 @@ const AssetPage = () => {
                     "grid gap-4 transition-all duration-300",
                     isTreeCollapsed ? "grid-cols-[48px_1fr]" : "grid-cols-[240px_1fr]"
                 )}>
-                    <div className="relative flex min-h-[240px] flex-col rounded-md bg-gray-50 dark:bg-[#141414]">
+                    <div className="relative flex min-h-60 flex-col rounded-md bg-gray-50 dark:bg-[#141414]">
                         {!isTreeCollapsed && (
                             <div className="flex-1">
                                 <AssetTree selected={groupId} onSelect={handleGroupChange}/>
@@ -727,18 +744,18 @@ const AssetPage = () => {
             onClose={() => {
                 setGroupChooserOpen(false);
                 setSelectedRowKeys([]);
-                reloadTable();
+                assetPagingQuery.refetch();
             }}
         />
 
-        <AssetGatewayChoose
-            type={'asset'}
-            resourceIds={selectedRowKeys}
-            open={gatewayChooserOpen}
-            onClose={() => {
-                setGatewayChooserOpen(false);
+        <AssetBatchEditDrawer
+            assetIds={selectedRowKeys}
+            open={batchEditorOpen}
+            onClose={() => setBatchEditorOpen(false)}
+            onSuccess={() => {
+                setBatchEditorOpen(false);
                 setSelectedRowKeys([]);
-                reloadTable();
+                assetPagingQuery.refetch();
             }}
         />
 
@@ -751,8 +768,8 @@ const AssetPage = () => {
                     groupId: undefined,
                     copy: false,
                 })
-                reloadTable();
             }}
+            onSuccess={() => assetPagingQuery.refetch()}
             assetId={params.assetId}
             groupId={params.groupId}
             copy={params.copy}

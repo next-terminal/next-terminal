@@ -1,12 +1,13 @@
-import React, {useState} from 'react';
-import {App, Button, Input, Popconfirm, Space, Table, type TableProps, Tag} from "antd";
-import {useTranslation} from "react-i18next";
-import {useMutation, useQuery} from "@tanstack/react-query";
-import databaseAssetApi, {DatabaseAsset} from "@/api/database-asset-api";
-import DatabaseAssetModal from "@/pages/assets/DatabaseAssetModal";
+import databaseAssetApi,{ DatabaseAsset } from "@/api/database-asset-api";
 import NButton from "@/components/NButton";
-import {getSort} from "@/utils/sort";
+import DatabaseAssetModal from "@/pages/assets/DatabaseAssetModal";
+import { getSort } from "@/utils/sort";
+import { useMutation,useQuery } from "@tanstack/react-query";
+import { App,Button,Input,Popconfirm,Space,Table,type TableProps,Tag } from "antd";
 import dayjs from "dayjs";
+import { useState } from 'react';
+import { useTranslation } from "react-i18next";
+import {firstGatewayHop} from "@/api/gateway-chain";
 
 const api = databaseAssetApi;
 
@@ -57,7 +58,7 @@ const DatabaseAssetPage = () => {
         }
     });
 
-    const handleTableChange: TableProps<DatabaseAsset>['onChange'] = (nextPagination, filters, sorter) => {
+    const handleTableChange: TableProps<DatabaseAsset>['onChange'] = (nextPagination, _filters, sorter) => {
         const activeSorter = Array.isArray(sorter) ? sorter.find((item) => item.order) : sorter;
         const field = activeSorter?.field;
         const fieldName = Array.isArray(field) ? field.join('.') : field ? String(field) : '';
@@ -67,6 +68,19 @@ const DatabaseAssetPage = () => {
             current: nextPagination.current || 1,
             pageSize: nextPagination.pageSize || prev.pageSize,
         }));
+    };
+
+    const getGatewayTypeName = (gatewayType?: string) => {
+        if (gatewayType === 'ssh') {
+            return t('menus.gateway.submenus.ssh_gateway');
+        }
+        if (gatewayType === 'agent') {
+            return t('menus.gateway.submenus.agent_gateway');
+        }
+        if (gatewayType === 'group') {
+            return t('menus.gateway.submenus.gateway_group');
+        }
+        return gatewayType || '-';
     };
 
     const columns: TableProps<DatabaseAsset>['columns'] = [
@@ -108,21 +122,19 @@ const DatabaseAssetPage = () => {
         },
         {
             title: t('assets.gateway_type'),
-            dataIndex: 'gatewayType',
-            render: (text) => {
-                if (!text) {
+            dataIndex: 'gatewayChain',
+            render: (_, record) => {
+                const gatewayChain = record.gatewayChain || [];
+                const gatewayHop = firstGatewayHop(gatewayChain);
+                if (!gatewayHop.gatewayType || !gatewayHop.gatewayId) {
                     return '-';
                 }
-                if (text === 'ssh') {
-                    return t('menus.gateway.submenus.ssh_gateway');
-                }
-                if (text === 'agent') {
-                    return t('menus.gateway.submenus.agent_gateway');
-                }
-                if (text === 'group') {
-                    return t('menus.gateway.submenus.gateway_group');
-                }
-                return text;
+                return (
+                    <Space size={4}>
+                        <Tag color="blue">{getGatewayTypeName(gatewayHop.gatewayType)}</Tag>
+                        {gatewayChain.length > 1 && <Tag>{gatewayChain.length}</Tag>}
+                    </Space>
+                );
             },
         },
         {

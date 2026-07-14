@@ -13,9 +13,9 @@ import {
     DatabaseOutlined,
     DesktopOutlined,
     DisconnectOutlined,
+    FileDoneOutlined,
     FileTextOutlined,
     FileSearchOutlined,
-    FormOutlined,
     ForkOutlined,
     GlobalOutlined,
     HddOutlined,
@@ -31,8 +31,9 @@ import {
     UserSwitchOutlined,
     WarningOutlined,
     SafetyCertificateOutlined,
+    RobotOutlined,
+    UserAddOutlined,
 } from "@ant-design/icons";
-import React from "react";
 
 export const getMenus = (t: any) => {
     return [
@@ -40,6 +41,11 @@ export const getMenus = (t: any) => {
             key: 'dashboard',
             label: t('menus.dashboard.label'),
             icon: <DashboardOutlined/>,
+        },
+        {
+            key: 'ai',
+            label: t('menus.ai.label'),
+            icon: <RobotOutlined/>,
         },
         {
             key: 'resource',
@@ -81,10 +87,22 @@ export const getMenus = (t: any) => {
                     label: t('menus.resource.submenus.certificate'),
                     icon: <SafetyCertificateOutlined />,
                 },
+            ]
+        },
+        {
+            key: 'work-order',
+            label: t('menus.work_order.label'),
+            icon: <FileDoneOutlined/>,
+            children: [
                 {
                     key: 'db-work-order',
-                    label: t('menus.resource.submenus.db_work_order'),
-                    icon: <FormOutlined/>,
+                    label: t('menus.work_order.submenus.db_work_order'),
+                    icon: <DatabaseOutlined/>,
+                },
+                {
+                    key: 'access-request',
+                    label: t('menus.work_order.submenus.access_request'),
+                    icon: <UserAddOutlined/>,
                 },
             ]
         },
@@ -124,6 +142,11 @@ export const getMenus = (t: any) => {
                     key: 'offline-session',
                     label: t('menus.log_audit.submenus.offline_session'),
                     icon: <DisconnectOutlined/>,
+                },
+                {
+                    key: 'exec-command-log',
+                    label: t('menus.log_audit.submenus.exec_command_log'),
+                    icon: <CodeOutlined/>,
                 },
                 {
                     key: 'filesystem-log',
@@ -176,6 +199,11 @@ export const getMenus = (t: any) => {
                     key: 'monitoring',
                     label: t('menus.sysops.submenus.monitoring'),
                     icon: <MonitorOutlined/>,
+                },
+                {
+                    key: 'system-event',
+                    label: t('menus.sysops.submenus.system_event'),
+                    icon: <FileSearchOutlined/>,
                 },
             ]
         },

@@ -1,4 +1,3 @@
-import {useMemo} from 'react';
 import {Link} from 'react-router-dom';
 import {useTranslation} from 'react-i18next';
 import {useQuery} from '@tanstack/react-query';
@@ -21,42 +20,38 @@ export function useUserDropdownMenu() {
         queryFn: brandingApi.getBranding,
     });
 
-    const dropMenus = useMemo(() => {
-        const menus: MenuProps['items'] = [
-            {
-                key: 'my-asset',
-                icon: <LaptopIcon className={'h-4 w-4'}/>,
-                label: <Link to={'/x-asset'} target="_blank">{t('general.my_assets')}</Link>
-            },
-            {
-                key: 'info',
-                icon: <UserIcon className={'h-4 w-4'}/>,
-                label: <Link to={'/info'}>{t('account.profile')}</Link>
-            },
-            {
-                key: 'logout',
-                icon: <LogOutIcon className={'h-4 w-4'}/>,
-                danger: true,
-                label: <div onClick={async () => {
-                    await accountApi.logout();
-                    window.location.href = '/login';
-                }}>
-                    {t('account.logout')}
-                </div>
-            },
-        ];
+    const dropMenus: MenuProps['items'] = [
+        {
+            key: 'my-asset',
+            icon: <LaptopIcon className={'h-4 w-4'}/>,
+            label: <Link to={'/x-asset'} target="_blank">{t('general.my_assets')}</Link>
+        },
+        {
+            key: 'info',
+            icon: <UserIcon className={'h-4 w-4'}/>,
+            label: <Link to={'/info'}>{t('account.profile')}</Link>
+        },
+        {
+            key: 'logout',
+            icon: <LogOutIcon className={'h-4 w-4'}/>,
+            danger: true,
+            label: <div onClick={async () => {
+                await accountApi.logout();
+                window.location.href = '/login';
+            }}>
+                {t('account.logout')}
+            </div>
+        },
+    ];
 
-        // 如果启用了 debug 模式，添加 debug 菜单项
-        if (brandingQuery.data?.debug) {
-            menus.push({
-                key: 'debug',
-                icon: <BugOutlined/>,
-                label: <a target='_blank' rel="noreferrer" href={`${baseUrl()}/debug/pprof/`}>Debug</a>,
-            });
-        }
-
-        return menus;
-    }, [brandingQuery.data?.debug, t]);
+    // 如果启用了 debug 模式，添加 debug 菜单项
+    if (brandingQuery.data?.debug) {
+        dropMenus.push({
+            key: 'debug',
+            icon: <BugOutlined/>,
+            label: <a target='_blank' rel="noreferrer" href={`${baseUrl()}/debug/pprof/`}>Debug</a>,
+        });
+    }
 
     return {dropMenus};
 }

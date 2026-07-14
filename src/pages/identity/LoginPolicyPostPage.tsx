@@ -1,23 +1,22 @@
 import { useFormRequest } from "@/hook/use-antd-form-query";
-import React, { useRef } from 'react';
-import { FormInstance, Form, Typography, Input, InputNumber, Radio, DatePicker, Checkbox } from 'antd';
-import DragWeekTime from "../../components/drag-weektime/DragWeekTime";
-import loginPolicyApi, { LoginPolicy } from "../../api/login-policy-api";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { maybe } from "../../utils/maybe";
 import { useMutation } from "@tanstack/react-query";
+import { Checkbox,DatePicker,Form,Input,InputNumber,Radio,Typography } from 'antd';
 import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
+import { useNavigate,useSearchParams } from "react-router-dom";
+import loginPolicyApi,{ LoginPolicy } from "../../api/login-policy-api";
+import DragWeekTime from "../../components/drag-weektime/DragWeekTime";
+import { maybe } from "../../utils/maybe";
 const {
   Title
 } = Typography;
 const LoginPolicyPostPage = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, _setSearchParams] = useSearchParams();
   let id = maybe(searchParams.get('loginPolicyId'), '');
   let {
     t
   } = useTranslation();
-  const formRef = useRef<FormInstance>(null);
+  const [form] = Form.useForm();
   let navigate = useNavigate();
   const get = async () => {
     if (id) {
@@ -55,16 +54,16 @@ const LoginPolicyPostPage = () => {
     }
   });
   const wrapSet = async (values: any) => {
-    formRef.current?.validateFields().then(() => {
+    form.validateFields().then(() => {
       mutation.mutate(values);
     });
   };
-  useFormRequest(formRef, ["form-request", "web/src/pages/identity/LoginPolicyPostPage.tsx", id], get, true);
+  useFormRequest(form, ["form-request", "web/src/pages/identity/LoginPolicyPostPage.tsx", id], get, true);
   return <div className="px-4">
             <Title level={5} style={{
       marginTop: 0
     }}>{t('actions.new')}</Title>
-            <Form onFinish={wrapSet} ref={formRef} layout="vertical">
+            <Form onFinish={wrapSet} form={form} layout="vertical">
                 <Form.Item hidden={true} name={'id'}>
     <Input />
       </Form.Item>

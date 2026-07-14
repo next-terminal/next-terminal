@@ -1,13 +1,10 @@
 import {Api} from './core/api';
 import requests from './core/requests';
+import type {ExternalLoginResult} from './account-api';
 
 export interface WechatWorkAuthorizeResponse {
     authorizeUrl: string;
-}
-
-export interface WechatWorkLoginResponse {
-    token: string;
-    needTotp: boolean;
+    state: string;
 }
 
 class WechatWorkApi extends Api<any> {
@@ -16,14 +13,14 @@ class WechatWorkApi extends Api<any> {
     }
 
     // 获取企业微信授权链接
-    getAuthorizeUrl = async (state?: string): Promise<WechatWorkAuthorizeResponse> => {
-        const params = state ? `?state=${encodeURIComponent(state)}` : '';
-        return await requests.get(`/wechat-work/authorize${params}`);
+    getAuthorizeUrl = async (): Promise<WechatWorkAuthorizeResponse> => {
+        return await requests.get('/wechat-work/authorize');
     }
 
     // 企业微信登录
-    login = async (code: string): Promise<WechatWorkLoginResponse> => {
-        return await requests.post(`/wechat-work/login?code=${encodeURIComponent(code)}`);
+    login = async ({code, state}: {code: string; state: string}): Promise<ExternalLoginResult> => {
+        const params = new URLSearchParams({code, state});
+        return await requests.post(`/wechat-work/login?${params.toString()}`);
     }
 }
 

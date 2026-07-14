@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {GripHorizontal} from "lucide-react";
 import {useWindowSize} from "react-use";
 
@@ -23,10 +23,14 @@ const FloatingButton = ({onClick}: Props) => {
         endY: defaultBottom,
     });
 
-    const buttonRef = useRef(null);
+    const buttonRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        const handleMouseMove = (e) => {
+        const handleMouseMove = (e: MouseEvent) => {
+            const button = buttonRef.current;
+            if (!button) {
+                return;
+            }
             if (isMove) {
                 let offsetX = e.pageX - btnPos.startX;
                 let offsetY = e.pageY - btnPos.startY;
@@ -34,11 +38,11 @@ const FloatingButton = ({onClick}: Props) => {
                 let y = btnPos.y - offsetY;
 
                 // 检查边界
-                if (x + buttonRef.current.offsetWidth > document.documentElement.offsetWidth) {
-                    x = document.documentElement.offsetWidth - buttonRef.current.offsetWidth;
+                if (x + button.offsetWidth > document.documentElement.offsetWidth) {
+                    x = document.documentElement.offsetWidth - button.offsetWidth;
                 }
-                if (y + buttonRef.current.offsetHeight > maxBottom) {
-                    y = maxBottom - buttonRef.current.offsetHeight;
+                if (y + button.offsetHeight > maxBottom) {
+                    y = maxBottom - button.offsetHeight;
                 }
                 if (x < 0) {
                     x = 0;
@@ -47,8 +51,8 @@ const FloatingButton = ({onClick}: Props) => {
                     y = minBottom;
                 }
 
-                buttonRef.current.style.right = `${x}px`;
-                buttonRef.current.style.bottom = `${y}px`;
+                button.style.right = `${x}px`;
+                button.style.bottom = `${y}px`;
 
                 setBtnPos((prevPos) => ({
                     ...prevPos,
@@ -59,9 +63,13 @@ const FloatingButton = ({onClick}: Props) => {
         };
 
         const handleMouseUp = () => {
+            const button = buttonRef.current;
+            if (!button) {
+                return;
+            }
             if (isMove) {
                 const dWidth = document.documentElement.clientWidth || document.body.clientWidth;
-                const mWidth = buttonRef.current.getBoundingClientRect().width;
+                const mWidth = button.getBoundingClientRect().width;
 
                 setBtnPos((prevPos) => ({
                     ...prevPos,
@@ -78,7 +86,7 @@ const FloatingButton = ({onClick}: Props) => {
                     setBtnPos((prevPos) => ({...prevPos, x: dWidth - mWidth}));
                 }
 
-                buttonRef.current.style.right = `${btnPos.x}px`;
+                button.style.right = `${btnPos.x}px`;
                 setIsMove(false);
             }
         };
@@ -92,7 +100,7 @@ const FloatingButton = ({onClick}: Props) => {
         };
     }, [isMove, btnPos]);
 
-    const handleMouseDown = (e) => {
+    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
         console.log(`handleMouseDown`, e.pageY, e.pageY)
         setBtnPos((prevPos) => ({
             ...prevPos,

@@ -1,396 +1,346 @@
-import React, {useState} from 'react';
-import {
-    Button,
-    Card,
-    Col,
-    Divider,
-    Form,
-    Input,
-    InputNumber,
-    message,
-    notification,
-    Row,
-    Select,
-    Space,
-    Switch,
-    Tooltip,
-    Typography
-} from 'antd';
-import {MinusCircleOutlined, PlusOutlined, QuestionCircleOutlined} from '@ant-design/icons';
+import {DeleteOutlined, PlusOutlined, QuestionCircleOutlined} from '@ant-design/icons';
+import {Button, Form, Input, InputNumber, Select, Switch, Tooltip} from 'antd';
 import {useTranslation} from "react-i18next";
 
-const {Option} = Select;
-const {Text} = Typography;
-
-interface BodyReplaceRule {
-    search: string;
-    is_regex: boolean;
-    replace: string;
-}
-
-interface KeyValuePair {
-    key: string;
-    value: string;
-}
-
-interface ModifyRule {
-    name: string;
-    match: {
-        path?: string;
-        method?: string;
-        status?: number;
-    };
-    actions: {
-        set_headers?: KeyValuePair[];
-        add_headers?: KeyValuePair[];
-        remove_headers?: string[];
-        body_replace?: BodyReplaceRule[];
-    };
-}
-
-interface FormData {
-    modifyRules: ModifyRule[];
-}
+const methodOptions = [
+    {value: 'GET', label: 'GET'},
+    {value: 'POST', label: 'POST'},
+    {value: 'PUT', label: 'PUT'},
+    {value: 'DELETE', label: 'DELETE'},
+    {value: 'PATCH', label: 'PATCH'},
+    {value: 'HEAD', label: 'HEAD'},
+    {value: 'OPTIONS', label: 'OPTIONS'},
+];
 
 const WebsiteModifyResponseView = () => {
     const {t} = useTranslation();
-    const [loading, setLoading] = useState(false);
 
-    const onFinish = async (values: FormData) => {
-        setLoading(true);
-        try {
-            // 这里转换数据格式以匹配后端需求
-            const formattedRules = values.modifyRules.map(rule => ({
-                ...rule,
-                actions: {
-                    ...rule.actions,
-                    // 将键值对数组转换为对象
-                    set_headers: rule.actions.set_headers || [],
-                    add_headers: rule.actions.add_headers || [],
-                    remove_headers: rule.actions.remove_headers || [],
-                    body_replace: rule.actions.body_replace || []
-                }
-            }));
+    const renderTitle = (label: string, tooltip?: string) => (
+        <div className="flex items-center gap-1 text-xs font-medium text-gray-500">
+            <span>{label}</span>
+            {tooltip && (
+                <Tooltip title={tooltip}>
+                    <QuestionCircleOutlined className="cursor-pointer text-gray-400"/>
+                </Tooltip>
+            )}
+        </div>
+    );
 
-            const payload = {
-                modifyRules: formattedRules
-            };
-
-            console.log('Submitted payload:', JSON.stringify(payload, null, 2));
-
-            // 这里应该调用您的 API
-            // await saveModifyRules(payload);
-
-            notification.success({
-                message: t('assets.website_response_modify.save_success'),
-                description: t('assets.website_response_modify.save_success_desc'),
-                placement: 'topRight',
-            });
-        } catch (error) {
-            message.error(t('assets.website_response_modify.save_failed'));
-            console.error('Save failed:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // 渲染键值对字段
     const renderKeyValueFields = (fieldName: any[], label: string, tooltip: string, addLabel: string) => (
         <Form.List name={fieldName}>
             {(fields, {add, remove}) => (
-                <>
-                    <Row align="middle" style={{marginBottom: 8}}>
-                        <Col>
-                            <Text strong>{label}</Text>
-                            <Tooltip title={tooltip}>
-                                <QuestionCircleOutlined style={{marginLeft: 8, cursor: 'pointer'}}/>
-                            </Tooltip>
-                        </Col>
-                    </Row>
-                    {fields.map(({key, name, ...restField}) => (
-                        <Row gutter={8} key={key} style={{marginBottom: 8}}>
-                            <Col flex="1">
-                                <Form.Item
-                                    {...restField}
-                                    name={[name, 'key']}
-                                    rules={[{required: true, message: t('assets.website_response_modify.header_key_required')}]}
-                                    style={{marginBottom: 0}}
-                                >
-                                    <Input placeholder={t('assets.header_key')}/>
-                                </Form.Item>
-                            </Col>
-                            <Col flex="1">
-                                <Form.Item
-                                    {...restField}
-                                    name={[name, 'value']}
-                                    rules={[{required: true, message: t('assets.website_response_modify.header_value_required')}]}
-                                    style={{marginBottom: 0}}
-                                >
-                                    <Input placeholder={t('assets.header_value')}/>
-                                </Form.Item>
-                            </Col>
-                            <Col>
-                                <MinusCircleOutlined
-                                    onClick={() => remove(name)}
-                                    style={{color: '#ff4d4f', fontSize: '16px'}}
-                                />
-                            </Col>
-                        </Row>
-                    ))}
-                    <Form.Item>
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                        {renderTitle(label, tooltip)}
                         <Button
-                            type="dashed"
-                            onClick={() => add()}
-                            block
+                            type="link"
+                            size="small"
                             icon={<PlusOutlined/>}
-                            style={{marginTop: 8}}
+                            onClick={() => add()}
+                            style={{paddingInline: 0}}
                         >
                             {addLabel}
                         </Button>
-                    </Form.Item>
-                </>
+                    </div>
+
+                    {fields.length > 0 && (
+                        <div className="overflow-x-auto">
+                            <div className="min-w-[520px] space-y-2">
+                                <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_32px] gap-2 px-2 text-xs text-gray-500">
+                                    <div>{t('assets.header_key')}</div>
+                                    <div>{t('assets.header_value')}</div>
+                                    <div/>
+                                </div>
+
+                                {fields.map(({key, name, ...restField}) => (
+                                    <div
+                                        key={key}
+                                        className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_32px] items-start gap-2"
+                                    >
+                                        <Form.Item
+                                            {...restField}
+                                            name={[name, 'key']}
+                                            rules={[{
+                                                required: true,
+                                                message: t('assets.website_response_modify.header_key_required')
+                                            }]}
+                                            style={{marginBottom: 0}}
+                                        >
+                                            <Input placeholder={t('assets.header_key')}/>
+                                        </Form.Item>
+                                        <Form.Item
+                                            {...restField}
+                                            name={[name, 'value']}
+                                            rules={[{
+                                                required: true,
+                                                message: t('assets.website_response_modify.header_value_required')
+                                            }]}
+                                            style={{marginBottom: 0}}
+                                        >
+                                            <Input placeholder={t('assets.header_value')}/>
+                                        </Form.Item>
+                                        <Button
+                                            type="text"
+                                            danger
+                                            icon={<DeleteOutlined/>}
+                                            onClick={() => remove(name)}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+        </Form.List>
+    );
+
+    const renderRemoveHeaders = (ruleName: number) => (
+        <Form.List name={[ruleName, 'actions', 'remove_headers']}>
+            {(fields, {add, remove}) => (
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                        {renderTitle(
+                            t('assets.website_response_modify.remove_headers_label'),
+                            t('assets.website_response_modify.remove_headers_tip')
+                        )}
+                        <Button
+                            type="link"
+                            size="small"
+                            icon={<PlusOutlined/>}
+                            onClick={() => add()}
+                            style={{paddingInline: 0}}
+                        >
+                            {t('assets.website_response_modify.add_remove_header_button')}
+                        </Button>
+                    </div>
+
+                    {fields.length > 0 && (
+                        <div className="overflow-x-auto">
+                            <div className="min-w-[320px] space-y-2">
+                                <div className="grid grid-cols-[minmax(0,1fr)_32px] gap-2 px-2 text-xs text-gray-500">
+                                    <div>{t('assets.website_response_modify.remove_headers_label')}</div>
+                                    <div/>
+                                </div>
+
+                                {fields.map(({key, name: subName, ...restField}) => (
+                                    <div
+                                        key={key}
+                                        className="grid grid-cols-[minmax(0,1fr)_32px] items-start gap-2"
+                                    >
+                                        <Form.Item
+                                            {...restField}
+                                            name={[subName]}
+                                            rules={[{
+                                                required: true,
+                                                message: t('assets.website_response_modify.remove_header_name_required')
+                                            }]}
+                                            style={{marginBottom: 0}}
+                                        >
+                                            <Input
+                                                placeholder={t('assets.website_response_modify.remove_header_name_placeholder')}/>
+                                        </Form.Item>
+                                        <Button
+                                            type="text"
+                                            danger
+                                            icon={<DeleteOutlined/>}
+                                            onClick={() => remove(subName)}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+        </Form.List>
+    );
+
+    const renderBodyReplace = (ruleName: number) => (
+        <Form.List name={[ruleName, 'actions', 'body_replace']}>
+            {(fields, {add, remove}) => (
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                        {renderTitle(t('assets.website_response_modify.body_replace_title'))}
+                        <Button
+                            type="link"
+                            size="small"
+                            icon={<PlusOutlined/>}
+                            onClick={() => add()}
+                            style={{paddingInline: 0}}
+                        >
+                            {t('assets.website_response_modify.add_replace_rule')}
+                        </Button>
+                    </div>
+
+                    {fields.length > 0 && (
+                        <div className="overflow-x-auto">
+                            <div className="min-w-[680px] space-y-2">
+                                <div className="grid grid-cols-[minmax(0,1fr)_92px_minmax(0,1fr)_32px] gap-2 px-2 text-xs text-gray-500">
+                                    <div>{t('assets.website_response_modify.search_text_label')}</div>
+                                    <div>
+                                        <Tooltip title={t('assets.website_response_modify.use_regex_tip')}>
+                                            <span>{t('assets.website_response_modify.use_regex_label')}</span>
+                                        </Tooltip>
+                                    </div>
+                                    <div>{t('assets.website_response_modify.replace_text_label')}</div>
+                                    <div/>
+                                </div>
+
+                                {fields.map(({key, name: subName, ...restField}) => (
+                                    <div
+                                        key={key}
+                                        className="grid grid-cols-[minmax(0,1fr)_92px_minmax(0,1fr)_32px] items-start gap-2"
+                                    >
+                                        <Form.Item
+                                            {...restField}
+                                            name={[subName, 'search']}
+                                            rules={[{
+                                                required: true,
+                                                message: t('assets.website_response_modify.search_text_required')
+                                            }]}
+                                            style={{marginBottom: 0}}
+                                        >
+                                            <Input placeholder={t('assets.website_response_modify.search_text_placeholder')}/>
+                                        </Form.Item>
+                                        <Form.Item
+                                            {...restField}
+                                            name={[subName, 'is_regex']}
+                                            valuePropName="checked"
+                                            style={{marginBottom: 0}}
+                                        >
+                                            <Switch/>
+                                        </Form.Item>
+                                        <Form.Item
+                                            {...restField}
+                                            name={[subName, 'replace']}
+                                            rules={[{
+                                                required: true,
+                                                message: t('assets.website_response_modify.replace_text_required')
+                                            }]}
+                                            style={{marginBottom: 0}}
+                                        >
+                                            <Input placeholder={t('assets.website_response_modify.replace_text_placeholder')}/>
+                                        </Form.Item>
+                                        <Button
+                                            type="text"
+                                            danger
+                                            icon={<DeleteOutlined/>}
+                                            onClick={() => remove(subName)}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
             )}
         </Form.List>
     );
 
     return (
-        <div style={{}}>
-            <Form.List name="modifyRules">
-                {(fields, {add, remove}) => (
-                    <>
-                        {fields.map(({key, name, ...restField}) => (
-                            <Card
-                                key={key}
-                                type="inner"
-                                title={
+        <Form.List name="modifyRules">
+            {(fields, {add, remove}) => (
+                <div className="space-y-4">
+                    {fields.map(({key, name, ...restField}) => (
+                        <div key={key} className="space-y-4 border-b border-gray-200 pb-4 last:border-b-0">
+                            <div className="grid grid-cols-[minmax(0,1fr)_32px] items-start gap-2">
+                                <Form.Item
+                                    {...restField}
+                                    name={[name, 'name']}
+                                    rules={[{
+                                        required: true,
+                                        message: t('assets.website_response_modify.rule_name_required')
+                                    }]}
+                                    style={{marginBottom: 0}}
+                                >
+                                    <Input placeholder={t('assets.website_response_modify.rule_name_placeholder')}/>
+                                </Form.Item>
+                                <Button
+                                    type="text"
+                                    danger
+                                    icon={<DeleteOutlined/>}
+                                    onClick={() => remove(name)}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                {renderTitle(t('assets.website_response_modify.match_conditions'))}
+                                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                                     <Form.Item
                                         {...restField}
-                                        name={[name, 'name']}
-                                        rules={[{required: true, message: t('assets.website_response_modify.rule_name_required')}]}
+                                        name={[name, 'match', 'path']}
+                                        label={t('assets.website_response_modify.match_path')}
+                                        tooltip={t('assets.website_response_modify.match_path_tip')}
                                         style={{marginBottom: 0}}
                                     >
-                                        <Input placeholder={t('assets.website_response_modify.rule_name_placeholder')}/>
+                                        <Input placeholder="/hello"/>
                                     </Form.Item>
-                                }
-                                extra={
-                                    fields.length > 0 ? (
-                                        <MinusCircleOutlined
-                                            onClick={() => remove(name)}
-                                            style={{fontSize: '16px', color: '#ff4d4f',marginLeft: 8, cursor: 'pointer'}}
+
+                                    <Form.Item
+                                        {...restField}
+                                        name={[name, 'match', 'method']}
+                                        label={t('assets.website_response_modify.match_method')}
+                                        tooltip={t('assets.website_response_modify.match_method_tip')}
+                                        style={{marginBottom: 0}}
+                                    >
+                                        <Select
+                                            placeholder={t('assets.website_response_modify.match_method_placeholder')}
+                                            allowClear
+                                            options={methodOptions}
                                         />
-                                    ) : null
-                                }
-                                style={{marginBottom: 24}}
-                            >
-                                <Row gutter={24}>
-                                    <Col span={12}>
-                                        <Card title={t('assets.website_response_modify.match_conditions')} size="small" style={{marginBottom: 16}}>
-                                            <Form.Item
-                                                {...restField}
-                                                name={[name, 'match', 'path']}
-                                                label={t('assets.website_response_modify.match_path')}
-                                                tooltip={t('assets.website_response_modify.match_path_tip')}
-                                            >
-                                                <Input placeholder="/hello"/>
-                                            </Form.Item>
+                                    </Form.Item>
 
-                                            <Form.Item
-                                                {...restField}
-                                                name={[name, 'match', 'method']}
-                                                label={t('assets.website_response_modify.match_method')}
-                                                tooltip={t('assets.website_response_modify.match_method_tip')}
-                                            >
-                                                <Select placeholder={t('assets.website_response_modify.match_method_placeholder')} allowClear>
-                                                    <Option value="GET">GET</Option>
-                                                    <Option value="POST">POST</Option>
-                                                    <Option value="PUT">PUT</Option>
-                                                    <Option value="DELETE">DELETE</Option>
-                                                    <Option value="PATCH">PATCH</Option>
-                                                    <Option value="HEAD">HEAD</Option>
-                                                    <Option value="OPTIONS">OPTIONS</Option>
-                                                </Select>
-                                            </Form.Item>
+                                    <Form.Item
+                                        {...restField}
+                                        name={[name, 'match', 'status']}
+                                        label={t('assets.website_response_modify.match_status')}
+                                        tooltip={t('assets.website_response_modify.match_status_tip')}
+                                        style={{marginBottom: 0}}
+                                    >
+                                        <InputNumber
+                                            min={0}
+                                            max={599}
+                                            placeholder="200"
+                                            style={{width: '100%'}}
+                                        />
+                                    </Form.Item>
+                                </div>
+                            </div>
 
-                                            <Form.Item
-                                                {...restField}
-                                                name={[name, 'match', 'status']}
-                                                label={t('assets.website_response_modify.match_status')}
-                                                tooltip={t('assets.website_response_modify.match_status_tip')}
-                                            >
-                                                <InputNumber
-                                                    min={0}
-                                                    max={599}
-                                                    placeholder="200"
-                                                    style={{width: '100%'}}
-                                                />
-                                            </Form.Item>
-                                        </Card>
-                                    </Col>
+                            <div className="space-y-3">
+                                {renderTitle(t('assets.website_response_modify.header_operations'))}
+                                {renderKeyValueFields(
+                                    [name, 'actions', 'set_headers'],
+                                    t('assets.website_response_modify.set_headers_label'),
+                                    t('assets.website_response_modify.set_headers_tip'),
+                                    t('assets.website_response_modify.add_set_headers')
+                                )}
+                                {renderKeyValueFields(
+                                    [name, 'actions', 'add_headers'],
+                                    t('assets.website_response_modify.add_headers_label'),
+                                    t('assets.website_response_modify.add_headers_tip'),
+                                    t('assets.website_response_modify.add_add_headers')
+                                )}
+                                {renderRemoveHeaders(name)}
+                                {renderBodyReplace(name)}
+                            </div>
+                        </div>
+                    ))}
 
-                                    <Col span={12}>
-                                        <Card title={t('assets.website_response_modify.actions_title')} size="small">
-                                            <Divider titlePlacement="left" style={{margin: '12px 0'}}>
-                                                <Text strong>{t('assets.website_response_modify.header_operations')}</Text>
-                                            </Divider>
-
-                                            {renderKeyValueFields(
-                                                [name, 'actions', 'set_headers'],
-                                                t('assets.website_response_modify.set_headers_label'),
-                                                t('assets.website_response_modify.set_headers_tip'),
-                                                t('assets.website_response_modify.add_set_headers')
-                                            )}
-
-                                            {renderKeyValueFields(
-                                                [name, 'actions', 'add_headers'],
-                                                t('assets.website_response_modify.add_headers_label'),
-                                                t('assets.website_response_modify.add_headers_tip'),
-                                                t('assets.website_response_modify.add_add_headers')
-                                            )}
-
-                                            <Form.List name={[name, 'actions', 'remove_headers']}>
-                                                {(fields, {add, remove}) => (
-                                                    <>
-                                                        <Row align="middle" style={{marginBottom: 8}}>
-                                                            <Col>
-                                                                <Text strong>{t('assets.website_response_modify.remove_headers_label')}</Text>
-                                                                <Tooltip
-                                                                    title={t('assets.website_response_modify.remove_headers_tip')}>
-                                                                    <QuestionCircleOutlined style={{
-                                                                        marginLeft: 8,
-                                                                        cursor: 'pointer'
-                                                                    }}/>
-                                                                </Tooltip>
-                                                            </Col>
-                                                        </Row>
-                                                        {fields.map(({key, name: subName, ...restField}) => (
-                                                            <Row gutter={8} key={key} style={{marginBottom: 8}}>
-                                                                <Col flex="1">
-                                                                    <Form.Item
-                                                                        {...restField}
-                                                                        name={[subName]}
-                                                                        rules={[{
-                                                                            required: true,
-                                                                            message: t('assets.website_response_modify.remove_header_name_required')
-                                                                        }]}
-                                                                        style={{marginBottom: 0}}
-                                                                    >
-                                                                        <Input placeholder={t('assets.website_response_modify.remove_header_name_placeholder')}/>
-                                                                    </Form.Item>
-                                                                </Col>
-                                                                <Col>
-                                                                    <MinusCircleOutlined
-                                                                        onClick={() => remove(subName)}
-                                                                        style={{
-                                                                            color: '#ff4d4f',
-                                                                            fontSize: '16px'
-                                                                        }}
-                                                                    />
-                                                                </Col>
-                                                            </Row>
-                                                        ))}
-                                                        <Form.Item>
-                                                            <Button
-                                                                type="dashed"
-                                                                onClick={() => add()}
-                                                                block
-                                                                icon={<PlusOutlined/>}
-                                                                style={{marginTop: 8}}
-                                                            >
-                                                                {t('assets.website_response_modify.add_remove_header_button')}
-                                                            </Button>
-                                                        </Form.Item>
-                                                    </>
-                                                )}
-                                            </Form.List>
-
-                                            <Divider titlePlacement="left" style={{margin: '12px 0'}}>
-                                                <Text strong>{t('assets.website_response_modify.body_replace_title')}</Text>
-                                            </Divider>
-
-                                            <Form.List name={[name, 'actions', 'body_replace']}>
-                                                {(fields, {add, remove}) => (
-                                                    <>
-                                                        {fields.map(({key, name: subName, ...restField}) => (
-                                                            <Card
-                                                                key={key}
-                                                                size="small"
-                                                                title={t('assets.website_response_modify.replace_rule_title', {index: subName + 1})}
-                                                                extra={
-                                                                    <MinusCircleOutlined
-                                                                        onClick={() => remove(subName)}
-                                                                        style={{color: '#ff4d4f'}}
-                                                                    />
-                                                                }
-                                                                style={{marginBottom: 12}}
-                                                            >
-                                                                    <Form.Item
-                                                                        {...restField}
-                                                                        name={[subName, 'search']}
-                                                                        label={t('assets.website_response_modify.search_text_label')}
-                                                                        rules={[{
-                                                                            required: true,
-                                                                            message: t('assets.website_response_modify.search_text_required')
-                                                                        }]}
-                                                                    >
-                                                                        <Input placeholder={t('assets.website_response_modify.search_text_placeholder')}/>
-                                                                    </Form.Item>
-
-                                                                <Form.Item
-                                                                    {...restField}
-                                                                    name={[subName, 'is_regex']}
-                                                                    label={t('assets.website_response_modify.use_regex_label')}
-                                                                    valuePropName="checked"
-                                                                    tooltip={t('assets.website_response_modify.use_regex_tip')}
-                                                                >
-                                                                    <Switch/>
-                                                                </Form.Item>
-
-                                                                <Form.Item
-                                                                    {...restField}
-                                                                    name={[subName, 'replace']}
-                                                                    label={t('assets.website_response_modify.replace_text_label')}
-                                                                    rules={[{
-                                                                        required: true,
-                                                                        message: t('assets.website_response_modify.replace_text_required')
-                                                                    }]}
-                                                                >
-                                                                    <Input placeholder={t('assets.website_response_modify.replace_text_placeholder')}/>
-                                                                </Form.Item>
-                                                            </Card>
-                                                        ))}
-                                                        <Form.Item>
-                                                            <Button
-                                                                type="dashed"
-                                                                onClick={() => add()}
-                                                                block
-                                                                icon={<PlusOutlined/>}
-                                                            >
-                                                                {t('assets.website_response_modify.add_replace_rule')}
-                                                            </Button>
-                                                        </Form.Item>
-                                                    </>
-                                                )}
-                                            </Form.List>
-                                        </Card>
-                                    </Col>
-                                </Row>
-                            </Card>
-                        ))}
-                        <Form.Item>
-                            <Button
-                                type="dashed"
-                                onClick={() => add()}
-                            block
+                    <Form.Item style={{marginBottom: 0}}>
+                        <Button
+                            type="dashed"
                             icon={<PlusOutlined/>}
-                            size="large"
+                            onClick={() => add()}
+                            block
                         >
                             {t('assets.website_response_modify.add_modify_rule')}
                         </Button>
                     </Form.Item>
-                    </>
-                )}
-            </Form.List>
-        </div>
+                </div>
+            )}
+        </Form.List>
     );
 };
 

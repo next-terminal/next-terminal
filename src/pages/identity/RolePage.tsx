@@ -1,27 +1,25 @@
-import React, {useRef, useState} from 'react';
+import { useRef,useState } from 'react';
 
-import {
-    App,
-    Button,
-    Popconfirm,
-    Space} from "antd";
-import {Link} from "react-router-dom";
-import NTable, {type NTableActionType, type NColumn} from "@/components/NTable";
-import RoleModal from "./RoleModal";
-import roleApi, {Role} from "../../api/role-api";
-import {useTranslation} from "react-i18next";
-import {getSort} from "@/utils/sort";
-import {useMutation} from "@tanstack/react-query";
-import NButton from "../../components/NButton";
 import NLink from "@/components/NLink";
-import {useLicense} from "@/hook/LicenseContext";
-import Disabled from "@/components/Disabled";
+import NTable,{ type NColumn,type NTableActionType } from "@/components/NTable";
+import { getSort } from "@/utils/sort";
+import { useMutation } from "@tanstack/react-query";
+import {
+App,
+Button,
+Popconfirm,
+Space
+} from "antd";
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
+import roleApi,{ Role } from "../../api/role-api";
+import NButton from "../../components/NButton";
+import RoleModal from "./RoleModal";
 
 const api = roleApi;
 
 const RolePage = () => {
 
-    let { license } = useLicense();
     const {t} = useTranslation();
     const actionRef = useRef<NTableActionType>(null);
 
@@ -65,10 +63,7 @@ const RolePage = () => {
             title: t('general.name'),
             dataIndex: 'name',
             render: (text, record) => {
-                return <a onClick={() => {
-                    setOpen(true);
-                    setSelectedRowKey(record['id']);
-                }}>{text}</a>;
+                return <NLink to={`/role/${record['id']}`}>{text}</NLink>;
             },
         },
         {
@@ -94,7 +89,7 @@ const RolePage = () => {
             valueType: 'option',
             key: 'option',
             width: 160,
-            render: (text, record) => (
+            render: (_text, record) => (
                 <Space>
                     <NButton key="info">
                         <Link key="get" to={`/role/${record['id']}`}>{t('actions.detail')}</Link>
@@ -124,11 +119,10 @@ const RolePage = () => {
     ];
 
     return (<div>
-        <Disabled disabled={license.isFree()}>
             <NTable
                 columns={columns}
                 actionRef={actionRef}
-                request={async (params = {}, sort, filter) => {
+                request={async (params = {}, sort, _filter) => {
                     let [sortOrder, sortField] = getSort(sort);
                     
                     let queryParams = {
@@ -175,7 +169,6 @@ const RolePage = () => {
                 }}
                 handleOk={mutation.mutate}
             />
-        </Disabled>
     </div>);
 }
 

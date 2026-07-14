@@ -1,19 +1,20 @@
-import React, {useEffect, useRef, useState} from 'react';
-import {Terminal} from "@xterm/xterm";
-import {CleanTheme, useTerminalTheme} from "@/pages/access/hooks/use-terminal-theme";
-import {FitAddon} from "@xterm/addon-fit";
-import {debounce} from "@/utils/debounce";
-import {useAccessContentSize} from "@/pages/access/hooks/use-access-size";
-import {useInterval, useWindowSize} from "react-use";
-import {Message, MessageTypeData, MessageTypeKeepAlive, MessageTypeResize} from "@/pages/access/Terminal";
-import portalApi, {ExportSession} from "@/api/portal-api";
-import {baseWebSocketUrl} from "@/api/core/requests";
-import qs from "qs";
 import eventEmitter from "@/api/core/event-emitter";
-import {clsx} from "clsx";
-import {Popconfirm} from "antd";
-import {XIcon} from "lucide-react";
-import {useTranslation} from "react-i18next";
+import { baseWebSocketUrl } from "@/api/core/requests";
+import portalApi,{ ExportSession } from "@/api/portal-api";
+import { useAccessContentSize } from "@/pages/access/hooks/use-access-size";
+import { CleanTheme,useTerminalTheme } from "@/pages/access/hooks/use-terminal-theme";
+import { Message,MessageTypeData,MessageTypePing,MessageTypeResize } from "@/pages/access/Terminal";
+import { normalizeTerminalBackspace } from "@/pages/access/terminal-backspace";
+import { debounce } from "@/utils/debounce";
+import { FitAddon } from "@xterm/addon-fit";
+import { Terminal } from "@xterm/xterm";
+import { Popconfirm } from "antd";
+import { clsx } from "clsx";
+import { XIcon } from "lucide-react";
+import qs from "qs";
+import React,{ useEffect,useRef,useState } from 'react';
+import { useTranslation } from "react-i18next";
+import { useInterval,useWindowSize } from "react-use";
 
 interface Props {
     assetId: string;
@@ -29,7 +30,7 @@ const AccessTerminalBulkItem = React.memo(({assetId, securityToken, tabId, onClo
     const terminal = useRef<Terminal>(null);
     const fit = useRef<FitAddon>(null);
 
-    let [websocket, setWebsocket] = useState<WebSocket>();
+    let [websocket, setWebsocket] = useState<WebSocket | null>(null);
     let {width, height} = useWindowSize();
     let [contentSize] = useAccessContentSize();
 
@@ -42,7 +43,7 @@ const AccessTerminalBulkItem = React.memo(({assetId, securityToken, tabId, onClo
 
     useInterval(() => {
         if (websocket?.readyState === WebSocket.OPEN) {
-            websocket?.send(new Message(MessageTypeKeepAlive, "").toString());
+            websocket.send(new Message(MessageTypePing, Date.now().toString()).toString());
         }
     }, 5000);
 
@@ -106,11 +107,15 @@ const AccessTerminalBulkItem = React.memo(({assetId, securityToken, tabId, onClo
             return !(domEvent.ctrlKey && domEvent.key === 'v');
         })
 
+        if (!terminalRef.current) {
+            return;
+        }
         term.open(terminalRef.current);
-        term.textarea.addEventListener('focus', () => {
+        const textarea = term.textarea;
+        textarea?.addEventListener('focus', () => {
             setIsFocus(true);
         });
-        term.textarea.addEventListener('blur', () => {
+        textarea?.addEventListener('blur', () => {
             setIsFocus(false);
         })
 
@@ -138,7 +143,8 @@ const AccessTerminalBulkItem = React.memo(({assetId, securityToken, tabId, onClo
             session = await portalApi.createSessionByAssetsId(assetId, securityToken);
             setSession(session);
         } catch (e) {
-            terminal.current?.writeln(`\x1b[41m ERROR \x1b[0m : ${e.message}`);
+            const message = e instanceof Error ? e.message : String(e);
+            terminal.current?.writeln(`\x1b[41m ERROR \x1b[0m : ${message}`);
             setLoading(false);
             return;
         }
@@ -153,11 +159,11 @@ const AccessTerminalBulkItem = React.memo(({assetId, securityToken, tabId, onClo
 
         let paramStr = qs.stringify(params);
         let websocket = new WebSocket(`${baseWebSocketUrl()}/access/terminal?${paramStr}`);
-        websocket.onopen = (e => {
+        websocket.onopen = (_e => {
             setLoading(false);
         });
 
-        websocket.onerror = (e) => {
+        websocket.onerror = (_e) => {
             terminal.current?.writeln(`websocket error`);
             setLoading(false);
         }
@@ -182,7 +188,7 @@ const AccessTerminalBulkItem = React.memo(({assetId, securityToken, tabId, onClo
             let msg = Message.parse(e.data);
             switch (msg.type) {
                 case MessageTypeData:
-                    terminal.current.write(msg.content);
+                    terminal.current?.write(msg.content);
                     break;
             }
         }
@@ -193,7 +199,7 @@ const AccessTerminalBulkItem = React.memo(({assetId, securityToken, tabId, onClo
         if (!terminal.current) {
             return;
         }
-        connect(securityToken)
+        connect(securityToken ?? '')
     }, [reconnected]);
 
     useEffect(() => {
@@ -205,7 +211,7 @@ const AccessTerminalBulkItem = React.memo(({assetId, securityToken, tabId, onClo
             if (!websocket) {
                 setReconnected(new Date().toString());
             } else {
-                websocket?.send(new Message(MessageTypeData, data).toString());
+                websocket?.send(new Message(MessageTypeData, normalizeTerminalBackspace(data, session)).toString());
             }
         });
         if (websocket) {
@@ -217,7 +223,7 @@ const AccessTerminalBulkItem = React.memo(({assetId, securityToken, tabId, onClo
             dataListener?.dispose();
             websocket?.close();
         }
-    }, [websocket]);
+    }, [websocket, session?.attrs?.backspaceMode]);
 
     return (
         <div className={clsx(

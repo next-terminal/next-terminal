@@ -1,20 +1,19 @@
-import React, {useRef} from 'react';
-import {
-    Button,
-    Dropdown,
-    Popconfirm,
-    Space,
-    Tag} from "antd";
-import NTable, {type NTableActionType, type NColumn} from "@/components/NTable";
-import {Link, useNavigate} from "react-router-dom";
-import {SafetyCertificateOutlined, StopOutlined} from "@ant-design/icons";
-import loginPolicyApi, {LoginPolicy} from "../../api/login-policy-api";
-import {useTranslation} from "react-i18next";
-import {getSort} from "@/utils/sort";
-import NButton from "../../components/NButton";
 import NLink from "@/components/NLink";
-import {useLicense} from "@/hook/LicenseContext";
-import Disabled from "@/components/Disabled";
+import NTable,{ type NColumn,type NTableActionType } from "@/components/NTable";
+import { getSort } from "@/utils/sort";
+import { SafetyCertificateOutlined,StopOutlined } from "@ant-design/icons";
+import {
+Button,
+Dropdown,
+Popconfirm,
+Space,
+Tag
+} from "antd";
+import { useRef } from 'react';
+import { useTranslation } from "react-i18next";
+import { Link,useNavigate } from "react-router-dom";
+import loginPolicyApi,{ LoginPolicy } from "../../api/login-policy-api";
+import NButton from "../../components/NButton";
 
 const api = loginPolicyApi;
 
@@ -24,7 +23,6 @@ const LoginPolicyPage = () => {
     const actionRef = useRef<NTableActionType>(null);
 
     let navigate = useNavigate();
-    let { license } = useLicense();
 
     const columns: NColumn<LoginPolicy>[] = [
         {
@@ -95,7 +93,7 @@ const LoginPolicyPage = () => {
             valueType: 'option',
             key: 'option',
             width: 160,
-            render: (text, record) => (
+            render: (_text, record) => (
                 <Space>
                     <Link to={`/login-policy/new?loginPolicyId=${record.id}`}>
                         <NButton key="edit">
@@ -122,7 +120,7 @@ const LoginPolicyPage = () => {
                             onClick: ({key}) => {
                                 switch (key) {
                                     case 'login-policy-detail':
-                                        navigate(`/login-policy/${record['id']}?activeKey=info`);
+                                        navigate(`/login-policy/${record['id']}?activeKey=detail`);
                                         break;
                                     case 'login-policy-bind-user':
                                         navigate(`/login-policy/${record['id']}?activeKey=bind-user`);
@@ -142,11 +140,10 @@ const LoginPolicyPage = () => {
 
     return (
         <div>
-            <Disabled disabled={license.isFree()}>
                 <NTable
                     columns={columns}
                     actionRef={actionRef}
-                    request={async (params = {}, sort, filter) => {
+                    request={async (params = {}, sort, _filter) => {
                         let [sortOrder, sortField] = getSort(sort);
                         
                         let queryParams = {
@@ -181,7 +178,6 @@ const LoginPolicyPage = () => {
                         </Link>
                     ]}
                 />
-            </Disabled>
         </div>
     );
 }

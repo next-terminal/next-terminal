@@ -1,12 +1,11 @@
-import React, {useEffect, useRef, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {useSearchParams} from 'react-router-dom';
 // @ts-ignore
 import Guacamole from '@dushixiang/guacamole-common-js';
 import {baseUrl} from "@/api/core/requests";
 import times from '@/components/time/times';
 import {useTranslation} from "react-i18next";
-import './GuacdPlayback.css';
-import {ConfigProvider, Select, Slider, theme, Tooltip} from "antd";
+import {Slider, Tooltip} from "antd";
 import {Pause, Play, Maximize, Minimize, SkipBack, SkipForward, Volume2, VolumeX} from "lucide-react";
 
 Guacamole.Layer.prototype.toCanvas = function () {
@@ -24,6 +23,9 @@ Guacamole.Layer.prototype.toCanvas = function () {
     canvas.height = this.height;
 
     const context = canvas.getContext('2d');
+    if (!context) {
+        return canvas;
+    }
     context.drawImage(c, 0, 0);
 
     return canvas;
@@ -32,7 +34,7 @@ Guacamole.Layer.prototype.toCanvas = function () {
 const GuacdPlayback = () => {
 
     const [searchParams] = useSearchParams();
-    const sessionId = searchParams.get('sessionId');
+    const sessionId = searchParams.get('sessionId') ?? '';
 
     let {t} = useTranslation();
 
@@ -40,8 +42,6 @@ const GuacdPlayback = () => {
     let [duration, setDuration] = useState('00:00');
     let [percent, setPercent] = useState(0);
     let [max, setMax] = useState(0);
-    let [speed, setSpeed] = useState(1.0);
-
     let [recording, setRecording] = useState<Guacamole.SessionRecording>();
 
     let [playing, setPlaying] = useState(false);
@@ -54,6 +54,9 @@ const GuacdPlayback = () => {
 
     const hideTimerRef = useRef<number | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const displayAreaRef = useRef<HTMLDivElement>(null);
+    const displayRef = useRef<HTMLDivElement>(null);
+    const displayResizeObserverRef = useRef<ResizeObserver | null>(null);
     const volumeTimeoutRef = useRef<number | null>(null);
 
     useEffect(() => {
@@ -96,6 +99,7 @@ const GuacdPlayback = () => {
                 recording.disconnect();
                 recording.getDisplay().getElement().innerHTML = '';
             }
+            displayResizeObserverRef.current?.disconnect();
             document.removeEventListener('keydown', handleKeyDown);
             document.removeEventListener('fullscreenchange', handleFullscreenChange);
         }
@@ -110,7 +114,11 @@ const GuacdPlayback = () => {
 
         const recordingDisplay = recording.getDisplay();
 
-        const display = document.getElementById('display');
+        const display = displayRef.current;
+        const displayArea = displayAreaRef.current;
+        if (!display || !displayArea) {
+            return recording;
+        }
         display.appendChild(recordingDisplay.getElement());
         recording.onload = function () {
             console.log(`onload`);
@@ -124,22 +132,38 @@ const GuacdPlayback = () => {
             setPlaying(false);
         }
 
-        // Fit display within containing div
-        recordingDisplay.onresize = function displayResized(width, height) {
-            const container = document.getElementById('display');
-            if (!container) return;
-            const scale = Math.min(container.offsetWidth / width, container.offsetHeight / height);
+        let displayWidth = 0;
+        let displayHeight = 0;
+        const fitDisplay = () => {
+            if (!displayWidth || !displayHeight) return;
+
+            const scale = Math.min(
+                displayArea.clientWidth / displayWidth,
+                displayArea.clientHeight / displayHeight,
+            );
             recordingDisplay.scale(scale);
+            display.style.width = `${displayWidth * scale}px`;
+            display.style.height = `${displayHeight * scale}px`;
         };
+
+        // 录像尺寸和可用视口变化时，都重新适配显示区域。
+        recordingDisplay.onresize = function displayResized(width: number, height: number) {
+            displayWidth = width;
+            displayHeight = height;
+            fitDisplay();
+        };
+        displayResizeObserverRef.current?.disconnect();
+        displayResizeObserverRef.current = new ResizeObserver(fitDisplay);
+        displayResizeObserverRef.current.observe(displayArea);
 
         recording.connect();
 
-        recording.onseek = (millis) => {
+        recording.onseek = (millis: number) => {
             setPercent(millis);
             setPosition(times.formatTime(millis));
         };
 
-        recording.onprogress = (millis) => {
+        recording.onprogress = (millis: number) => {
             setMax(millis);
             setDuration(times.formatTime(millis));
         };
@@ -148,60 +172,36 @@ const GuacdPlayback = () => {
         return recording;
     }
 
-    let timer;
-    const startSpeedUp = () => {
-        stopSpeedUp();
-        if (speed === 1) {
-            return;
-        }
-        if (!recording.isPlaying()) {
-            return;
-        }
-        const add_time = 100;
-        let delay = 1000 / (1000 / add_time) / (speed - 1);
-
-        let max = recording.getDuration();
-        let current = recording.getPosition();
-        if (current >= max) {
-            return;
-        }
-        recording.seek(current + add_time, () => {
-            timer = setTimeout(startSpeedUp, delay);
-        });
-    }
-
-    const stopSpeedUp = () => {
-        if (timer) {
-            clearTimeout(timer)
-        }
-    }
-
     const togglePlayPause = (self?: Guacamole.SessionRecording) => {
+        const activeRecording = self ?? recording;
+        if (!activeRecording) {
+            return;
+        }
         if (self) {
-            recording = self;
+            setRecording(self);
         }
         setHasStarted(true);
         if (percent === max) {
             // 重播
             setPercent(0);
-            recording.seek(0, () => {
-                recording.play();
-                startSpeedUp();
+            activeRecording.seek(0, () => {
+                activeRecording.play();
             });
         }
 
-        if (!recording.isPlaying()) {
+        if (!activeRecording.isPlaying()) {
             console.log(`play`);
-            recording.play();
-            startSpeedUp();
+            activeRecording.play();
         } else {
             console.log(`pause`);
-            recording.pause();
-            // stopSpeedUp();
+            activeRecording.pause();
         }
     }
 
     const handleProgressChange = (value: number) => {
+        if (!recording) {
+            return;
+        }
         // Request seek
         recording.seek(value, () => {
             console.log('complete');
@@ -292,18 +292,20 @@ const GuacdPlayback = () => {
     };
 
     return (
-        <div ref={containerRef}>
+        <div ref={containerRef} className="fixed inset-0 h-dvh w-screen overflow-hidden bg-black">
             <div
-                className={'h-screen w-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-neutral-900 to-black'}
+                ref={displayAreaRef}
+                className="absolute inset-x-2 top-2 bottom-16 flex min-h-0 min-w-0 items-center justify-center overflow-hidden bg-black md:inset-x-4 md:top-4 md:bottom-[5.5rem]"
                 onMouseMove={handleMouseMove}
                 onMouseLeave={handleMouseLeave}
             >
-                <div className="rounded-xl overflow-hidden ring-1 ring-white/10 shadow-2xl bg-black/20">
-                    <div id="display" onClick={() => {
+                <div
+                    ref={displayRef}
+                    className="max-h-full max-w-full flex-none origin-top-left overflow-hidden bg-black shadow-2xl ring-1 ring-white/10 [&>div>div]:origin-top-left [&>div]:origin-top-left"
+                    onClick={() => {
                         // togglePlayPause()
-                    }}>
-                    </div>
-                </div>
+                    }}
+                />
             </div>
             
             {!playing && !hasStarted && (
@@ -319,7 +321,7 @@ const GuacdPlayback = () => {
                 </div>
             )}
 
-            <div className={'fixed bottom-2 md:bottom-4 left-1/2 -translate-x-1/2 w-[min(900px,98vw)] h-12 md:h-14 flex gap-1 md:gap-3 items-center px-2 md:px-4 rounded-lg md:rounded-xl bg-black/60 backdrop-blur-md border border-white/10 shadow-xl transition-opacity duration-300 ctrl-bar'}
+            <div className={'fixed bottom-2 md:bottom-4 left-1/2 -translate-x-1/2 w-[min(900px,98vw)] h-12 md:h-14 flex gap-1 md:gap-3 items-center px-2 md:px-4 bg-black text-[#bbb] border border-white/10 shadow-xl transition-opacity duration-300'}
                  style={{opacity: opacity}}
             >
                 {/* 后退按钮 - 在小屏幕上隐藏 */}
@@ -352,7 +354,7 @@ const GuacdPlayback = () => {
                             onChange={handleProgressChange}
                             tooltip={{
                                 formatter: (millis) => {
-                                    return times.formatTime(millis)
+                                    return times.formatTime(millis ?? 0)
                                 }
                             }}
                             styles={{
@@ -370,34 +372,6 @@ const GuacdPlayback = () => {
                     />
                 </div>
                 
-                {/* 速度选择器 */}
-                <div className={'flex-none'}>
-                    <ConfigProvider theme={{
-                        algorithm: theme.darkAlgorithm,
-                    }}>
-                        <Select size={'small'}
-                                className="min-w-12 md:min-w-16 text-xs"
-                                defaultValue={1}
-                                value={speed}
-                                onChange={(value) => {
-                                    setSpeed(value);
-                                    if (value === 1) {
-                                        stopSpeedUp();
-                                    } else {
-                                        startSpeedUp();
-                                    }
-                                }}
-                                options={[
-                                    { value: 1, label: '1x' },
-                                    { value: 1.5, label: '1.5x' },
-                                    { value: 2, label: '2x' },
-                                    { value: 5, label: '5x' },
-                                ]}
-                        >
-                        </Select>
-                    </ConfigProvider>
-                </div>
-                
                 {/* 音量控制 - 在小屏幕上隐藏 */}
                 <div className={'flex-none hidden lg:block relative'} 
                      onMouseEnter={handleVolumeMouseEnter}
@@ -413,7 +387,7 @@ const GuacdPlayback = () => {
                     
                     {/* 音量滑块 */}
                     {showVolumeSlider && (
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-black/80 backdrop-blur-md rounded-lg p-3 border border-white/10">
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-black p-3 border border-white/10">
                             <div className="h-20 flex items-center">
                                 <Slider
                                     vertical

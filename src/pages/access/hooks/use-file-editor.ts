@@ -1,7 +1,7 @@
-import {useState} from 'react';
-import fileSystemApi, {FileInfo} from "@/api/filesystem-api";
-import {getLanguageFromFileName} from "@/utils/editor-language";
-import {downloadFileContent} from "@/utils/filesystem-utils";
+import { FileInfo } from "@/api/filesystem-api";
+import { getLanguageFromFileName } from "@/utils/editor-language";
+import { downloadFileContent } from "@/utils/filesystem-utils";
+import { useState } from 'react';
 
 interface OpenFile {
     key: string
@@ -177,4 +177,4 @@ export function useFileEditor(fsId: string) {
     };
 }
 
-export type {OpenFile};
+export type { OpenFile };

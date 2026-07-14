@@ -1,5 +1,4 @@
 import userApi from "../../api/user-api";
-import React from "react";
 import {useTranslation} from "react-i18next";
 import {Descriptions, Space, Spin, Tag} from "antd";
 import NLink from "@/components/NLink";
@@ -22,16 +21,6 @@ const UserInfo = ({active, id}: UserInfoProps) => {
 
     const user = userQuery.data;
 
-    const sourceMap: Record<string, string> = {
-        'local': t('identity.user.sources.local'),
-        'ldap': t('identity.user.sources.ldap'),
-        'wechat': t('identity.user.sources.wechat'),
-        'oidc': t('identity.user.sources.oidc'),
-        // 兼容旧值
-        'self': t('identity.user.sources.local'),
-        'wechat-work': t('identity.user.sources.wechat'),
-    };
-
     return (
         <div className={'page-detail-info'}>
             <Spin spinning={userQuery.isLoading}>
@@ -39,9 +28,6 @@ const UserInfo = ({active, id}: UserInfoProps) => {
                     <Descriptions.Item label={t('gateways.username')}>{user?.username}</Descriptions.Item>
                     <Descriptions.Item label={t('identity.user.nickname')}>{user?.nickname}</Descriptions.Item>
                     <Descriptions.Item label={t('identity.user.mail')}>{user?.mail}</Descriptions.Item>
-                    <Descriptions.Item label={t('audit.accessLog.stats.table.referer')}>
-                        {user?.source ? sourceMap[user.source] || user.source : '-'}
-                    </Descriptions.Item>
                     <Descriptions.Item label={t('general.remark')}>{user?.remark}</Descriptions.Item>
                     <Descriptions.Item label={t('identity.user.status')}>
                         {user?.status === 'disabled' ? (

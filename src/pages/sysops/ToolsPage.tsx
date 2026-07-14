@@ -1,4 +1,3 @@
-import React from 'react';
 import {Tabs, TabsProps} from "antd";
 import {useSearchParams} from "react-router-dom";
 import ToolsPing from './ToolsPing';
@@ -27,7 +26,7 @@ const ToolsPage = () => {
     }
 
     return (
-        <div className='px-4'>
+        <div>
             <Tabs activeKey={searchParams.get('tab') || 'ping'}
                   items={items}
                   onChange={onChange}

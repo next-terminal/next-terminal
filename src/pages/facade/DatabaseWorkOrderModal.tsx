@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { FormInstance, Modal, Form, Select, Input } from 'antd';
+import { useEffect, useState } from 'react';
+import { Form, Input, Modal, Select } from 'antd';
 import { useTranslation } from "react-i18next";
 import portalApi, { DatabaseAssetUser } from "@/api/portal-api.ts";
 export interface DatabaseWorkOrderModalProps {
@@ -17,23 +17,23 @@ const DatabaseWorkOrderModal = ({
   const {
     t
   } = useTranslation();
-  const formRef = useRef<FormInstance>(null);
+  const [form] = Form.useForm();
   const [assets, setAssets] = useState<DatabaseAssetUser[]>([]);
   useEffect(() => {
     if (!open) {
-      formRef.current?.resetFields();
+      form.resetFields();
       return;
     }
     portalApi.databaseAssets().then(setAssets).catch(() => setAssets([]));
-  }, [open]);
+  }, [form, open]);
   return <Modal title={t('db.work_order.new')} open={open} mask={{
     closable: false
   }} destroyOnHidden={true} onOk={() => {
-    formRef.current?.validateFields().then(async values => {
+    form.validateFields().then(async values => {
       handleOk(values);
     });
   }} onCancel={handleCancel} confirmLoading={confirmLoading}>
-            <Form ref={formRef} layout="vertical">
+            <Form form={form} layout="vertical">
                 <Form.Item label={t('menus.resource.submenus.database_asset')} name='assetId' rules={[{
         required: true
       }]}>

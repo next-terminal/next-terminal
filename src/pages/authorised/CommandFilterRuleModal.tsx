@@ -1,6 +1,5 @@
 import { useFormRequest } from "@/hook/use-antd-form-query";
-import React, { useRef } from 'react';
-import { FormInstance, Modal, Form, Input, InputNumber, Radio, Checkbox } from 'antd';
+import {Modal, Form, Input, InputNumber, Radio, Checkbox} from 'antd';
 import commandFilterRuleApi, { CommandFilterRule } from "../../api/command-filter-rule-api.js";
 import { useTranslation } from "react-i18next";
 const api = commandFilterRuleApi;
@@ -18,7 +17,7 @@ const CommandFilterRuleModal = ({
   confirmLoading,
   id
 }: Props) => {
-  const formRef = useRef<FormInstance>(null);
+  const [form] = Form.useForm();
   let {
     t
   } = useTranslation();
@@ -33,17 +32,17 @@ const CommandFilterRuleModal = ({
       enabled: true
     } as CommandFilterRule;
   };
-  useFormRequest(formRef, ["form-request", "web/src/pages/authorised/CommandFilterRuleModal.tsx", open, id], get, open);
+  useFormRequest(form, ["form-request", "web/src/pages/authorised/CommandFilterRuleModal.tsx", open, id], get, {enabled: open});
   return <Modal title={id ? t('actions.edit') : t('actions.new')} open={open} mask={{
     closable: false
   }} destroyOnHidden={true} onOk={() => {
-    formRef.current?.validateFields().then(async values => {
+    form.validateFields().then(async values => {
       handleOk(values);
     });
   }} onCancel={() => {
     handleCancel();
   }} confirmLoading={confirmLoading}>
-            <Form ref={formRef} layout="vertical">
+            <Form form={form} clearOnDestroy={true} layout="vertical">
                 <Form.Item hidden={true} name={'id'}>
     <Input />
       </Form.Item>

@@ -1,4 +1,3 @@
-import React from 'react';
 import {Button, Result, Space} from "antd";
 import {isRouteErrorResponse, Link, useNavigate, useRouteError} from "react-router-dom";
 import {StyleProvider} from '@ant-design/cssinjs';

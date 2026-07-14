@@ -1,4 +1,3 @@
-import {useMemo} from 'react';
 import {Progress} from "antd";
 
 const getStrokeColors = (user: number, system: number, steps: number) => {
@@ -12,9 +11,20 @@ const getStrokeColors = (user: number, system: number, steps: number) => {
     );
 };
 
-export const CpuProgressBar = ({cpu, index}) => {
+interface CpuInfo {
+    user: number;
+    nice: number;
+    system: number;
+}
+
+interface CpuProgressBarProps {
+    cpu: CpuInfo;
+    index: number;
+}
+
+export const CpuProgressBar = ({cpu, index}: CpuProgressBarProps) => {
     const steps = 50;
-    const strokeColors = useMemo(() => getStrokeColors(cpu.user, cpu.system, steps), [cpu, steps]);
+    const strokeColors = getStrokeColors(cpu.user, cpu.system, steps);
 
     return (
         <div className="flex items-center gap-2" key={index}>
@@ -23,7 +33,7 @@ export const CpuProgressBar = ({cpu, index}) => {
                 steps={steps}
                 strokeColor={strokeColors}
                 size="small"
-                format={(percent) => <span className="text-xs">{percent.toFixed(1)}%</span>}
+                format={(percent) => <span className="text-xs">{(percent ?? 0).toFixed(1)}%</span>}
                 className="w-full"
             />
         </div>

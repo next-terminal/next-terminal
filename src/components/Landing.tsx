@@ -1,4 +1,3 @@
-import React from 'react';
 import {Spin} from "antd";
 import {useTranslation} from "react-i18next";
 

@@ -1,72 +1,72 @@
-import React, {
-    forwardRef,
-    useCallback,
-    useEffect,
-    useImperativeHandle,
-    useMemo,
-    useReducer,
-    useRef,
-    useState
-} from 'react';
-import {
-    Button,
-    Checkbox,
-    Col,
-    Drawer,
-    Dropdown,
-    FloatButton,
-    Input,
-    MenuProps,
-    message,
-    Modal,
-    Progress,
-    Row,
-    Space,
-    Table,
-    Tag,
-    Tooltip
-} from "antd";
-import type {DrawerProps} from "antd";
-import {
-    Download,
-    DownloadIcon,
-    File,
-    FileArchive,
-    FileEdit,
-    FileImage,
-    FileJson,
-    FilePlus2Icon,
-    FileText,
-    FileUpIcon,
-    Folder,
-    FolderEdit,
-    FolderUpIcon,
-    Link,
-    Shield,
-    Trash2Icon,
-    TrashIcon,
-    Undo2,
-    X,
-    XCircle
-} from "lucide-react";
-import {ColumnsType} from "antd/es/table";
-import {browserDownload, generateRandomId, renderSize} from "@/utils/utils";
-import {useQuery} from "@tanstack/react-query";
-import dayjs from "dayjs";
-import strings from "@/utils/strings";
-import {useTranslation} from "react-i18next";
-import {baseUrl} from "@/api/core/requests";
+import { baseUrl } from "@/api/core/requests";
+import fileSystemApi,{ FileInfo } from "@/api/filesystem-api";
+import { Strategy } from "@/api/strategy-api";
 import PromptModal from "@/components/PromptModal";
+import { useLicense } from "@/hook/LicenseContext";
+import { cn } from "@/lib/utils";
 import FileEditor from "@/pages/access/FileEditor";
-import {useFileEditor} from "@/pages/access/hooks/use-file-editor";
-import fileSystemApi, {FileInfo} from "@/api/filesystem-api";
-import {EyeInvisibleOutlined, EyeOutlined, ReloadOutlined, SyncOutlined} from "@ant-design/icons";
+import { useFileEditor } from "@/pages/access/hooks/use-file-editor";
+import strings from "@/utils/strings";
+import { browserDownload,generateRandomId,isMobileByMediaQuery,renderSize } from "@/utils/utils";
+import { EyeInvisibleOutlined,EyeOutlined,ReloadOutlined,SyncOutlined } from "@ant-design/icons";
+import { useQuery } from "@tanstack/react-query";
+import type { DrawerProps } from "antd";
+import {
+Button,
+Checkbox,
+Col,
+Drawer,
+Dropdown,
+FloatButton,
+Input,
+MenuProps,
+message,
+Modal,
+Progress,
+Row,
+Space,
+Table,
+Tag,
+Tooltip
+} from "antd";
+import { ColumnsType } from "antd/es/table";
 import clsx from "clsx";
-import {cn} from "@/lib/utils";
-import {Strategy} from "@/api/strategy-api";
-import {Base64} from 'js-base64';
-import {useLicense} from "@/hook/LicenseContext";
-import {isMobileByMediaQuery} from "@/utils/utils";
+import dayjs from "dayjs";
+import { Base64 } from 'js-base64';
+import {
+Download,
+DownloadIcon,
+File,
+FileArchive,
+FileEdit,
+FileImage,
+FileJson,
+FilePlus2Icon,
+FileText,
+FileUpIcon,
+Folder,
+FolderEdit,
+FolderUpIcon,
+Link,
+Shield,
+Trash2Icon,
+TrashIcon,
+Undo2,
+X,
+XCircle
+} from "lucide-react";
+import React,{
+forwardRef,
+useCallback,
+useEffect,
+useImperativeHandle,
+useMemo,
+useReducer,
+useRef,
+useState
+} from 'react';
+import { useTranslation } from "react-i18next";
+import {MOBILE_TOOL_DRAWER_SIZE, MOBILE_TOOL_DRAWER_STYLES} from "@/pages/access/terminal-tool-drawer";
 
 declare module 'react' {
     interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -85,6 +85,8 @@ interface Props {
     strategy?: Strategy
     open: boolean
     onClose: () => void
+    placement?: DrawerProps['placement']
+    size?: DrawerProps['size']
     mask?: boolean
     maskClosable?: boolean
     getContainer?: DrawerProps['getContainer']
@@ -255,6 +257,8 @@ const FileSystemPage = forwardRef<FileSystem, Props>(({
                                                           strategy,
                                                           open,
                                                           onClose,
+                                                          placement,
+                                                          size,
                                                           mask,
                                                           maskClosable,
                                                           getContainer = false
@@ -265,6 +269,7 @@ const FileSystemPage = forwardRef<FileSystem, Props>(({
 
     let fileUploadRef = useRef<HTMLInputElement>(null);
     let dirUploadRef = useRef<HTMLInputElement>(null);
+    const fileTableContainerRef = useRef<HTMLDivElement>(null);
     const dragCounterRef = useRef(0);
 
     const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
@@ -273,6 +278,7 @@ const FileSystemPage = forwardRef<FileSystem, Props>(({
     let [files, setFiles] = useState<FileInfo[]>([]);
     let [hiddenFileVisible, setHiddenFileVisible] = useState<boolean>(false);
     const [isDraggingOver, setIsDraggingOver] = useState(false);
+    const [fileTableScrollY, setFileTableScrollY] = useState(240);
 
     const [transmissionRecords, transmissionDispatch] = useReducer(transmissionReducer, []);
 
@@ -299,7 +305,7 @@ const FileSystemPage = forwardRef<FileSystem, Props>(({
 
     const [modal, contextHolder] = Modal.useModal();
     const [messageApi, messageContextHolder] = message.useMessage();
-    const [contextMenu, setContextMenu] = useState<ContextMenu>(null);
+    const [contextMenu, setContextMenu] = useState<ContextMenu | null>(null);
     const [imagePreview, setImagePreview] = useState<ImagePreviewState>({
         open: false,
         src: '',
@@ -309,7 +315,7 @@ const FileSystemPage = forwardRef<FileSystem, Props>(({
     const dragUploadDisabledMessage = t('fs.drag_upload_disabled');
 
     let editLabel = t('actions.edit');
-    if (license.isFree()) {
+    if (!license.hasPremiumFeatures()) {
         editLabel += ` (${t('settings.license.type.premium')})`;
     }
 
@@ -322,8 +328,9 @@ const FileSystemPage = forwardRef<FileSystem, Props>(({
             label: editLabel,
             key: 'edit',
             icon: <FileEdit className={iconClassName}/>,
-            disabled: contextMenu?.file?.isDir || license.isFree(),
+            disabled: contextMenu?.file?.isDir || !license.hasPremiumFeatures(),
             onClick: async () => {
+                if (!contextMenu) return;
                 let file = contextMenu.file;
                 const loadingKey = `loading`
                 messageApi.open({
@@ -336,7 +343,8 @@ const FileSystemPage = forwardRef<FileSystem, Props>(({
                 try {
                     await fileEditor.openFile(file);
                 } catch (error) {
-                    messageApi.error(`Failed to open file: ${error.message}`);
+                    const errorMessage = error instanceof Error ? error.message : String(error);
+                    messageApi.error(`Failed to open file: ${errorMessage}`);
                 } finally {
                     messageApi.destroy(loadingKey);
                 }
@@ -348,6 +356,7 @@ const FileSystemPage = forwardRef<FileSystem, Props>(({
             icon: <FileImage className={iconClassName}/>,
             disabled: !isPreviewableImageFile(contextMenu?.file),
             onClick: () => {
+                if (!contextMenu) return;
                 let file = contextMenu.file;
                 setImagePreview({
                     open: true,
@@ -361,6 +370,7 @@ const FileSystemPage = forwardRef<FileSystem, Props>(({
             key: 'chmod',
             icon: <Shield className={iconClassName}/>,
             onClick: () => {
+                if (!contextMenu) return;
                 let file = contextMenu.file;
                 // 解析文件权限
                 const mode = file.mode;
@@ -388,6 +398,7 @@ const FileSystemPage = forwardRef<FileSystem, Props>(({
             icon: <Download className={iconClassName}/>,
             disabled: contextMenu?.file?.isDir,
             onClick: () => {
+                if (!contextMenu) return;
                 let file = contextMenu.file;
                 browserDownload(getFileDownloadUrl(file.path));
             },
@@ -397,6 +408,7 @@ const FileSystemPage = forwardRef<FileSystem, Props>(({
             key: 'rename',
             icon: <FolderEdit className={iconClassName}/>,
             onClick: () => {
+                if (!contextMenu) return;
                 let file = contextMenu.file;
                 setPromptState({
                     loading: false, open: true, type: "rename", value: file.name
@@ -412,7 +424,8 @@ const FileSystemPage = forwardRef<FileSystem, Props>(({
             danger: true,
             icon: <TrashIcon className={iconClassName}/>,
             onClick: () => {
-                let keys = [contextMenu.file?.path];
+                if (!contextMenu) return;
+                let keys = [contextMenu.file.path];
                 setSelectedRowKeys(keys);
                 handleDeleteFile(keys);
             },
@@ -456,6 +469,43 @@ const FileSystemPage = forwardRef<FileSystem, Props>(({
         setFiles(filesQuery.data);
     }, [filesQuery.data]);
 
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
+
+        const container = fileTableContainerRef.current;
+        if (!container) {
+            return;
+        }
+
+        const updateTableScrollY = () => {
+            const table = container.querySelector<HTMLElement>('.ant-table');
+            const virtualHolder = container.querySelector<HTMLElement>('.ant-table-tbody-virtual-holder');
+            const tableHeader = container.querySelector<HTMLElement>('.ant-table-thead');
+            const fixedTableHeight = table && virtualHolder
+                ? table.offsetHeight - virtualHolder.offsetHeight
+                : tableHeader?.offsetHeight ?? 0;
+
+            setFileTableScrollY(Math.max(Math.floor(container.clientHeight - fixedTableHeight), 1));
+        };
+
+        const resizeObserver = new ResizeObserver(updateTableScrollY);
+        resizeObserver.observe(container);
+        const tableHeader = container.querySelector<HTMLElement>('.ant-table-thead');
+        if (tableHeader) {
+            resizeObserver.observe(tableHeader);
+        }
+        const animationFrame = requestAnimationFrame(updateTableScrollY);
+        window.visualViewport?.addEventListener('resize', updateTableScrollY);
+
+        return () => {
+            resizeObserver.disconnect();
+            cancelAnimationFrame(animationFrame);
+            window.visualViewport?.removeEventListener('resize', updateTableScrollY);
+        };
+    }, [files.length, open]);
+
     const renderFileIcon = (file: FileInfo) => {
         if (file.isDir) {
             return <Folder color={'#4096ff'} className={iconClassName}/>
@@ -474,7 +524,7 @@ const FileSystemPage = forwardRef<FileSystem, Props>(({
             sorter: (a, b) => {
                 return a.name?.localeCompare(b.name);
             },
-            render: (value, file) => {
+            render: (_value, file) => {
                 let name = file.name
                 if (name.length > 24) {
                     name = name.substring(0, 24) + '...'
@@ -490,7 +540,7 @@ const FileSystemPage = forwardRef<FileSystem, Props>(({
             dataIndex: 'size',
             key: 'size',
             width: 100,
-            render: (value, item, index) => {
+            render: (value, item, _index) => {
                 if (item.isDir) {
                     return '-';
                 }
@@ -508,7 +558,7 @@ const FileSystemPage = forwardRef<FileSystem, Props>(({
                 return a.modTime - b.modTime;
             },
             sortDirections: ['descend', 'ascend'],
-            render: (value, item) => {
+            render: (value, _item) => {
                 return <span>{dayjs(value).format(`YYYY-MM-DD HH:mm:ss`)}</span>;
             },
         }, {
@@ -516,7 +566,7 @@ const FileSystemPage = forwardRef<FileSystem, Props>(({
             dataIndex: 'mode',
             key: 'mode',
             width: 100,
-            render: (value, item) => {
+            render: (value, _item) => {
                 return <span className={'dode'}>{value}</span>;
             },
         },
@@ -566,7 +616,7 @@ const FileSystemPage = forwardRef<FileSystem, Props>(({
             title: t('fs.attributes.size'),
             dataIndex: 'size',
             key: 'size',
-            render: (value, item) => {
+            render: (value, _item) => {
                 return renderSize(value);
             },
             width: 80,
@@ -599,7 +649,7 @@ const FileSystemPage = forwardRef<FileSystem, Props>(({
             title: t('fs.transmission.progress'),
             dataIndex: 'percent',
             key: 'percent',
-            render: (v, record) => (
+            render: (_v, record) => (
                 <Progress
                     percent={record.percent}
                     size="small"
@@ -1215,26 +1265,34 @@ const FileSystemPage = forwardRef<FileSystem, Props>(({
     }, [transmissionRecords]);
 
     let uploadDirLabel = t('fs.operations.upload_dir');
-    if (license.isFree()) {
+    if (!license.hasPremiumFeatures()) {
         uploadDirLabel += ` (${t('settings.license.type.premium')})`;
     }
 
     let batchDownloadLabel = t('fs.operations.batch_download');
-    if (license.isFree()) {
+    if (!license.hasPremiumFeatures()) {
         batchDownloadLabel += ` (${t('settings.license.type.premium')})`;
     }
-    const fileTableScrollY = Math.max(window.innerHeight - 240, 240);
+    const drawerPlacement = placement ?? (isMobile ? 'bottom' : 'right');
 
     return (
         <div>
             <Drawer title="FileSystem"
-                    placement={isMobile ? 'bottom' : 'right'}
+                    placement={drawerPlacement}
                     onClose={onClose}
                     open={open}
-                    size={isMobile ? '86svh' : 720}
+                    size={size ?? (isMobile ? MOBILE_TOOL_DRAWER_SIZE : 720)}
                     mask={mask}
                     maskClosable={maskClosable}
                     push={false}
+                    styles={{
+                        ...(drawerPlacement === 'bottom' ? MOBILE_TOOL_DRAWER_STYLES : {}),
+                        body: {
+                            display: 'flex',
+                            flexDirection: 'column',
+                            overflow: 'hidden',
+                        },
+                    }}
                     getContainer={getContainer}
                     extra={
                         <div>
@@ -1259,9 +1317,9 @@ const FileSystemPage = forwardRef<FileSystem, Props>(({
                                 <Tooltip title={uploadDirLabel}>
                                     {strategy?.upload &&
                                         <FolderUpIcon className={cn(
-                                            'h-4 w-4 cursor-pointer', license.isFree() && 'text-gray-400 cursor-no-drop'
+                                            'h-4 w-4 cursor-pointer', !license.hasPremiumFeatures() && 'text-gray-400 cursor-no-drop'
                                         )} onClick={() => {
-                                            if (license.isFree()) {
+                                            if (!license.hasPremiumFeatures()) {
                                                 return
                                             }
                                             dirUploadRef.current?.click();
@@ -1305,9 +1363,9 @@ const FileSystemPage = forwardRef<FileSystem, Props>(({
                                     title={batchDownloadLabel}>
                                     {strategy?.download &&
                                         <DownloadIcon
-                                            className={cn('h-4 w-4 cursor-pointer', license.isFree() && 'text-gray-400 cursor-no-drop')}
+                                            className={cn('h-4 w-4 cursor-pointer', !license.hasPremiumFeatures() && 'text-gray-400 cursor-no-drop')}
                                             onClick={() => {
-                                                if (license.isFree()) {
+                                                if (!license.hasPremiumFeatures()) {
                                                     return;
                                                 }
                                                 if (selectedRowKeys.length === 0) {
@@ -1336,7 +1394,7 @@ const FileSystemPage = forwardRef<FileSystem, Props>(({
                         </div>
                     }
             >
-                <Row gutter={8} style={{paddingBottom: 8}}>
+                <Row gutter={8} style={{paddingBottom: 8, flexShrink: 0}}>
                     <Col>
                         <Tooltip title={t('fs.navigation.back_to_prev')}>
                             <Button style={{padding: 8}} onClick={rollback}>
@@ -1349,7 +1407,7 @@ const FileSystemPage = forwardRef<FileSystem, Props>(({
                                onChange={(e) => {
                                    setCurrentDirectoryForInput(e.target.value)
                                }}
-                               onPressEnter={(e) => {
+                               onPressEnter={(_e) => {
                                    setCurrentDirectory(currentDirectoryForInput);
                                }}
                         />
@@ -1395,12 +1453,13 @@ const FileSystemPage = forwardRef<FileSystem, Props>(({
                 </Row>
 
                 <div
+                    ref={fileTableContainerRef}
                     onDragEnter={handleDragEnter}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
                     className={cn(
-                        'relative',
+                        'relative min-h-0 flex-1 overflow-hidden',
                         strategy?.upload && 'rounded-md border border-transparent transition-colors',
                         strategy?.upload && isDraggingOver && 'border-dashed border-blue-400 bg-blue-50/60'
                     )}
@@ -1416,6 +1475,7 @@ const FileSystemPage = forwardRef<FileSystem, Props>(({
                     <Table
                         virtual
                         scroll={{y: fileTableScrollY}}
+                        style={{overflowY: 'hidden'}}
                         rowKey={'path'}
                         columns={fileColumns}
                         rowSelection={rowSelection}
@@ -1423,9 +1483,9 @@ const FileSystemPage = forwardRef<FileSystem, Props>(({
                         size={'small'}
                         pagination={false}
                         loading={filesQuery.isFetching}
-                        onRow={(file, index) => {
+                        onRow={(file, _index) => {
                             return {
-                                onDoubleClick: event => {
+                                onDoubleClick: _event => {
                                     if (!file.isDir && !file.isLink) return;
                                     setCurrentDirectory(file.path);
                                 },

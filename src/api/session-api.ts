@@ -1,11 +1,13 @@
 import {Api} from "@/api/core/api";
 import requests from "@/api/core/requests";
+import type {RegionInfo} from "@/api/region-info";
 
 export interface Session {
-    region: string;
     id: string;
     clientIp: string;
+    regionInfo?: RegionInfo;
     protocol: string;
+    accessMode: SessionAccessMode;
     ip: string;
     port: number;
     username: string;
@@ -18,9 +20,31 @@ export interface Session {
     disconnectedAt: number;
     connectionDuration: string;
     recording: string;
+    recordingType?: '' | 'not' | 'local' | 's3' | 'webdav';
+    recordingPath?: string;
     recordingSize: number;
+    videoType?: '' | 'not' | 'local' | 's3' | 'webdav';
+    videoPath?: string;
+    videoSize?: number;
+    recordingConvertStatus?: '' | 'pending' | 'processing' | 'completed' | 'failed';
+    recordingConvertProgress?: number;
+    message?: string;
     commandCount: number;
-    auditStatus: string;
+}
+
+export type SessionAccessMode = '' | 'terminal' | 'guacd' | 'rdp_proxy';
+
+export const getSessionAccessMode = (session: Pick<Session, 'accessMode' | 'protocol'>): SessionAccessMode => {
+    if (session.accessMode) {
+        return session.accessMode;
+    }
+    if (session.protocol === 'ssh' || session.protocol === 'telnet') {
+        return 'terminal';
+    }
+    if (session.protocol === 'rdp' || session.protocol === 'vnc') {
+        return 'guacd';
+    }
+    return '';
 }
 
 export interface SessionWatermark {
@@ -44,16 +68,6 @@ export interface SessionSharer {
     url: string
 }
 
-export interface SessionAudit {
-    id: string;
-    sessionId: string;
-    status: 'pending' | 'completed' | 'failed';
-    content: string;
-    error: string;
-    createdAt: number;
-    updatedAt: number;
-}
-
 class SessionApi extends Api<Session> {
     constructor() {
         super("admin/sessions");
@@ -67,16 +81,8 @@ class SessionApi extends Api<Session> {
         await requests.post(`/${this.group}/clear`);
     }
 
-    auditEnabled = async (): Promise<{ terminalEnabled: boolean }> => {
-        return await requests.get(`/${this.group}/audit-enabled`);
-    }
-
-    triggerAudit = async (sessionId: string): Promise<SessionAudit> => {
-        return await requests.post(`/${this.group}/${sessionId}/audit`);
-    }
-
-    getAudit = async (sessionId: string): Promise<SessionAudit | null> => {
-        return await requests.get(`/${this.group}/${sessionId}/audit`);
+    triggerRecordingConvert = async (sessionId: string) => {
+        await requests.post(`/${this.group}/${sessionId}/recording-convert`);
     }
 }
 

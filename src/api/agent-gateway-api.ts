@@ -1,5 +1,5 @@
 import {Api} from "./core/api";
-import requests from "@/api/core/requests";
+import requests, {baseUrl} from "@/api/core/requests";
 
 export interface AgentGateway {
     id: string;
@@ -13,6 +13,17 @@ export interface AgentGateway {
     sort: string;  // 使用 LexoRank 排序
     stat?: Stat;
     version: string;
+}
+
+export interface GatewayReferenceError {
+    status: number;
+    message: string;
+    assetNames: string[];
+    websiteNames: string[];
+    databaseAssetNames: string[];
+    assetGroupNames: string[];
+    websiteGroupNames: string[];
+    gatewayGroupNames: string[];
 }
 
 interface Stat {
@@ -134,6 +145,26 @@ class AgentGatewayApi extends Api<AgentGateway> {
 
     updateSortPosition = async (req: SortPositionRequest) => {
         return await requests.post(`/${this.group}/sort`, req);
+    }
+
+    deleteById = async (id: string) => {
+        const response = await fetch(baseUrl() + `/${this.group}/${id}`, {
+            method: "DELETE",
+        });
+        if (response.ok) {
+            return;
+        }
+        const data = response.headers.get('Content-Type')?.includes('application/json') ? await response.json() : {};
+        return Promise.reject({
+            status: response.status,
+            message: data?.message,
+            assetNames: data?.assetNames || [],
+            websiteNames: data?.websiteNames || [],
+            databaseAssetNames: data?.databaseAssetNames || [],
+            assetGroupNames: data?.assetGroupNames || [],
+            websiteGroupNames: data?.websiteGroupNames || [],
+            gatewayGroupNames: data?.gatewayGroupNames || [],
+        } as GatewayReferenceError);
     }
 
     getVersion = async () => {

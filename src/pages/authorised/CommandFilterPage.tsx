@@ -1,31 +1,33 @@
-import React, {useRef, useState} from 'react';
-import {
-    App,
-    Button,
-    Dropdown,
-    Popconfirm,
-    Space} from "antd";
-import NTable, {type NTableActionType, type NColumn} from "@/components/NTable";
-import {useNavigate} from "react-router-dom";
-import commandFilterApi, {CommandFilter} from '@/api/command-filter-api';
-import CommandFilterModal from "@/pages/authorised/CommandFilterModal";
-import {useTranslation} from "react-i18next";
-import {getSort} from "@/utils/sort";
-import {useMutation} from "@tanstack/react-query";
-import NLink from "@/components/NLink";
+import commandFilterApi,{ CommandFilter } from '@/api/command-filter-api';
+import Disabled from "@/components/Disabled";
 import NButton from "@/components/NButton";
+import NLink from "@/components/NLink";
+import NTable,{ type NColumn,type NTableActionType } from "@/components/NTable";
+import { useLicense } from "@/hook/LicenseContext";
+import CommandFilterModal from "@/pages/authorised/CommandFilterModal";
+import { getSort } from "@/utils/sort";
+import { useMutation } from "@tanstack/react-query";
+import {
+Button,
+Dropdown,
+Popconfirm,
+Space
+} from "antd";
+import { useRef,useState } from 'react';
+import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 const api = commandFilterApi;
 
 const CommandFilterPage = () => {
 
     const {t} = useTranslation();
+    const {license} = useLicense();
+    const hasPremiumFeatures = license.hasPremiumFeatures();
     const actionRef = useRef<NTableActionType>(null);
 
     let [open, setOpen] = useState<boolean>(false);
     let [selectedRowKey, setSelectedRowKey] = useState<string>();
-
-    const {message} = App.useApp();
 
     const postOrUpdate = async (values: any) => {
         if (values['id']) {
@@ -44,13 +46,6 @@ const CommandFilterPage = () => {
         }
     });
 
-    function showSuccess() {
-        message.open({
-            type: 'success',
-            content: t('general.success'),
-        });
-    }
-
     let navigate = useNavigate();
 
     const columns: NColumn<CommandFilter>[] = [
@@ -63,10 +58,7 @@ const CommandFilterPage = () => {
             title: t('general.name'),
             dataIndex: 'name',
             render: (text, record) => {
-                return <a onClick={() => {
-                    setOpen(true);
-                    setSelectedRowKey(record['id']);
-                }}>{text}</a>;
+                return <NLink to={`/command-filter/${record['id']}?activeKey=info`}>{text}</NLink>;
             },
         },
         {
@@ -80,7 +72,7 @@ const CommandFilterPage = () => {
             title: t('actions.label'),
             valueType: 'option',
             key: 'option',
-            render: (text, record) => (
+            render: (_text, record) => (
                 <Space>
                     <NButton
                         key="edit"
@@ -131,56 +123,66 @@ const CommandFilterPage = () => {
 
     return (
         <div>
-            <NTable
-                columns={columns}
-                actionRef={actionRef}
-                request={async (params = {}, sort, filter) => {
-                    let [sortOrder, sortField] = getSort(sort);
-                    
-                    let queryParams = {
-                        pageIndex: params.current,
-                        pageSize: params.pageSize,
-                        sortOrder: sortOrder,
-                        sortField: sortField,
-                        name: params.name,
-                    }
-                    let result = await api.getPaging(queryParams);
-                    return {
-                        data: result['items'],
-                        success: true,
-                        total: result['total']
-                    };
-                }}
-                rowKey="id"
-                search={{
-                    labelWidth: 'auto',
-                }}
-                pagination={{
-                    defaultPageSize: 10,
-                    showSizeChanger: true
-                }}
-                dateFormatter="string"
-                headerTitle={t('menus.authorised.submenus.command_filter')}
-                toolBarRender={() => [
-                    <Button key="button" type="primary" onClick={() => {
-                        setOpen(true)
-                    }}>
-                        {t('actions.new')}
-                    </Button>
-                    ,
-                ]}
-            />
+            <Disabled disabled={!hasPremiumFeatures}>
+                <NTable
+                    columns={columns}
+                    actionRef={actionRef}
+                    request={async (params = {}, sort, _filter) => {
+                        if (!hasPremiumFeatures) {
+                            return {
+                                data: [],
+                                success: true,
+                                total: 0
+                            };
+                        }
 
-            <CommandFilterModal
-                id={selectedRowKey}
-                open={open}
-                confirmLoading={mutation.isPending}
-                handleCancel={() => {
-                    setOpen(false);
-                    setSelectedRowKey(undefined);
-                }}
-                handleOk={mutation.mutate}
-            />
+                        let [sortOrder, sortField] = getSort(sort);
+
+                        let queryParams = {
+                            pageIndex: params.current,
+                            pageSize: params.pageSize,
+                            sortOrder: sortOrder,
+                            sortField: sortField,
+                            name: params.name,
+                        }
+                        let result = await api.getPaging(queryParams);
+                        return {
+                            data: result['items'],
+                            success: true,
+                            total: result['total']
+                        };
+                    }}
+                    rowKey="id"
+                    search={{
+                        labelWidth: 'auto',
+                    }}
+                    pagination={{
+                        defaultPageSize: 10,
+                        showSizeChanger: true
+                    }}
+                    dateFormatter="string"
+                    headerTitle={t('menus.authorised.submenus.command_filter')}
+                    toolBarRender={() => [
+                        <Button key="button" type="primary" onClick={() => {
+                            setOpen(true)
+                        }}>
+                            {t('actions.new')}
+                        </Button>
+                        ,
+                    ]}
+                />
+
+                <CommandFilterModal
+                    id={selectedRowKey}
+                    open={open}
+                    confirmLoading={mutation.isPending}
+                    handleCancel={() => {
+                        setOpen(false);
+                        setSelectedRowKey(undefined);
+                    }}
+                    handleOk={mutation.mutate}
+                />
+            </Disabled>
         </div>
     );
 }

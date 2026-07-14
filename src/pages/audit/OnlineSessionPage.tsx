@@ -1,12 +1,13 @@
-import React, {useRef} from 'react';
-import {useTranslation} from "react-i18next";
-import {getSort} from "@/utils/sort";
-import NTable, {type NTableActionType, type NColumn} from "@/components/NTable";
-import {App, Popconfirm, Space, Typography} from "antd";
-import sessionApi, {Session} from "@/api/session-api";
+import sessionApi,{ getSessionAccessMode,Session } from "@/api/session-api";
+import IPRegion from "@/components/IPRegion";
 import NButton from "@/components/NButton";
+import NTable,{ type NColumn,type NTableActionType } from "@/components/NTable";
+import { getProtocolColor } from "@/helper/asset-helper";
+import { getSort } from "@/utils/sort";
+import { App,Popconfirm,Space,Tag,Tooltip,Typography } from "antd";
 import clsx from "clsx";
-import {getProtocolColor} from "@/helper/asset-helper";
+import { useRef } from 'react';
+import { useTranslation } from "react-i18next";
 
 const OnlineSessionPage = () => {
     const {t} = useTranslation();
@@ -37,14 +38,7 @@ const OnlineSessionPage = () => {
             title: t('audit.client_ip'),
             dataIndex: 'clientIp',
             key: 'clientIp',
-            render: (text, record) => {
-                let view = <div>{text}</div>;
-                const title = record.region;
-                return <div className={'flex items-center gap-2'}>
-                    {view}
-                    <Typography.Text type="secondary">{title}</Typography.Text>
-                </div>
-            },
+            render: (_, record) => <IPRegion ip={record.clientIp} regionInfo={record.regionInfo}/>,
         },
 
         {
@@ -52,12 +46,16 @@ const OnlineSessionPage = () => {
             dataIndex: 'protocol',
             key: 'protocol',
             sorter: true,
-            render: (text, record) => {
-                return <span
-                    className={clsx('rounded-md px-1.5 py-1 text-white font-bold', getProtocolColor(record.protocol))}
-                    style={{fontSize: 9,}}>
+            render: (_text, record) => {
+                const accessMode = getSessionAccessMode(record);
+                return <Space size={4}>
+                    <span
+                        className={clsx('rounded-md px-1.5 py-1 text-white font-bold', getProtocolColor(record.protocol))}
+                        style={{fontSize: 9,}}>
                         {record.protocol.toUpperCase()}
                     </span>
+                    {accessMode === 'rdp_proxy' && <Tag color="processing">{t('audit.rdp_proxy.label')}</Tag>}
+                </Space>
             },
         },
         {
@@ -76,38 +74,57 @@ const OnlineSessionPage = () => {
             title: t('actions.label'),
             valueType: 'option',
             key: 'option',
-            render: (text, record) => (
-                <Space>
-                    <NButton
-                        key='monitor'
-                        onClick={() => {
-                            switch (record.protocol) {
-                                case 'ssh':
-                                    window.open(`/terminal-monitor?sessionId=${record.id}`, '_blank')
-                                    break;
-                                case 'rdp':
-                                case 'vnc':
-                                    window.open(`/graphics-monitor?sessionId=${record.id}`, '_blank')
-                                    break;
-                                default:
-                                    message.warning(t('audit.unknown_protocol', {protocol: record.protocol}));
-                            }
-                        }}
-                    >
-                        {t('gateways.monitor.action')}
-                    </NButton>
-                    <Popconfirm
-                        key={'confirm-disconnect'}
-                        title={t('audit.options.disconnect.confirm')}
-                        onConfirm={async () => {
-                            await sessionApi.disconnect(record.id);
-                            actionRef.current?.reload();
-                        }}
-                    >
-                        <NButton key='delete' danger>{t('audit.options.disconnect.action')}</NButton>
-                    </Popconfirm>
-                </Space>
-            ),
+            render: (_text, record) => {
+                const accessMode = getSessionAccessMode(record);
+                const unsupportedOnlineAction = accessMode === 'rdp_proxy';
+                const unsupportedTip = unsupportedOnlineAction ? t('audit.rdp_proxy.unsupported_online_action') : undefined;
+                return (
+                    <Space>
+                        <Tooltip title={unsupportedTip}>
+                            <span>
+                                <NButton
+                                    key='monitor'
+                                    disabled={unsupportedOnlineAction}
+                                    onClick={() => {
+                                        switch (accessMode) {
+                                            case 'terminal':
+                                                window.open(`/terminal-monitor?sessionId=${record.id}`, '_blank')
+                                                break;
+                                            case 'guacd':
+                                                window.open(`/graphics-monitor?sessionId=${record.id}`, '_blank')
+                                                break;
+                                            case 'rdp_proxy':
+                                                message.warning(t('audit.rdp_proxy.unsupported_online_action'));
+                                                break;
+                                            default:
+                                                message.warning(t('audit.unknown_protocol', {protocol: record.protocol}));
+                                        }
+                                    }}
+                                >
+                                    {t('gateways.monitor.action')}
+                                </NButton>
+                            </span>
+                        </Tooltip>
+                        <Tooltip title={unsupportedTip}>
+                            <span>
+                                <Popconfirm
+                                    key={'confirm-disconnect'}
+                                    disabled={unsupportedOnlineAction}
+                                    title={t('audit.options.disconnect.confirm')}
+                                    onConfirm={async () => {
+                                        await sessionApi.disconnect(record.id);
+                                        actionRef.current?.reload();
+                                    }}
+                                >
+                                    <NButton key='delete' danger disabled={unsupportedOnlineAction}>
+                                        {t('audit.options.disconnect.action')}
+                                    </NButton>
+                                </Popconfirm>
+                            </span>
+                        </Tooltip>
+                    </Space>
+                );
+            },
         },
     ];
 
@@ -117,7 +134,7 @@ const OnlineSessionPage = () => {
                 defaultSize={'small'}
                 columns={columns}
                 actionRef={actionRef}
-                    request={async (params = {}, sort, filter) => {
+                    request={async (params = {}, sort, _filter) => {
                         let [sortOrder, sortField] = getSort(sort);
                         
                         let queryParams = {

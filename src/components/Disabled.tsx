@@ -1,42 +1,50 @@
-import React, {CSSProperties, useEffect, useRef} from 'react';
-import {useTranslation} from "react-i18next";
+import React, { CSSProperties } from 'react';
+import { Alert, theme } from 'antd';
+import { useTranslation } from "react-i18next";
+import {cn} from "@/lib/utils";
 
 export interface Props {
     disabled?: boolean;
     children?: React.ReactNode;
-    classNames?: string[]
-    style?: CSSProperties | undefined;
+    className?: string;
+    style?: CSSProperties;
 }
 
-const Disabled = ({disabled, children, classNames, style}: Props) => {
-    let ref = useRef<HTMLDivElement>(null);
-    let {t} = useTranslation();
-
-    useEffect(() => {
-        if (disabled && ref.current) {
-            let el = ref.current;
-            el.querySelectorAll('*').forEach((e) => {
-                e.setAttribute('disabled', 'true');
-            });
-        }
-    }, [ref.current]);
+const Disabled = ({disabled, children, className, style}: Props) => {
+    const {t} = useTranslation();
+    const {token} = theme.useToken();
+    const disabledStyle: CSSProperties | undefined = disabled ? {
+        padding: token.padding,
+        border: `1px solid ${token.colorWarningBorder}`,
+        borderRadius: token.borderRadius,
+        background: token.colorWarningBg
+    } : undefined;
 
     return (
-        <div className={'z-10 relative'}>
+        <div className={cn(disabled && 'transition-colors', className)} style={{...disabledStyle, ...style}}>
             {disabled &&
-                <div className={'z-10 flex items-center justify-center w-full h-full'}>
-                    <div className={'p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded-md w-full mb-4'}>
-                        <strong>⚠ {t('settings.license.restricted.label')}: </strong>
-                        {t('settings.license.restricted.content')}
-                        <a className={'text-blue-500 hover:text-blue-600'}
-                           target={'_blank'}
-                           href={'https://next-terminal.typesafe.cn/pricing'}>
-                            {t('settings.license.restricted.pay')}
-                        </a>
-                    </div>
-                </div>
+                <Alert
+                    type={'warning'}
+                    showIcon={false}
+                    style={{marginBottom: token.margin}}
+                    title={
+                        <>
+                            <strong>{t('settings.license.restricted.label')}: </strong>
+                            {t('settings.license.restricted.content')}
+                            <a className={'ml-1'}
+                               target={'_blank'}
+                               rel={'noreferrer'}
+                               href={'https://www.next-terminal.com/pricing'}>
+                                {t('settings.license.restricted.pay')}
+                            </a>
+                        </>
+                    }
+                />
             }
-            <div className={disabled && 'grayscale'} ref={ref}>
+            <div
+                className={disabled ? 'grayscale opacity-60 pointer-events-none select-none' : undefined}
+                inert={disabled ? true : undefined}
+                aria-disabled={disabled}>
                 {children}
             </div>
         </div>

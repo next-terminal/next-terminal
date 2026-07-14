@@ -1,6 +1,5 @@
 import { useFormRequest } from "@/hook/use-antd-form-query";
-import React, { useRef } from 'react';
-import { FormInstance, Modal, Form, Input, Switch, InputNumber, Space } from 'antd';
+import {Modal, Form, Input, Switch, InputNumber, Space} from 'antd';
 import { useTranslation } from "react-i18next";
 import storageApi from "@/api/storage-api";
 const api = storageApi;
@@ -21,7 +20,7 @@ const StorageModal = ({
   let {
     t
   } = useTranslation();
-  const formRef = useRef<FormInstance>(null);
+  const [form] = Form.useForm();
   const get = async () => {
     if (id) {
       let data = await api.getById(id);
@@ -32,18 +31,18 @@ const StorageModal = ({
     }
     return {};
   };
-  useFormRequest(formRef, ["form-request", "web/src/pages/assets/StorageModal.tsx", open, id], get, open);
+  useFormRequest(form, ["form-request", "web/src/pages/assets/StorageModal.tsx", open, id], get, {enabled: open});
   return <Modal title={id ? t('actions.edit') : t('actions.new')} open={open} mask={{
     closable: false
   }} destroyOnHidden={true} onOk={() => {
-    formRef.current?.validateFields().then(async values => {
+    form.validateFields().then(async values => {
       values['limitSize'] = values['limitSize'] * 1024 * 1024 * 1024;
       handleOk(values);
     });
   }} onCancel={() => {
     handleCancel();
   }} confirmLoading={confirmLoading}>
-            <Form ref={formRef} layout="vertical">
+            <Form form={form} clearOnDestroy={true} layout="vertical">
                 <Form.Item hidden={true} name={'id'}>
     <Input />
       </Form.Item>

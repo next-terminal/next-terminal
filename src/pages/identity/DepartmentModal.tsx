@@ -1,9 +1,8 @@
-import React, {useEffect, useState} from 'react';
-import {Form, Input, InputNumber, Modal, TreeSelect} from "antd";
-import {useTranslation} from "react-i18next";
-import {useQuery} from "@tanstack/react-query";
-import departmentApi, {Department, TreeNode} from "@/api/department-api";
-import userApi from "@/api/user-api";
+import departmentApi,{ Department,TreeNode } from "@/api/department-api";
+import { useQuery } from "@tanstack/react-query";
+import { Form,Input,InputNumber,Modal,TreeSelect } from "antd";
+import { useEffect,useState } from 'react';
+import { useTranslation } from "react-i18next";
 
 export interface DepartmentModalProps {
     id?: string
@@ -30,13 +29,6 @@ const DepartmentModal = ({id, open, confirmLoading, handleCancel, handleOk}: Dep
     const {data: departmentTree} = useQuery({
         queryKey: ['department-tree'],
         queryFn: () => departmentApi.getTree(),
-        enabled: open,
-    });
-
-    // 获取用户列表（用于选择负责人）
-    const {data: users} = useQuery({
-        queryKey: ['users-all'],
-        queryFn: () => userApi.getAll(),
         enabled: open,
     });
 

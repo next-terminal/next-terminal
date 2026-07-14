@@ -1,13 +1,7 @@
-import React, {useState} from 'react';
+import {useState} from 'react';
 import {message, Tabs} from "antd";
-import LicenseSetting from "./LicenseSetting";
 import LogSetting from "./LogSetting";
-import RdpSetting from "./RdpSetting";
-import VncSetting from "./VncSetting";
-import MailSetting from "./MailSetting";
 import SecuritySetting from "./SecuritySetting";
-import SshdSetting from "./SshdSetting";
-import DbProxySetting from "@/pages/sysconf/DbProxySetting";
 import {useSearchParams} from "react-router-dom";
 import propertyApi from "../../api/property-api";
 import {useTranslation} from "react-i18next";
@@ -16,17 +10,16 @@ import accountApi from "@/api/account-api";
 import {useMutation, useQuery} from "@tanstack/react-query";
 
 import SystemSetting from "@/pages/sysconf/SystemSetting";
-import About from "@/pages/sysconf/About";
-import BackupSetting from "./BackupSetting";
-import LogoSetting from "@/pages/sysconf/LogoSetting";
-import IdentitySetting from "@/pages/sysconf/IdentitySetting";
-import IdentitySourceSetting from "@/pages/sysconf/IdentitySourceSetting";
-import {useLicense} from "@/hook/LicenseContext";
-import NetworkSetting from "@/pages/sysconf/NetworkSetting";
-import LLMSetting from "@/pages/sysconf/LLMSetting";
 import {useMobile} from "@/hook/use-mobile";
 import {cn} from "@/lib/utils";
 import MultiFactorAuthentication from "@/pages/account/MultiFactorAuthentication";
+import ProxyServiceSetting from "@/pages/sysconf/ProxyServiceSetting";
+import AssetAccessSetting from "@/pages/sysconf/AssetAccessSetting";
+import IdentityAuthSetting from "@/pages/sysconf/IdentityAuthSetting";
+import IdentityProviderServiceSetting from "@/pages/sysconf/IdentityProviderServiceSetting";
+import NotificationIntegrationSetting from "@/pages/sysconf/NotificationIntegrationSetting";
+import SystemMaintenanceSetting from "@/pages/sysconf/SystemMaintenanceSetting";
+import AISetting from "@/pages/sysconf/AISetting";
 
 export interface SettingProps {
     get: () => any
@@ -49,9 +42,8 @@ const SettingPage = () => {
     const { isMobile } = useMobile();
     const [messageApi, contextHolder] = message.useMessage();
     const [searchParams, setSearchParams] = useSearchParams();
-    let { license } = useLicense();
 
-    let key = maybe(searchParams.get('activeKey'), 'system-setting');
+    let key = maybe(searchParams.get('activeKey'), 'system');
 
     let [activeKey, setActiveKey] = useState(key);
     let {t} = useTranslation();
@@ -129,91 +121,56 @@ const SettingPage = () => {
 
     const items = [
         {
-            label: t('menus.setting.label'),
-            key: 'system-setting',
+            label: t('settings.system.setting'),
+            key: 'system',
             children: <SystemSetting get={get} set={set}/>
         },
         {
+            label: t('settings.asset_access.setting'),
+            key: 'asset-access',
+            children: <AssetAccessSetting get={get} set={set}/>
+        },
+        {
+            label: t('settings.proxy_service.setting'),
+            key: 'proxy-service',
+            children: <ProxyServiceSetting get={get} set={set}/>
+        },
+        {
             label: t('settings.security.setting'),
-            key: 'security-setting',
+            key: 'security',
             children: <SecuritySetting get={get} set={set}/>
         },
         {
-            label: t('settings.sshd.setting'),
-            key: 'sshd',
-            children: <SshdSetting get={get} set={set}/>
+            label: t('settings.identity_auth.setting'),
+            key: 'identity-auth',
+            children: <IdentityAuthSetting get={get} set={set}/>
         },
         {
-            label: t('db.proxy.setting'),
-            key: 'db-proxy',
-            children: <DbProxySetting get={get} set={set}/>
-        },
-
-        {
-            label: t('settings.rdp.setting'),
-            key: 'rdp',
-            children: <RdpSetting get={get} set={set}/>
+            label: t('settings.oidc_server.setting'),
+            key: 'identity-provider-service',
+            children: <IdentityProviderServiceSetting get={get} set={set}/>
         },
         {
-            label: t('settings.vnc.setting'),
-            key: 'vnc',
-            children: <VncSetting get={get} set={set}/>
+            label: t('settings.notification_integration.setting'),
+            key: 'notification-integration',
+            children: <NotificationIntegrationSetting get={get} set={set}/>
         },
         {
-            label: t('settings.mail.setting'),
-            key: 'mail',
-            children: <MailSetting get={get} set={set}/>
+            label: t('settings.ai.setting'),
+            key: 'ai',
+            children: <AISetting get={get} set={set}/>
         },
         {
-            label: t('settings.identity_methods'),
-            key: 'ldap',
-            children: <IdentitySetting get={get} set={set}/>
-        },
-        {
-            label: t('settings.identity_source.setting'),
-            key: 'identity-source',
-            children: <IdentitySourceSetting get={get} set={set}/>
-        },
-        {
-            label: t('settings.log.setting'),
+            label: t('settings.log_retention.setting'),
             key: 'log',
             children: <LogSetting get={get} set={set}/>
         },
         {
-            label: t('settings.backup.setting'),
-            key: 'backup',
-            children: <BackupSetting/>
+            label: t('settings.maintenance.setting'),
+            key: 'maintenance',
+            children: <SystemMaintenanceSetting/>
         },
-        {
-            label: t('settings.network.setting'),
-            key: 'network',
-            children: <NetworkSetting get={get} set={set}/>
-        },
-        {
-            label: t('settings.llm.title'),
-            key: 'llm',
-            children: <LLMSetting get={get} set={set}/>
-        },
-        {
-            label: t('settings.license.setting'),
-            key: 'license',
-            children: <LicenseSetting/>
-        },
-        {
-            label: t('settings.logo.setting'),
-            key: 'logo',
-            children: <LogoSetting/>
-        },
-
     ]
-
-    if (!license.isOEM()) {
-        items.push({
-            label: t('settings.about.setting'),
-            key: 'about',
-            children: <About/>
-        },)
-    }
 
     return (
         <div>
@@ -225,6 +182,7 @@ const SettingPage = () => {
                 items={items}
                 size={isMobile ? 'small' : 'middle'}
                 className={cn(
+                    'setting-tabs',
                     isMobile && 'mobile-setting-tabs'
                 )}
             >

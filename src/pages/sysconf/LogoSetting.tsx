@@ -1,12 +1,15 @@
-import React from 'react';
-import {UploadIcon} from "lucide-react";
-import {message, Popconfirm, Tooltip, TreeDataNode, Typography, Upload} from "antd";
-import {useQuery} from "@tanstack/react-query";
-import {logoApi} from "@/api/logo-api";
-import {RcFile} from "antd/es/upload";
-import {useTranslation} from "react-i18next";
+import { logoApi } from "@/api/logo-api";
+import { useQuery } from "@tanstack/react-query";
+import { message,Popconfirm,Tooltip,TreeDataNode,Upload } from "antd";
+import { RcFile } from "antd/es/upload";
+import { UploadIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
-const {Title} = Typography;
+interface TreeSelectDataNode {
+    title: TreeDataNode['title'];
+    value: string;
+    children: TreeSelectDataNode[];
+}
 
 const LogoSetting = () => {
     let {t} = useTranslation();
@@ -33,9 +36,9 @@ const LogoSetting = () => {
         });
     }
 
-    const transformData = (data: TreeDataNode[]) => {
+    const transformData = (data: TreeDataNode[]): TreeSelectDataNode[] => {
         return data.map(item => {
-            const newItem = {
+            const newItem: TreeSelectDataNode = {
                 title: item.title,
                 value: item.key as string,
                 // key: item.key,
@@ -50,8 +53,6 @@ const LogoSetting = () => {
 
     return (
         <div className={'space-y-2'}>
-            <Title level={5} style={{marginTop: 0}}>{t('settings.logo.setting')}</Title>
-
             <div>{t('settings.logo.preset')}</div>
             <div className={'flex items-center gap-2 flex-wrap'}>
                 {logosQuery.data?.filter(item => !item.deletable)
@@ -74,7 +75,7 @@ const LogoSetting = () => {
                                 key={'delete-confirm' + item.name}
                                 title={t('general.confirm_delete')}
                                 onConfirm={() => {
-                                    logoApi.delete(item.name).then(res => {
+                                    logoApi.delete(item.name).then(_res => {
                                         logosQuery.refetch();
                                     });
                                 }}

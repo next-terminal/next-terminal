@@ -1,53 +1,53 @@
-import {
-    useEffect,
-    useState} from 'react';
-import {App,
-    Button,
-    Dropdown,
-    Input,
-    Popconfirm,
-    Space,
-    Table,
-    type TableProps,
-    Tag,
-    Tooltip} from "antd";
-import {useTranslation} from "react-i18next";
-import {useMutation, useQuery} from "@tanstack/react-query";
 import websiteApi, {SortPositionRequest, Website} from "@/api/website-api";
-import NButton from "@/components/NButton";
 import DraggableTable, {DragHandle} from "@/components/DraggableTable";
-import clsx from "clsx";
+import NButton from "@/components/NButton";
 import {getImgColor} from "@/helper/asset-helper";
-import {useNavigate} from "react-router-dom";
-import WebsiteDrawer from "@/pages/assets/WebsiteDrawer";
-import WebsiteGroupDrawer from "@/pages/assets/WebsiteGroupDrawer";
-import AssetGatewayChoose from "@/pages/assets/AssetGatewayChoose";
-import WebsiteTree from "./WebsiteTree";
-import {cn} from "@/lib/utils";
+import {useLicense} from "@/hook/LicenseContext";
 import {useMobile} from "@/hook/use-mobile";
+import {cn} from "@/lib/utils";
+import WebsiteDrawer from "@/pages/assets/WebsiteDrawer";
+import WebsiteGatewayChoose from "@/pages/assets/WebsiteGatewayChoose";
+import WebsiteGroupDrawer from "@/pages/assets/WebsiteGroupDrawer";
 import {getSort} from "@/utils/sort";
-import {PanelLeftCloseIcon, PanelLeftOpenIcon, RefreshCw} from "lucide-react";
+import {useMutation, useQuery} from "@tanstack/react-query";
+import {App, Button, Dropdown, Input, Space, Switch, Table, type TableProps, Tag, Tooltip} from "antd";
+import clsx from "clsx";
 import dayjs from "dayjs";
+import {PanelLeftCloseIcon, PanelLeftOpenIcon, RefreshCw} from "lucide-react";
+import {useEffect, useState} from 'react';
+import {useTranslation} from "react-i18next";
+import {useNavigate} from "react-router-dom";
+import WebsiteTree from "./WebsiteTree";
 
 const api = websiteApi;
+
+interface PostParams {
+    open: boolean;
+    websiteId?: string;
+    groupId?: string;
+}
 
 const WebsitePage = () => {
 
     const {isMobile} = useMobile();
     const {t} = useTranslation();
     const {message, modal} = App.useApp();
-    let [open, setOpen] = useState<boolean>(false);
-    let [selectedRowKey, setSelectedRowKey] = useState<string>();
+    const {license, isLoading: licenseLoading} = useLicense();
+    const hasPremiumFeatures = !licenseLoading && license.hasPremiumFeatures();
     let [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
     let [groupId, setGroupId] = useState('');
     let [dataSource, setDataSource] = useState<Website[]>([]);
     let [pagination, setPagination] = useState({current: 1, pageSize: 10, total: 0});
     let [sort, setSort] = useState<Record<string, string | null>>({});
-    let [reloadKey, setReloadKey] = useState(0);
     let [keyword, setKeyword] = useState('');
     const [groupDrawerOpen, setGroupDrawerOpen] = useState<boolean>(false);
     const [gatewayChooserOpen, setGatewayChooserOpen] = useState<boolean>(false);
     const [selectedWebsiteId, setSelectedWebsiteId] = useState<string>('');
+    let [params, setParams] = useState<PostParams>({
+        open: false,
+        websiteId: undefined,
+        groupId: undefined,
+    });
     const [isTreeCollapsed, setIsTreeCollapsed] = useState<boolean>(() => {
         const saved = localStorage.getItem('website-tree-collapsed');
         return saved ? JSON.parse(saved) : false;
@@ -55,13 +55,8 @@ const WebsitePage = () => {
 
     let navigate = useNavigate();
 
-    const reloadTable = () => {
-        setReloadKey((value) => value + 1);
-    };
-
     const resetTableToFirstPage = () => {
         setPagination((prev) => ({...prev, current: 1}));
-        reloadTable();
     };
 
     useEffect(() => {
@@ -75,7 +70,7 @@ const WebsitePage = () => {
         }
     });
 
-    const handleDragSortEnd = (beforeIndex: number, afterIndex: number, newDataSource: Website[]) => {
+    const handleDragSortEnd = (_beforeIndex: number, afterIndex: number, newDataSource: Website[]) => {
         setDataSource(newDataSource);
         const draggedItem = newDataSource[afterIndex];
         const req: SortPositionRequest = {
@@ -91,8 +86,16 @@ const WebsitePage = () => {
         resetTableToFirstPage();
     };
 
+    const openWebsiteEditor = (websiteId?: string, options?: Partial<PostParams>) => {
+        setParams({
+            open: true,
+            websiteId,
+            groupId: options?.groupId ?? (!websiteId ? groupId : undefined),
+        });
+    };
+
     const websitePagingQuery = useQuery({
-        queryKey: ['websites', pagination.current, pagination.pageSize, sort, groupId, keyword, reloadKey],
+        queryKey: ['websites', pagination.current, pagination.pageSize, sort, groupId, keyword],
         queryFn: async () => {
             let [sortOrder, sortField] = getSort(sort);
             if (sortOrder === "" && sortField === "") {
@@ -132,7 +135,7 @@ const WebsitePage = () => {
         },
         onSuccess: () => {
             message.success(t('general.success'));
-            reloadTable();
+            websitePagingQuery.refetch();
         }
     });
 
@@ -151,34 +154,6 @@ const WebsitePage = () => {
     const renderWebsiteActions = (record: Website, compact = false) => {
         return (
             <div className={cn('flex items-center gap-2', compact && 'gap-1')}>
-                {record.enabled ? (
-                    <Popconfirm
-                        title={t('assets.confirm_disable_website', '确认禁用该网站？')}
-                        okText={t('actions.disable', '禁用')}
-                        cancelText={t('actions.cancel')}
-                        onConfirm={() => toggleEnabledMutation.mutate(record)}
-                    >
-                        <Button
-                            type="link"
-                            size="small"
-                            danger
-                            style={{padding: 0}}
-                            loading={toggleEnabledMutation.isPending && toggleEnabledMutation.variables?.id === record.id}
-                        >
-                            {t('actions.disable', '禁用')}
-                        </Button>
-                    </Popconfirm>
-                ) : (
-                    <Button
-                        type="link"
-                        size="small"
-                        style={{padding: 0}}
-                        loading={toggleEnabledMutation.isPending && toggleEnabledMutation.variables?.id === record.id}
-                        onClick={() => toggleEnabledMutation.mutate(record)}
-                    >
-                        {t('actions.enable', '启用')}
-                    </Button>
-                )}
                 <NButton
                     key="access"
                     onClick={() => {
@@ -193,7 +168,7 @@ const WebsitePage = () => {
                     trigger={compact ? ['click'] : ['hover']}
                     menu={{
                         items: [
-                            {key: 'config', label: t('actions.config', '配置')},
+                            {key: 'config', label: t('actions.config')},
                             {
                                 key: 'view-authorised',
                                 label: `${t('actions.authorized')}${t('menus.identity.submenus.user')}`
@@ -203,7 +178,7 @@ const WebsitePage = () => {
                         onClick: ({key}) => {
                             switch (key) {
                                 case 'config':
-                                    navigate(`/website/${record.id}`);
+                                    openWebsiteEditor(record.id);
                                     break;
                                 case 'view-authorised':
                                     navigate(`/authorised-website?websiteId=${record.id}`);
@@ -215,7 +190,7 @@ const WebsitePage = () => {
                                         okButtonProps: {danger: true},
                                         onOk: async () => {
                                             await api.deleteById(record.id);
-                                            reloadTable();
+                                            websitePagingQuery.refetch();
                                         },
                                     });
                                     break;
@@ -244,7 +219,7 @@ const WebsitePage = () => {
             title: t('assets.logo'),
             dataIndex: 'logo',
             width: isMobile ? 40 : 60,
-            render: (text, record) => {
+            render: (_text, record) => {
                 return renderWebsiteLogo(record);
             },
             fixed: 'left',
@@ -257,7 +232,7 @@ const WebsitePage = () => {
                 return (
                     <span
                         className={'cursor-pointer text-blue-600 hover:underline'}
-                        onClick={() => navigate(`/website/${record.id}`)}
+                        onClick={() => openWebsiteEditor(record.id)}
                     >
                         {text}
                     </span>
@@ -286,22 +261,24 @@ const WebsitePage = () => {
         {
             title: t('general.enabled'),
             dataIndex: 'enabled',
-            width: 50,
+            width: 80,
             hidden: isMobile,
-            render: (text) => {
-                if (text === true) {
-                    return <Tag color={'green'} variant="solid">{t('general.yes')}</Tag>
-                } else {
-                    return <Tag color={'gray'} variant="filled">{t('general.no')}</Tag>
-                }
-            }
+            render: (_text, record) => (
+                <Switch
+                    checked={record.enabled}
+                    checkedChildren={t('general.yes')}
+                    unCheckedChildren={t('general.no')}
+                    loading={toggleEnabledMutation.isPending && toggleEnabledMutation.variables?.id === record.id}
+                    onChange={() => toggleEnabledMutation.mutate(record)}
+                />
+            )
         },
         {
             title: t('assets.domain'),
             dataIndex: 'domain',
             key: 'domain',
             width: isMobile ? 150 : 300,
-            render: (text, record) => {
+            render: (_text, record) => {
                 return <div>
                     <Tag variant="filled" color={'blue'} className={cn(isMobile && 'text-xs')}>
                         {isMobile ?
@@ -324,7 +301,7 @@ const WebsitePage = () => {
             title: t('actions.label'),
             key: 'option',
             width: 120,
-            render: (text, record) => {
+            render: (_text, record) => {
                 return renderWebsiteActions(record, isMobile);
             },
             fixed: 'right',
@@ -337,7 +314,7 @@ const WebsitePage = () => {
         selections: [Table.SELECTION_ALL, Table.SELECTION_INVERT],
     };
 
-    const handleTableChange: TableProps<Website>['onChange'] = (nextPagination, filters, sorter) => {
+    const handleTableChange: TableProps<Website>['onChange'] = (nextPagination, _filters, sorter) => {
         const activeSorter = Array.isArray(sorter) ? sorter.find((item) => item.order) : sorter;
         const field = activeSorter?.field;
         const fieldName = Array.isArray(field) ? field.join('.') : field ? String(field) : '';
@@ -354,7 +331,7 @@ const WebsitePage = () => {
             key="refresh"
             loading={websitePagingQuery.isFetching}
             icon={<RefreshCw className="h-4 w-4"/>}
-            onClick={reloadTable}
+            onClick={() => websitePagingQuery.refetch()}
         >
             {t('actions.refresh')}
         </Button>,
@@ -377,15 +354,15 @@ const WebsitePage = () => {
             </Button>
         ),
         <Button key="button" type="primary" onClick={() => {
-            setSelectedRowKey(undefined);
-            setOpen(true)
+            openWebsiteEditor();
         }}>
             {t('actions.new')}
         </Button>
     ].filter(Boolean);
 
     const batchActions = selectedRowKeys.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 py-3 dark:border-gray-800">
+        <div
+            className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 py-3 dark:border-gray-800">
             <span className="text-sm text-gray-500">
                 {t('identity.oidc_client.selected_count', {count: selectedRowKeys.length})}
             </span>
@@ -398,13 +375,15 @@ const WebsitePage = () => {
                 >
                     {t('assets.change_group')}
                 </NButton>
-                <NButton
-                    onClick={() => {
-                        setGatewayChooserOpen(true);
-                    }}
-                >
-                    {t('assets.change_gateway')}
-                </NButton>
+                {hasPremiumFeatures && (
+                    <NButton
+                        onClick={() => {
+                            setGatewayChooserOpen(true);
+                        }}
+                    >
+                        {t('assets.change_gateway')}
+                    </NButton>
+                )}
             </Space>
         </div>
     );
@@ -520,14 +499,18 @@ const WebsitePage = () => {
         </div>
 
         <WebsiteDrawer
-            id={selectedRowKey}
-            open={open}
+            id={params.websiteId}
+            groupId={params.groupId}
+            open={params.open}
             onClose={() => {
-                setOpen(false);
-                setSelectedRowKey(undefined);
+                setParams({
+                    open: false,
+                    websiteId: undefined,
+                    groupId: undefined,
+                });
             }}
             onSuccess={() => {
-                reloadTable();
+                websitePagingQuery.refetch();
             }}
         />
 
@@ -540,19 +523,18 @@ const WebsitePage = () => {
             }}
             websiteIds={selectedRowKeys.length > 0 ? selectedRowKeys : [selectedWebsiteId]}
             onSuccess={() => {
-                reloadTable();
+                websitePagingQuery.refetch();
                 setSelectedRowKeys([]);
             }}
         />
 
-        <AssetGatewayChoose
+        <WebsiteGatewayChoose
             resourceIds={selectedRowKeys}
-            type="website"
             open={gatewayChooserOpen}
             onClose={() => {
                 setGatewayChooserOpen(false);
                 setSelectedRowKeys([]);
-                reloadTable();
+                websitePagingQuery.refetch();
             }}
         />
     </div>);

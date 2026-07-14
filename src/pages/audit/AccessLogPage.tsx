@@ -1,13 +1,14 @@
-import React, {useRef} from 'react';
-import NTable, {type NTableActionType, type NColumn} from "@/components/NTable";
-import {useTranslation} from "react-i18next";
-import {getSort} from "@/utils/sort";
-import {Link} from "react-router-dom";
-import accessLogApi, {AccessLog} from "@/api/access-log-api";
-import {App, Button, Tag, Typography} from "antd";
-import {useMutation} from "@tanstack/react-query";
-import {renderSize} from "@/utils/utils";
-import {useMobile} from "@/hook/use-mobile";
+import accessLogApi,{ AccessLog } from "@/api/access-log-api";
+import IPRegion from "@/components/IPRegion";
+import NTable,{ type NColumn,type NTableActionType } from "@/components/NTable";
+import { useMobile } from "@/hook/use-mobile";
+import { getSort } from "@/utils/sort";
+import { renderSize } from "@/utils/utils";
+import { useMutation } from "@tanstack/react-query";
+import { App,Button,Tag,Typography } from "antd";
+import { useRef } from 'react';
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 const AccessLogPage = () => {
     const {t} = useTranslation();
@@ -131,7 +132,7 @@ const AccessLogPage = () => {
                 return (
                     <Typography.Text
                         className="text-xs font-mono"
-                        ellipsis={{tooltip: value}}
+                        ellipsis
                         style={{display: 'block', width: '100%'}}
                         copyable={text ? {text: String(text)} : false}
                     >
@@ -161,14 +162,7 @@ const AccessLogPage = () => {
             dataIndex: 'clientIp',
             width: 140,
             ellipsis: true,
-            render: (text, record) => {
-                let view = <div>{text}</div>;
-                const title = record.region;
-                return <div className={'flex items-center gap-2'}>
-                    {view}
-                    <Typography.Text type="secondary">{title}</Typography.Text>
-                </div>
-            },
+            render: (_, record) => <IPRegion ip={record.clientIp} regionInfo={record.regionInfo}/>,
         },
         {
             title: t('audit.accessLog.responseTime'),
@@ -215,7 +209,8 @@ const AccessLogPage = () => {
                 columns={columns}
                 actionRef={actionRef}
                 scroll={{x: 'max-content'}}
-                request={async (params = {}, sort, filter) => {
+                tableLayout="fixed"
+                request={async (params = {}, sort, _filter) => {
                     let [sortOrder, sortField] = getSort(sort);
 
                     let queryParams = {

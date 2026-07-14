@@ -1,5 +1,6 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {App, ConfigProvider, theme} from 'antd';
+import {useMutation} from '@tanstack/react-query';
 import './AccessPage.css';
 import {ResizableHandle, ResizablePanelGroup} from '@/components/ui/resizable';
 import {ThemeProvider} from '@/components/theme-provider';
@@ -43,20 +44,50 @@ export interface AccessTabSyncMessage {
     wolEnabled?: boolean;
 }
 
+type AccessAddTab = ReturnType<typeof useTabOperations>['addTab'];
+
+const openAccessAssetTab = (msg: AccessTabSyncMessage, addTab: AccessAddTab) => {
+    const key = generateRandomId() + '_' + msg.id;
+    const createSessionTab = (tabKey: string) => {
+        switch (msg.protocol) {
+            case "ssh":
+            case "telnet":
+                return <AccessTerminal assetId={msg.id} tabKey={tabKey}/>;
+            case "rdp":
+                return <AccessGuacamole assetId={msg.id} tabKey={tabKey}/>;
+            default:
+                return <AccessGuacamole assetId={msg.id} tabKey={tabKey}/>;
+        }
+    };
+
+    addTab(
+        key,
+        msg.name,
+        createSessionTab(key),
+        {
+            meta: {
+                type: 'session',
+                assetId: msg.id,
+                recreate: createSessionTab,
+            },
+        }
+    );
+};
+
 const AccessPage = () => {
     const {t} = useTranslation();
     const [activeKey, setActiveKey] = useAccessTab();
-    const [_, setContentSize] = useAccessContentSize();
+    const [, setContentSize] = useAccessContentSize();
     const [searchParams, setSearchParams] = useSearchParams();
     const leftRef = useRef<ImperativePanelHandle>(null);
-    const initialCollapsed = LocalStorage.get(STORAGE_KEYS.COLLAPSED_STATE, false);
+    const initialCollapsed = LocalStorage.get(STORAGE_KEYS.COLLAPSED_STATE, false) ?? false;
     const savedPanelSizes = LocalStorage.get(STORAGE_KEYS.PANEL_SIZES, {
         left: ACCESS_SIDEBAR_DEFAULT_SIZE,
         right: 100 - ACCESS_SIDEBAR_DEFAULT_SIZE,
     });
     const initialExpandedLeftPanelSize = Math.min(
         ACCESS_SIDEBAR_MAX_SIZE,
-        Math.max(ACCESS_SIDEBAR_DEFAULT_SIZE, savedPanelSizes.left || ACCESS_SIDEBAR_DEFAULT_SIZE)
+        Math.max(ACCESS_SIDEBAR_DEFAULT_SIZE, savedPanelSizes?.left || ACCESS_SIDEBAR_DEFAULT_SIZE)
     );
     const lastExpandedPanelSizeRef = useRef(initialExpandedLeftPanelSize);
 
@@ -74,35 +105,6 @@ const AccessPage = () => {
         onDragEnd,
     } = useTabOperations(activeKey, setActiveKey);
 
-    // 打开资产标签页
-    const openAssetTab = useCallback((msg: AccessTabSyncMessage) => {
-        const key = generateRandomId() + '_' + msg.id;
-        const createSessionTab = (tabKey: string) => {
-            switch (msg.protocol) {
-                case "ssh":
-                case "telnet":
-                    return <AccessTerminal assetId={msg.id} tabKey={tabKey}/>;
-                case "rdp":
-                    return <AccessGuacamole assetId={msg.id} tabKey={tabKey}/>;
-                default:
-                    return <AccessGuacamole assetId={msg.id} tabKey={tabKey}/>;
-            }
-        };
-
-        addTab(
-            key,
-            msg.name,
-            createSessionTab(key),
-            {
-                meta: {
-                    type: 'session',
-                    assetId: msg.id,
-                    recreate: createSessionTab,
-                },
-            }
-        );
-    }, [addTab]);
-
     // 面板状态管理
     const [isCollapsed, setIsCollapsed] = useState(() => {
         return initialCollapsed;
@@ -112,7 +114,7 @@ const AccessPage = () => {
         return initialCollapsed ? ACCESS_SIDEBAR_COLLAPSED_SIZE : initialExpandedLeftPanelSize;
     });
 
-    const handlePanelResize = useCallback((size: number) => {
+    const handlePanelResize = (size: number) => {
         setLeftPanelSize(size);
 
         const collapsed = size === ACCESS_SIDEBAR_COLLAPSED_SIZE;
@@ -128,7 +130,7 @@ const AccessPage = () => {
         }
 
         setContentSize(100 - size);
-    }, [isCollapsed, setContentSize]);
+    };
 
     // 对话框状态管理
     const [sshChooserOpen, setSSHChooserOpen] = useState(false);
@@ -140,6 +142,23 @@ const AccessPage = () => {
         name: string;
         protocol: string;
     } | null>(null);
+    const accessRequireMFAMutation = useMutation({
+        mutationFn: async (values: string[]) => {
+            const required = await portalApi.getAccessRequireMFA();
+            return {required, values};
+        },
+        onSuccess: ({required, values}) => {
+            if (required) {
+                setMfaOpen(true);
+                setChooseAssetIds(values);
+                return;
+            }
+
+            setSSHChooserOpen(false);
+            const key = generateRandomId();
+            addTab(key, t('access.batch.exec'), <AccessTerminalBulk assetIds={values}/>);
+        },
+    });
 
     // 初始化：设置样式和事件监听
     useEffect(() => {
@@ -173,7 +192,7 @@ const AccessPage = () => {
                         });
                         setWolDialogOpen(true);
                     } else {
-                        openAssetTab(msg);
+                        openAccessAssetTab(msg, addTab);
                     }
                 }
             } catch (error) {
@@ -184,10 +203,10 @@ const AccessPage = () => {
             nextParams.delete('asset');
             setSearchParams(nextParams, {replace: true});
         }
-    }, [openAssetTab, searchParams, setSearchParams]);
+    }, [addTab, searchParams, setSearchParams]);
 
     // 处理树节点双击
-    const handleNodeDoubleClick = useCallback((node: any) => {
+    const handleNodeDoubleClick = (node: any) => {
         // 检查是否需要 WOL 唤醒
         if (node.extra?.status === 'inactive' && node.extra?.wolEnabled) {
             setWolAssetInfo({
@@ -200,49 +219,41 @@ const AccessPage = () => {
         }
 
         // 直接打开连接
-        openAssetTab({
+        openAccessAssetTab({
             id: node.key,
             name: node.title,
             protocol: node.extra?.protocol,
-        });
-    }, [openAssetTab]);
+        }, addTab);
+    };
 
     // 处理顶部按钮点击
-    const handleThemeClick = useCallback(() => {
+    const handleThemeClick = () => {
         addTab('theme', t('access.settings.theme'), <AccessTheme/>);
-    }, [addTab, t]);
+    };
 
-    const handleSettingClick = useCallback(() => {
+    const handleSettingClick = () => {
         addTab('setting', t('menus.setting.label'), <AccessSetting/>);
-    }, [addTab, t]);
+    };
 
-    const handleBatchSSHClick = useCallback(() => {
+    const handleBatchSSHClick = () => {
         setSSHChooserOpen(true);
-    }, []);
+    };
 
-    const handleSidebarToggle = useCallback(() => {
+    const handleSidebarToggle = () => {
         if (isCollapsed) {
             leftRef.current?.resize(lastExpandedPanelSizeRef.current);
             return;
         }
         leftRef.current?.collapse();
-    }, [isCollapsed]);
+    };
 
     // 处理 SSH 选择器确认
-    const handleSSHChooserOk = useCallback(async (values: string[]) => {
-        const required = await portalApi.getAccessRequireMFA();
-        if (required) {
-            setMfaOpen(true);
-            setChooseAssetIds(values);
-        } else {
-            setSSHChooserOpen(false);
-            const key = generateRandomId();
-            addTab(key, t('access.batch.exec'), <AccessTerminalBulk assetIds={values}/>);
-        }
-    }, [addTab, t]);
+    const handleSSHChooserOk = (values: string[]) => {
+        accessRequireMFAMutation.mutate(values);
+    };
 
     // 处理 MFA 确认
-    const handleMFAOk = useCallback(async (securityToken: string) => {
+    const handleMFAOk = async (securityToken: string) => {
         setMfaOpen(false);
         setSSHChooserOpen(false);
         const key = generateRandomId();
@@ -251,21 +262,21 @@ const AccessPage = () => {
             t('access.batch.exec'),
             <AccessTerminalBulk assetIds={chooseAssetIds} securityToken={securityToken}/>
         );
-    }, [chooseAssetIds, addTab, t]);
+    };
 
     // 处理 WOL 成功
-    const handleWOLSuccess = useCallback(() => {
+    const handleWOLSuccess = () => {
         setWolDialogOpen(false);
         // 唤醒成功后自动打开连接
         if (wolAssetInfo) {
-            openAssetTab({
+            openAccessAssetTab({
                 id: wolAssetInfo.id,
                 name: wolAssetInfo.name,
                 protocol: wolAssetInfo.protocol,
-            });
+            }, addTab);
         }
         setWolAssetInfo(null);
-    }, [wolAssetInfo, openAssetTab]);
+    };
 
     return (
         <ConfigProvider

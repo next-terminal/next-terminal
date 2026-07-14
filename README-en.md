@@ -13,7 +13,7 @@ Next Terminal is a simple, secure, and user-friendly interactive auditing system
 ### Quick Start
 
 Refer to the installation guide here:
-👉 [Installation Documentation](https://docs.next-terminal.typesafe.cn)
+👉 [Installation Documentation](https://docs.next-terminal.com)
 
 
 ## Screenshots

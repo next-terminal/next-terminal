@@ -1,6 +1,5 @@
 import { useFormRequest } from "@/hook/use-antd-form-query";
-import React, { useRef } from 'react';
-import { FormInstance, Modal, Space, Form, Input, Switch } from 'antd';
+import {Modal, Space, Form, Input, Switch} from 'antd';
 import { useTranslation } from "react-i18next";
 import strategyApi from "@/api/strategy-api";
 const api = strategyApi;
@@ -18,7 +17,7 @@ const StrategyModal = ({
   confirmLoading,
   id
 }: StrategyProps) => {
-  const formRef = useRef<FormInstance>(null);
+  const [form] = Form.useForm();
   let {
     t
   } = useTranslation();
@@ -28,18 +27,18 @@ const StrategyModal = ({
     }
     return {};
   };
-  useFormRequest(formRef, ["form-request", "web/src/pages/authorised/StrategyModal.tsx", open, id], get, open);
+  useFormRequest(form, ["form-request", "web/src/pages/authorised/StrategyModal.tsx", open, id], get, {enabled: open});
   return <Modal title={id ? t('actions.edit') : t('actions.new')} open={open} mask={{
     closable: false
   }} destroyOnHidden={true} onOk={() => {
-    formRef.current?.validateFields().then(async values => {
+    form.validateFields().then(async values => {
       handleOk(values);
     });
   }} onCancel={() => {
     handleCancel();
   }} confirmLoading={confirmLoading}>
 
-            <Form ref={formRef} layout="vertical">
+            <Form form={form} clearOnDestroy={true} layout="vertical">
                 <Form.Item hidden={true} name={'id'}>
     <Input />
       </Form.Item>

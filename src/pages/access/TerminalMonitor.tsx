@@ -1,16 +1,16 @@
-import React, {useEffect} from 'react';
-import {useSearchParams} from "react-router-dom";
-import {maybe} from "@/utils/maybe";
-import {Terminal} from "@xterm/xterm";
-import {FitAddon} from "@xterm/addon-fit";
+import { baseWebSocketUrl } from "@/api/core/requests";
+import { Message,MessageTypeData } from "@/pages/access/Terminal";
+import { maybe } from "@/utils/maybe";
+import { FitAddon } from "@xterm/addon-fit";
+import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
-import {baseWebSocketUrl} from "@/api/core/requests";
 import qs from "qs";
-import {Message, MessageTypeData, MessageTypeExit, MessageTypeJoin} from "@/pages/access/Terminal";
+import { useEffect } from 'react';
+import { useSearchParams } from "react-router-dom";
 
 const TerminalMonitor = () => {
 
-    const [searchParams, setSearchParams] = useSearchParams();
+    const [searchParams, _setSearchParams] = useSearchParams();
     let sessionId = maybe(searchParams.get('sessionId'), '');
 
     const writeErrorMessage = (term: Terminal, message: string) => {
@@ -40,15 +40,15 @@ const TerminalMonitor = () => {
         let paramStr = qs.stringify(params);
 
         let websocket = new WebSocket(`${baseWebSocketUrl()}/admin/sessions/${sessionId}/terminal-monitor?${paramStr}`);
-        websocket.onopen = (e => {
+        websocket.onopen = (_e => {
             term.clear();
         });
 
-        websocket.onerror = (e) => {
+        websocket.onerror = (_e) => {
             writeErrorMessage(term, `websocket error`);
         }
 
-        websocket.onclose = (e) => {
+        websocket.onclose = (_e) => {
             writeErrorMessage(term, `connection is closed.`);
         }
 

@@ -53,7 +53,7 @@ export const getGroupAndChildIds = (data: TreeDataNodeWithExtra[], groupKey: str
         for (const node of nodes) {
             if (node.key === parentKey) {
                 if (node.children) {
-                    node.children.forEach(child => {
+                    node.children.forEach((child: TreeDataNodeWithExtra) => {
                         if (!child.isLeaf) {
                             ids.push(child.key);
                             collectChildIds(node.children!, child.key);

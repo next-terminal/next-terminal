@@ -1,4 +1,4 @@
-import React, {createContext, ReactNode, useContext} from 'react';
+import {createContext, ReactNode, useContext} from 'react';
 import {useQuery} from "@tanstack/react-query";
 import licenseApi, {SimpleLicense} from "@/api/license-api";
 
@@ -42,9 +42,9 @@ export function LicenseProvider({children}: LicenseProviderProps) {
         retry: 3, // 失败时重试3次
     });
 
-    // 加载期间或失败时返回企业版许可证，允许用户访问所有功能
+    // 加载期间或失败时返回专业版许可证，允许用户访问所有功能
     // 这样可以避免在数据加载期间误禁用UI元素
-    const license = query.data ?? new SimpleLicense('enterprise');
+    const license = query.data ?? new SimpleLicense('premium');
 
     const value: LicenseContextValue = {
         license,

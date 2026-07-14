@@ -1,4 +1,3 @@
-import React from 'react';
 import {Button, Result, Space} from "antd";
 import {Link, useNavigate} from "react-router-dom";
 import {useTranslation} from "react-i18next";

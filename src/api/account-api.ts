@@ -105,6 +105,28 @@ export type LoginResult = {
     needTotp: boolean
 }
 
+export type ExternalLoginResult = LoginResult & {
+    bindRequired: boolean
+    bindToken?: string
+    provider?: 'oidc' | 'wechat'
+    suggestedUsername?: string
+    suggestedNickname?: string
+    mail?: string
+}
+
+export type CompleteExternalLogin = {
+    bindToken: string
+    action: 'create' | 'bind'
+    username: string
+    password?: string
+    nickname?: string
+    totp?: string
+}
+
+export type BindCurrentExternalLogin = {
+    bindToken: string
+}
+
 export type AccountInfo = {
     id: string;
     username: string;
@@ -117,7 +139,9 @@ export type AccountInfo = {
     language: string;
     forceTotpEnabled: boolean
     needChangePassword: boolean
+    accessRequestEnabled: boolean
     dev: boolean
+    passwordSet: boolean
 }
 
 export type Menu = {
@@ -173,6 +197,14 @@ class AccountApi {
         return await requests.post('/login', account) as LoginResult;
     }
 
+    completeExternalLogin = async (request: CompleteExternalLogin) => {
+        return await requests.post('/external-login/complete', request) as ExternalLoginResult;
+    }
+
+    bindCurrentExternalLogin = async (request: BindCurrentExternalLogin) => {
+        return await requests.post(`/${this.group}/external-login/bind-current`, request);
+    }
+
     validateTOTP = async (values: any) => {
         return await requests.post(`/validate-totp`, values);
     }
@@ -224,6 +256,10 @@ class AccountApi {
 
     createSSHKey = async (values: { name?: string; publicKey: string; securityToken?: string }) => {
         return await requests.post(`/${this.group}/ssh-keys`, values) as AccountSSHKeyItem;
+    }
+
+    updateSSHKey = async (id: string, values: { name: string }) => {
+        return await requests.put(`/${this.group}/ssh-keys/${encodeURIComponent(id)}`, values) as AccountSSHKeyItem;
     }
 
     deleteSSHKey = async (id: string, securityToken?: string) => {

@@ -1,5 +1,5 @@
-import {Form, FormInstance, Input, Modal} from 'antd';
-import React, {useEffect, useRef} from 'react';
+import {Form, Input, Modal} from 'antd';
+import {useEffect} from 'react';
 
 interface Props {
     title: string;
@@ -19,26 +19,26 @@ const PromptModal = ({
                          onCancel,
                          label,
                          placeholder,
-                         confirmLoading,
-                         value
-                     }: Props) => {
-    const formRef = useRef<FormInstance>(null);
+                     confirmLoading,
+                     value
+                 }: Props) => {
+    const [form] = Form.useForm();
     useEffect(() => {
         if (open) {
-            formRef.current?.setFieldsValue({
+            form.setFieldsValue({
                 'prompt': value
             });
         }
-    }, [open, value]);
+    }, [form, open, value]);
     return <div>
         <Modal title={title} open={open} onOk={() => {
-            formRef.current?.validateFields().then(async values => {
+            form.validateFields().then(async values => {
                 onOk(values['prompt']);
             });
         }} onCancel={() => {
             onCancel();
         }} confirmLoading={confirmLoading}>
-            <Form ref={formRef} layout="vertical">
+            <Form form={form} layout="vertical">
                 <Form.Item name={'prompt'} label={label} required={true}>
                     <Input
                         placeholder={placeholder}

@@ -1,16 +1,23 @@
 import {useEffect, useMemo} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import type {FormInstance} from 'antd';
-import type {MutableRefObject} from 'react';
 
 type QueryKeyPart = string | number | boolean | null | undefined | Record<string, unknown> | QueryKeyPart[];
 
+interface UseFormRequestOptions<T extends Record<string, any>> {
+    enabled?: boolean;
+    transform?: (data: T) => Record<string, any>;
+}
+
 export const useFormRequest = <T extends Record<string, any>>(
-    form: FormInstance | MutableRefObject<FormInstance | null>,
+    form: FormInstance,
     queryKey: QueryKeyPart[],
     request?: () => Promise<T>,
-    enabled = true,
+    options: boolean | UseFormRequestOptions<T> = true,
 ) => {
+    const enabled = typeof options === 'boolean' ? options : options.enabled ?? true;
+    const transform = typeof options === 'boolean' ? undefined : options.transform;
+
     const query = useQuery({
         queryKey,
         queryFn: async () => request ? request() : ({} as T),
@@ -18,11 +25,10 @@ export const useFormRequest = <T extends Record<string, any>>(
     });
 
     useEffect(() => {
-        const formInstance = 'current' in form ? form.current : form;
-        if (query.data) {
-            formInstance?.setFieldsValue(query.data);
+        if (enabled && query.data) {
+            form.setFieldsValue(transform ? transform(query.data) : query.data);
         }
-    }, [form, query.data]);
+    }, [enabled, form, query.data, query.dataUpdatedAt, transform]);
 
     return query;
 };

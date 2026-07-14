@@ -1,49 +1,40 @@
-import React, { useEffect, useRef, useState } from 'react';
-import {useTranslation } from "react-i18next";
-import { getSort } from "@/utils/sort";
-import NTable, {type NTableActionType, type NColumn} from "@/components/NTable";
-import { App, Button, Popconfirm, Space, Table, Tag, Tooltip, Typography } from "antd";
-import { SyncOutlined } from "@ant-design/icons";
-import sessionApi, { Session } from "@/api/session-api";
-import { renderSize } from "@/utils/utils";
-import SessionAuditDrawer from "@/pages/audit/SessionAuditDrawer";
+import { baseUrl } from "@/api/core/requests";
+import sessionApi,{ getSessionAccessMode,Session } from "@/api/session-api";
+import IPRegion from "@/components/IPRegion";
 import NButton from "@/components/NButton";
-import { useMutation } from "@tanstack/react-query";
-import clsx from "clsx";
+import NTable,{ type NColumn,type NTableActionType } from "@/components/NTable";
 import { getProtocolColor } from "@/helper/asset-helper";
-
+import { getSort } from "@/utils/sort";
+import { browserDownload,renderSize } from "@/utils/utils";
+import { useMutation } from "@tanstack/react-query";
+import { App,Button,Popconfirm,Progress,Space,Table,Tag,Tooltip,Typography } from "antd";
+import clsx from "clsx";
+import {Download, PlayCircle} from "lucide-react";
+import { useRef,useState } from 'react';
+import { useTranslation } from "react-i18next";
 
 const OfflineSessionPage = () => {
     const { t } = useTranslation();
     const actionRef = useRef<NTableActionType>(null);
 
-    const [terminalAuditEnabled, setTerminalAuditEnabled] = useState(false);
-    const [auditSessionId, setAuditSessionId] = useState('');
-    const [auditOpen, setAuditOpen] = useState(false);
-    const [analyzingIds, setAnalyzingIds] = useState<Set<string>>(new Set());
+    const [convertingIds, setConvertingIds] = useState<Set<string>>(new Set());
 
     const { modal, message } = App.useApp();
 
-    useEffect(() => {
-        sessionApi.auditEnabled()
-            .then(({ terminalEnabled }) => setTerminalAuditEnabled(terminalEnabled))
-            .catch(() => setTerminalAuditEnabled(false));
-    }, []);
-
-    const viewAudit = (sessionId: string) => {
-        setAuditSessionId(sessionId);
-        setAuditOpen(true);
+    const downloadRecording = (sessionId: string, recordingType?: 'video') => {
+        const endpoint = recordingType === 'video' ? 'video-recording' : 'recording';
+        browserDownload(`${baseUrl()}/admin/sessions/${sessionId}/${endpoint}?download=true`);
     };
 
-    const triggerAnalysis = async (sessionId: string) => {
-        setAnalyzingIds(prev => new Set(prev).add(sessionId));
+    const triggerRecordingConvert = async (sessionId: string) => {
+        setConvertingIds(prev => new Set(prev).add(sessionId));
         try {
-            await sessionApi.triggerAudit(sessionId);
+            await sessionApi.triggerRecordingConvert(sessionId);
             actionRef.current?.reload();
         } catch {
-            message.error(t('audit.audit_failed'));
+            message.error(t('audit.recording_convert_status.trigger_failed'));
         } finally {
-            setAnalyzingIds(prev => {
+            setConvertingIds(prev => {
                 const next = new Set(prev);
                 next.delete(sessionId);
                 return next;
@@ -61,66 +52,145 @@ const OfflineSessionPage = () => {
         onSuccess: () => actionRef.current?.reload(),
     });
 
-    const renderAuditStatus = (record: Session) => {
-        const isTerminal = record.protocol === 'ssh' || record.protocol === 'telnet';
-        const canAudit = record.recordingSize > 0 && isTerminal && terminalAuditEnabled;
-        const isAnalyzing = analyzingIds.has(record.id);
+    const isRecordingConvertProcessing = (record: Session) =>
+        record.recordingConvertStatus === 'processing';
 
-        switch (record.auditStatus) {
+    const hasVideoRecording = (record: Session) =>
+        (record.videoSize || 0) > 0;
+
+    const videoRecordingSize = (record: Session) =>
+        record.videoSize || 0;
+
+    const canConvertRecording = (record: Session) => {
+        const accessMode = getSessionAccessMode(record);
+        const convertibleAccessMode = accessMode === 'terminal' || accessMode === 'guacd' || accessMode === 'rdp_proxy';
+        const convertibleStatus = !record.recordingConvertStatus || record.recordingConvertStatus === 'pending' || record.recordingConvertStatus === 'failed';
+        return record.recordingSize > 0 && convertibleAccessMode && convertibleStatus && !hasVideoRecording(record);
+    };
+
+    const openOriginalPlayback = (record: Session) => {
+        const accessMode = getSessionAccessMode(record);
+        switch (accessMode) {
+            case 'terminal':
+                window.open(`/terminal-playback?sessionId=${record.id}`, '_blank');
+                break;
+            case 'guacd':
+                window.open(`/graphics-playback?sessionId=${record.id}`, '_blank');
+                break;
+            case 'rdp_proxy':
+                window.open(`/graphics-playback?sessionId=${record.id}`, '_blank');
+                break;
+            default:
+                message.warning(t('audit.unknown_protocol', {protocol: record.protocol}));
+        }
+    };
+
+    const openVideoPlayback = (record: Session) => {
+        window.open(`/video-playback?sessionId=${record.id}`, '_blank');
+    };
+
+    const renderRecordingActions = (record: Session, recordingType?: 'video') => (
+        <Space size={4}>
+            <Tooltip title={t('audit.options.playback')}>
+                <Button
+                    type="text"
+                    size="small"
+                    shape="circle"
+                    className="!text-blue-600 hover:!bg-blue-50"
+                    icon={<PlayCircle className="h-4 w-4"/>}
+                    onClick={() => recordingType === 'video' ? openVideoPlayback(record) : openOriginalPlayback(record)}
+                />
+            </Tooltip>
+            <Tooltip title={t('actions.download')}>
+                <Button
+                    type="text"
+                    size="small"
+                    shape="circle"
+                    className="!text-gray-500 hover:!bg-gray-100 hover:!text-gray-700"
+                    icon={<Download className="h-4 w-4"/>}
+                    onClick={() => downloadRecording(record.id, recordingType)}
+                />
+            </Tooltip>
+        </Space>
+    );
+
+    const renderRecordingConvertStatus = (record: Session) => {
+        const canConvert = canConvertRecording(record);
+        const manualConverting = convertingIds.has(record.id);
+        const convertButton = canConvert ? (
+            <Button
+                type="link"
+                size="small"
+                loading={manualConverting}
+                style={{padding: 0}}
+                onClick={() => triggerRecordingConvert(record.id)}
+            >
+                {record.recordingConvertStatus === 'failed' ? t('audit.recording_convert_status.retry') : t('audit.recording_convert_status.start')}
+            </Button>
+        ) : null;
+
+        switch (record.recordingConvertStatus) {
             case 'pending':
+                return <Tag color="processing">{t('audit.recording_convert_status.pending')}</Tag>;
+            case 'processing':
                 return (
-                    <Tooltip title={t('audit.audit_status.pending_tip')}>
-                        <Tag icon={<SyncOutlined spin />} color="processing">
-                            {t('audit.audit_status.pending')}
-                        </Tag>
-                    </Tooltip>
+                    <div style={{ minWidth: 140 }}>
+                        <div className="mb-1 text-xs text-gray-500">{t('audit.recording_convert_status.processing')}</div>
+                        <Progress
+                            percent={record.recordingConvertProgress || 0}
+                            size="small"
+                            status="active"
+                        />
+                    </div>
                 );
             case 'completed':
-                return (
-                    <Space size={4}>
-                        <Tag color="success">{t('audit.audit_status.completed')}</Tag>
-                        <Button
-                            type="link"
-                            size="small"
-                            style={{ padding: 0 }}
-                            onClick={() => viewAudit(record.id)}
-                        >
-                            {t('audit.audit_status.view')}
-                        </Button>
-                    </Space>
-                );
+                return null;
             case 'failed':
                 return (
-                    <Space size={4}>
-                        <Tag color="error">{t('general.failed')}</Tag>
-                        {canAudit && (
-                            <Button
-                                type="link"
-                                size="small"
-                                danger
-                                loading={isAnalyzing}
-                                style={{ padding: 0 }}
-                                onClick={() => triggerAnalysis(record.id)}
-                            >
-                                {t('audit.audit_status.retry')}
-                            </Button>
-                        )}
+                    <Space size={6}>
+                        <Tooltip title={record.message || undefined}>
+                            <Tag color="error" className="!mr-0">{t('audit.recording_convert_status.failed')}</Tag>
+                        </Tooltip>
+                        {convertButton}
                     </Space>
                 );
             default:
-                if (!canAudit) return null;
-                return (
-                    <Button
-                        type="link"
-                        size="small"
-                        loading={isAnalyzing}
-                        style={{ padding: 0 }}
-                        onClick={() => triggerAnalysis(record.id)}
-                    >
-                        {t('audit.audit_status.start')}
-                    </Button>
-                );
+                return convertButton;
         }
+    };
+
+    const renderRecordingCell = (record: Session) => {
+        const showOriginal = record.recordingSize > 0;
+        const showVideo = hasVideoRecording(record) && !isRecordingConvertProcessing(record);
+        const convertStatus = renderRecordingConvertStatus(record);
+
+        if (!showOriginal && !showVideo && !convertStatus) {
+            return '-';
+        }
+
+        return (
+            <div className="space-y-1">
+                {showOriginal && (
+                    <div>
+                        <Space size={6} wrap>
+                            <Tag className="!mr-0">{t('audit.original_recording')}</Tag>
+                            <Typography.Text>{renderSize(record.recordingSize)}</Typography.Text>
+                            {renderRecordingActions(record)}
+                        </Space>
+                    </div>
+                )}
+                {showVideo && (
+                    <div>
+                        <Space size={6} wrap>
+                            <Tag color="blue" className="!mr-0">{t('audit.video_recording')}</Tag>
+                            <Typography.Text>{renderSize(videoRecordingSize(record))}</Typography.Text>
+                            {renderRecordingActions(record, 'video')}
+                        </Space>
+                    </div>
+                )}
+                {convertStatus && <div>{convertStatus}</div>}
+            </div>
+        );
     };
 
     const columns: NColumn<Session>[] = [
@@ -145,19 +215,14 @@ const OfflineSessionPage = () => {
             title: t('audit.client_ip'),
             dataIndex: 'clientIp',
             key: 'clientIp',
-            render: (text, record) => (
-                <div className={'flex items-center gap-2'}>
-                    <div>{text}</div>
-                    <Typography.Text type="secondary">{record.region}</Typography.Text>
-                </div>
-            ),
+            render: (_, record) => <IPRegion ip={record.clientIp} regionInfo={record.regionInfo}/>,
         },
         {
             title: t('assets.protocol'),
             dataIndex: 'protocol',
             key: 'protocol',
             sorter: true,
-            render: (text, record) => (
+            render: (_text, record) => (
                 <span
                     className={clsx('rounded-md px-1.5 py-1 text-white font-bold', getProtocolColor(record.protocol))}
                     style={{ fontSize: 9 }}>
@@ -179,57 +244,26 @@ const OfflineSessionPage = () => {
             hideInSearch: true,
         },
         {
-            title: t('audit.recording_size'),
+            title: t('audit.recording'),
             dataIndex: 'recordingSize',
             key: 'recordingSize',
             hideInSearch: true,
-            render: (text, record) => {
-                const count = record['commandCount'];
-                return <div>
-                    <div>{renderSize(record['recordingSize'])}</div>
-                    {count > 0 && (
-                        <Typography.Text type="secondary">
-                            {t('sysops.command')} × {count}
-                        </Typography.Text>
-                    )}
-                </div>;
-            },
+            render: (_text, record) => renderRecordingCell(record),
         },
         {
-            title: t('audit.audit_status.label'),
-            dataIndex: 'auditStatus',
-            key: 'auditStatus',
+            title: t('audit.command_count'),
+            dataIndex: 'commandCount',
+            key: 'commandCount',
             hideInSearch: true,
-            render: (text, record) => renderAuditStatus(record),
+            render: (_text, record) => record.commandCount || '-',
         },
         {
             title: t('actions.label'),
             valueType: 'option',
             key: 'option',
-            render: (text, record) => {
-                const disablePlayback = record.recordingSize <= 0;
-                return [
-                    <Button
-                        key='playback'
-                        disabled={disablePlayback}
-                        type="link"
-                        size='small'
-                        onClick={() => {
-                            switch (record.protocol) {
-                                case 'ssh':
-                                case 'telnet':
-                                    window.open(`/terminal-playback?sessionId=${record['id']}`, '_blank');
-                                    break;
-                                case 'rdp':
-                                case 'vnc':
-                                    window.open(`/graphics-playback?sessionId=${record['id']}`, '_blank');
-                                    break;
-                            }
-                        }}>
-                        {t('audit.options.playback')}
-                    </Button>,
+            render: (_text, record) => {
+                return (
                     <Popconfirm
-                        key='delete-confirm'
                         title={t('general.confirm_delete')}
                         onConfirm={async () => {
                             await sessionApi.deleteById(record.id);
@@ -237,8 +271,8 @@ const OfflineSessionPage = () => {
                         }}
                     >
                         <NButton danger={true}>{t('actions.delete')}</NButton>
-                    </Popconfirm>,
-                ];
+                    </Popconfirm>
+                );
             },
         },
     ];
@@ -298,12 +332,6 @@ const OfflineSessionPage = () => {
                     </Button>,
                 ]}
                 polling={5000}
-            />
-
-            <SessionAuditDrawer
-                open={auditOpen}
-                sessionId={auditSessionId}
-                onClose={() => setAuditOpen(false)}
             />
         </div>
     );

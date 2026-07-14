@@ -1,22 +1,23 @@
-import React, {useState} from 'react';
+import { useState } from 'react';
 
-import {
-    App,
-    Button,
-    Input,
-    Popconfirm,
-    Space,
-    Table,
-    type TableProps,
-    Tag} from "antd";
-import CredentialModal from "./CredentialModal";
-import credentialApi, {Credential} from '../../api/credential-api';
-import {useTranslation} from "react-i18next";
-import {getSort} from "@/utils/sort";
-import {useMutation, useQuery} from "@tanstack/react-query";
 import NButton from "@/components/NButton";
+import { getSort } from "@/utils/sort";
+import { useMutation,useQuery } from "@tanstack/react-query";
+import {
+App,
+Button,
+Input,
+Popconfirm,
+Space,
+Table,
+type TableProps,
+Tag
+} from "antd";
 import copy from "copy-to-clipboard";
 import dayjs from "dayjs";
+import { useTranslation } from "react-i18next";
+import credentialApi,{ Credential, CredentialReferenceError } from '../../api/credential-api';
+import CredentialModal from "./CredentialModal";
 
 const api = credentialApi;
 
@@ -30,7 +31,7 @@ const CredentialPage = () => {
     let [sort, setSort] = useState<Record<string, string | null>>({});
     let [keyword, setKeyword] = useState('');
 
-    const {message} = App.useApp();
+    const {message, modal} = App.useApp();
 
     const credentialPagingQuery = useQuery({
         queryKey: ['credentials', pagination.current, pagination.pageSize, sort, keyword],
@@ -76,7 +77,53 @@ const CredentialPage = () => {
         });
     }
 
-    const handleTableChange: TableProps<Credential>['onChange'] = (nextPagination, filters, sorter) => {
+    function showDeleteError(error: unknown) {
+        const referenceError = error as CredentialReferenceError;
+        const assetNames = referenceError.assetNames || [];
+        const gatewayNames = referenceError.gatewayNames || [];
+        const hasReferences = assetNames.length > 0 || gatewayNames.length > 0;
+        modal.warning({
+            title: hasReferences ? t('assets.credential_delete_referenced_title') : t('general.failed'),
+            content: (
+                <Space direction="vertical" size={12}>
+                    {assetNames.length > 0 && (
+                        <div>
+                            <div>{t('assets.credential_delete_referenced_assets')}</div>
+                            <ul className="m-0 pl-5">
+                                {assetNames.map((name, index) => (
+                                    <li key={`${name}-${index}`}>{name}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                    {gatewayNames.length > 0 && (
+                        <div>
+                            <div>{t('assets.credential_delete_referenced_ssh_gateways')}</div>
+                            <ul className="m-0 pl-5">
+                                {gatewayNames.map((name, index) => (
+                                    <li key={`${name}-${index}`}>{name}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                    {!hasReferences && (
+                        <div>{t('general.error')}</div>
+                    )}
+                </Space>
+            ),
+        });
+    }
+
+    const deleteMutation = useMutation({
+        mutationFn: (id: string) => api.deleteById(id),
+        onSuccess: () => {
+            reloadTable();
+            showSuccess();
+        },
+        onError: showDeleteError,
+    });
+
+    const handleTableChange: TableProps<Credential>['onChange'] = (nextPagination, _filters, sorter) => {
         const activeSorter = Array.isArray(sorter) ? sorter.find((item) => item.order) : sorter;
         const field = activeSorter?.field;
         const fieldName = Array.isArray(field) ? field.join('.') : field ? String(field) : '';
@@ -159,9 +206,8 @@ const CredentialPage = () => {
                     </NButton>
                     <Popconfirm
                         title={t('general.confirm_delete')}
-                        onConfirm={async () => {
-                            await api.deleteById(record.id);
-                            reloadTable();
+                        onConfirm={() => {
+                            deleteMutation.mutate(record.id);
                         }}
                     >
                         <NButton danger={true}>{t('actions.delete')}</NButton>

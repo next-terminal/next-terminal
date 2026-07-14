@@ -1,5 +1,6 @@
 import {Api} from "./core/api";
 import requests from "./core/requests";
+import type {GatewayHop} from "@/api/gateway-chain";
 
 export interface DatabaseAsset {
     id: string;
@@ -13,8 +14,7 @@ export interface DatabaseAsset {
     description: string;
     status: string;
     statusText: string;
-    gatewayType: string;
-    gatewayId: string;
+    gatewayChain: GatewayHop[];
     tags?: string[];
     attrs?: any;
     createdAt: number;

@@ -1,4 +1,3 @@
-import React from 'react';
 import departmentApi from "../../api/department-api";
 import {useTranslation} from "react-i18next";
 import {useQuery} from "@tanstack/react-query";

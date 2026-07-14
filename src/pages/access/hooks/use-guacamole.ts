@@ -1,8 +1,8 @@
-import React, {MutableRefObject, useCallback, useEffect, useRef, useState} from 'react';
+import { baseWebSocketUrl } from '@/api/core/requests';
+import portalApi,{ ExportSession } from '@/api/portal-api';
 import Guacamole from '@dushixiang/guacamole-common-js';
-import portalApi, {ExportSession} from '@/api/portal-api';
-import {baseWebSocketUrl} from '@/api/core/requests';
 import qs from 'qs';
+import React,{ MutableRefObject,useCallback,useEffect,useRef,useState } from 'react';
 
 interface Options {
     assetId: string;
@@ -18,7 +18,7 @@ export function useGuacamole({
                                  onClipboard,
                              }: Options) {
 
-    const clientRef = useRef<Guacamole.Client>();
+    const clientRef = useRef<Guacamole.Client | null>(null);
     const [session, setSession] = useState<ExportSession>();
     const [displaySize, setDisplaySize] = useState<[number, number]>([0, 0]);
     let [tiger, setTiger] = useState(new Date().toString());
@@ -37,7 +37,7 @@ export function useGuacamole({
 
         client.onstatechange = setState;
         client.onerror = setStatus;
-        if (onRequired) client.onrequired = params => onRequired([...params]);
+        if (onRequired) client.onrequired = (params: string[]) => onRequired([...params]);
         if (onClipboard) client.onclipboard = onClipboard;
 
         // 构建显示和输入
@@ -46,7 +46,7 @@ export function useGuacamole({
             displayEle.removeChild(displayEle.firstChild);
         }
         const display = client.getDisplay();
-        display.onresize = (w, h) => setDisplaySize([w, h]);
+        display.onresize = (w: number, h: number) => setDisplaySize([w, h]);
 
         const element = display.getElement();
         while (element.firstChild) element.removeChild(element.firstChild);
@@ -56,6 +56,8 @@ export function useGuacamole({
 
         const keyboard = new Guacamole.Keyboard(sink.getElement());
         const mouse = new Guacamole.Mouse(sink.getElement());
+        void keyboard;
+        void mouse;
         // …绑定键盘鼠标事件，省略
 
         // 发送连接参数

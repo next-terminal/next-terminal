@@ -1,19 +1,29 @@
-import React from 'react';
-import {App, Button, Card, Col, Descriptions, Row, Space, Spin, Typography} from "antd";
+import {App, Button, Card, Col, Descriptions, Form, Input, Radio, Row, Space, Spin, Typography} from "antd";
 import dayjs from "dayjs";
 import {useMutation, useQuery} from "@tanstack/react-query";
+import {useState} from "react";
 import licenseApi, {License} from "../../api/license-api";
 import {useTranslation} from "react-i18next";
 import {cn} from "@/lib/utils";
 import {useLicense} from "@/hook/LicenseContext";
 import {useMobile} from "@/hook/use-mobile";
+import propertyApi from "@/api/property-api";
+import {AimOutlined, ExportOutlined} from "@ant-design/icons";
+import MultiFactorAuthentication from "@/pages/account/MultiFactorAuthentication";
+import accountApi from "@/api/account-api";
 
-const {Title, Text} = Typography;
+const {Text} = Typography;
+const licenseDomainKey = 'license-domain';
+const bindingTypeKey = 'license-binding-type';
 
 const LicenseSetting = () => {
 
     const {isMobile} = useMobile();
     const {message} = App.useApp();
+    const [form] = Form.useForm();
+    const bindingType = Form.useWatch(bindingTypeKey, form);
+    const [mfaOpen, setMfaOpen] = useState(false);
+    const [pendingValues, setPendingValues] = useState<any>(null);
     let {t} = useTranslation();
 
     let {license: licence, refetch: licenseRefetch} = useLicense();
@@ -30,11 +40,43 @@ const LicenseSetting = () => {
             "type": "test",
             "machineId": "",
             "asset": 0,
-            "database": 0,
-            "concurrent": 0,
             "user": 0,
             "expired": 0
         } as License,
+    });
+
+    let queryProperties = useQuery({
+        queryKey: ['properties', 'license-binding'],
+        queryFn: async () => {
+            let values = await propertyApi.get();
+            let domain = values[licenseDomainKey] || '';
+            form.setFieldsValue({
+                [bindingTypeKey]: values[bindingTypeKey] || (domain ? 'domain' : 'machine'),
+                [licenseDomainKey]: domain,
+            });
+            return values;
+        },
+    });
+
+    const infoQuery = useQuery({
+        queryKey: ['info'],
+        queryFn: accountApi.getUserInfo,
+    });
+
+    const saveBindingValues = async (values: any, securityToken?: string) => {
+        let bindingType = values[bindingTypeKey] || 'machine';
+        return await propertyApi.set({
+            [bindingTypeKey]: bindingType,
+            [licenseDomainKey]: bindingType === 'domain' ? values[licenseDomainKey] || '' : '',
+        }, securityToken);
+    }
+
+    let saveDomain = useMutation({
+        mutationFn: (values: any) => saveBindingValues(values),
+        onSuccess: () => {
+            message.success(t('general.success'));
+            queryProperties.refetch();
+        },
     });
 
     let mutation = useMutation({
@@ -53,6 +95,14 @@ const LicenseSetting = () => {
             licenseRefetch();
         }
     });
+
+    const ensureMfaEnabled = async () => {
+        if (infoQuery.data) {
+            return infoQuery.data.mfaEnabled;
+        }
+        const res = await infoQuery.refetch();
+        return res.data?.mfaEnabled ?? false;
+    }
 
     const renderType = (type: string | undefined) => {
         switch (type) {
@@ -101,6 +151,37 @@ const LicenseSetting = () => {
         return !!value && value.trim().length > 0;
     }
 
+    const renderBindingType = (bindingType: string | undefined) => {
+        if (bindingType === 'domain') {
+            return t('settings.license.binding_type_domain');
+        }
+        return t('settings.license.binding_type_machine');
+    }
+
+    const validateLicenseDomain = (_: any, value: string | undefined) => {
+        if (bindingType !== 'domain') {
+            return Promise.resolve();
+        }
+        if (!value || value.trim().length === 0) {
+            return Promise.reject(new Error(t('settings.license.domain_error')));
+        }
+        let domain = value.trim();
+        if (domain.includes('://') || /[/?#:*]/.test(domain)) {
+            return Promise.reject(new Error(t('settings.license.domain_error')));
+        }
+        if (!domain.includes('.')) {
+            return Promise.reject(new Error(t('settings.license.domain_error')));
+        }
+        return Promise.resolve();
+    }
+
+    const handleAutoDetectDomain = () => {
+        form.setFieldsValue({
+            [bindingTypeKey]: 'domain',
+            [licenseDomainKey]: window.location.hostname,
+        });
+    }
+
     const handleImportLicense = () => {
         let files = (document.getElementById('import-license') as HTMLInputElement)?.files;
         if (!files || files.length === 0) {
@@ -116,49 +197,146 @@ const LicenseSetting = () => {
         reader.readAsText(file, 'utf-8');
     }
 
+    const handleRequestLicense = async () => {
+        requestLicense.mutate();
+    }
+
+    const handleSaveBinding = async (values: any) => {
+        let mfaEnabled = await ensureMfaEnabled();
+        if (mfaEnabled) {
+            setPendingValues({
+                values,
+            });
+            setMfaOpen(true);
+            return;
+        }
+        saveDomain.mutate(values);
+    }
+
+    const handleMfaOk = async (securityToken: string) => {
+        if (!pendingValues) {
+            setMfaOpen(false);
+            return;
+        }
+        await saveBindingValues(pendingValues.values, securityToken);
+        message.success(t('general.success'));
+        queryProperties.refetch();
+        setPendingValues(null);
+        setMfaOpen(false);
+    }
+
+    const handleMfaCancel = () => {
+        setPendingValues(null);
+        setMfaOpen(false);
+    }
+
     return (
         <div>
-            <Title level={5} style={{marginTop: 0}}>{t('settings.license.setting')}</Title>
-
             <Row justify="space-around" gutter={[16, 16]}>
                 <Col span={isMobile ? 24 : 12}>
-                    <Spin spinning={queryMachineId.isLoading}>
-                        <Card>
-                            <Descriptions title={t('settings.license.device')} column={1}>
-                                <Descriptions.Item label={t('settings.license.machine_id')}>
-                                    <Text strong copyable>{queryMachineId.data}</Text>
-                                </Descriptions.Item>
-                            </Descriptions>
-
+                    <Spin spinning={queryMachineId.isLoading || queryProperties.isLoading}>
+                        <Card
+                            title={t('settings.license.license_binding_type')}
+                            extra={!licence.isOEM() &&
+                                <Button
+                                    type="link"
+                                    icon={<ExportOutlined/>}
+                                    href={'https://www.next-terminal.com/license'}
+                                    target={'_blank'}
+                                >
+                                    {t('settings.license.binding')}
+                                </Button>
+                            }
+                        >
                             <input type="file" id="import-license" style={{display: 'none'}}
                                    onChange={handleImportLicense}/>
 
-                            <Space className={cn('mt-4', isMobile && 'flex-wrap')} size={isMobile ? 'small' : 'middle'}>
-                                <Button color="default" variant={'filled'}
-                                        size={isMobile ? 'small' : 'middle'}
-                                        onClick={() => {
-                                            window.document.getElementById('import-license')?.click();
-                                        }}>
-                                    {t('settings.license.import')}
-                                </Button>
-
-                                {!licence.isOEM() &&
-                                    <Button color="primary" variant="filled"
-                                            size={isMobile ? 'small' : 'middle'}
-                                            href={'https://license.typesafe.cn/'}
-                                            target={'_blank'}>
-                                        {t('settings.license.binding')}
-                                    </Button>
-                                }
-
-                                <Button color="purple" variant="filled"
-                                        size={isMobile ? 'small' : 'middle'}
-                                        loading={requestLicense.isPending}
-                                        onClick={() => requestLicense.mutate()}
+                            <Form
+                                form={form}
+                                layout="vertical"
+                                onFinish={handleSaveBinding}
+                                initialValues={{
+                                    [bindingTypeKey]: 'machine',
+                                }}
+                            >
+                                <Form.Item
+                                    name={bindingTypeKey}
                                 >
-                                    {t('settings.license.request')}
-                                </Button>
-                            </Space>
+                                    <Radio.Group
+                                        optionType="button"
+                                        buttonStyle="solid"
+                                        onChange={(event) => {
+                                            if (event.target.value === 'machine') {
+                                                form.setFieldsValue({
+                                                    [licenseDomainKey]: '',
+                                                });
+                                            }
+                                        }}
+                                        options={[
+                                            {
+                                                label: t('settings.license.binding_type_machine'),
+                                                value: 'machine',
+                                            },
+                                            {
+                                                label: t('settings.license.binding_type_domain'),
+                                                value: 'domain',
+                                            },
+                                        ]}
+                                    />
+                                </Form.Item>
+                                {bindingType !== 'domain' &&
+                                    <div className="mb-4">
+                                        <Descriptions column={1}>
+                                            <Descriptions.Item label={t('settings.license.machine_id')}>
+                                                <Text strong copyable>{queryMachineId.data}</Text>
+                                            </Descriptions.Item>
+                                        </Descriptions>
+                                    </div>
+                                }
+                                {bindingType === 'domain' &&
+                                    <Form.Item
+                                        name={licenseDomainKey}
+                                        label={t('settings.license.domain')}
+                                        tooltip={t('settings.license.domain_tip')}
+                                        rules={[{validator: validateLicenseDomain}]}
+                                    >
+                                        <Input
+                                            placeholder="nt.example.com"
+                                            addonAfter={
+                                                <Button
+                                                    type="link"
+                                                    size="small"
+                                                    icon={<AimOutlined/>}
+                                                    onClick={handleAutoDetectDomain}
+                                                >
+                                                    {t('settings.license.auto_detect_domain')}
+                                                </Button>
+                                            }
+                                        />
+                                    </Form.Item>
+                                }
+                                <Space className={cn(isMobile && 'flex-wrap')} size={isMobile ? 'small' : 'middle'}>
+                                    <Button type="primary" htmlType="submit" loading={saveDomain.isPending}>
+                                        {t('actions.save')}
+                                    </Button>
+
+                                    <Button color="default" variant={'filled'}
+                                            size={isMobile ? 'small' : 'middle'}
+                                            onClick={() => {
+                                                window.document.getElementById('import-license')?.click();
+                                            }}>
+                                        {t('settings.license.import')}
+                                    </Button>
+
+                                    <Button color="purple" variant="filled"
+                                            size={isMobile ? 'small' : 'middle'}
+                                            loading={requestLicense.isPending}
+                                            onClick={handleRequestLicense}
+                                    >
+                                        {t('settings.license.request')}
+                                    </Button>
+                                </Space>
+                            </Form>
                         </Card>
                     </Spin>
                 </Col>
@@ -177,6 +355,9 @@ const LicenseSetting = () => {
                                 <Descriptions.Item label={t('settings.license.type.label')}>
                                     <Text strong>{renderType(queryLicense.data?.type)}</Text>
                                 </Descriptions.Item>
+                                <Descriptions.Item label={t('settings.license.license_binding_type')}>
+                                    <Text strong>{renderBindingType(queryLicense.data?.bindingType)}</Text>
+                                </Descriptions.Item>
                                 {hasText(queryLicense.data?.name) &&
                                     <Descriptions.Item label={t('settings.license.name')}>
                                         <Text strong>{queryLicense.data?.name}</Text>
@@ -187,17 +368,16 @@ const LicenseSetting = () => {
                                         <Text strong>{queryLicense.data?.userName}</Text>
                                     </Descriptions.Item>
                                 }
-                                <Descriptions.Item label={t('settings.license.machine_id')}>
-                                    <Text strong>{queryLicense.data?.machineId}</Text>
-                                </Descriptions.Item>
+                                {queryLicense.data?.bindingType === 'domain' ?
+                                    <Descriptions.Item label={t('settings.license.domain')}>
+                                        <Text strong>{queryLicense.data?.domain || '-'}</Text>
+                                    </Descriptions.Item> :
+                                    <Descriptions.Item label={t('settings.license.machine_id')}>
+                                        <Text strong>{queryLicense.data?.machineId}</Text>
+                                    </Descriptions.Item>
+                                }
                                 <Descriptions.Item label={t('settings.license.max.asset_count')}>
                                     <Text strong>{renderCount(queryLicense.data?.asset)}</Text>
-                                </Descriptions.Item>
-                                <Descriptions.Item label={t('settings.license.max.database_count')}>
-                                    <Text strong>{renderCount(queryLicense.data?.database)}</Text>
-                                </Descriptions.Item>
-                                <Descriptions.Item label={t('settings.license.max.concurrent_count')}>
-                                    <Text strong>{renderCount(queryLicense.data?.concurrent)}</Text>
                                 </Descriptions.Item>
                                 <Descriptions.Item label={t('settings.license.max.user_count')}>
                                     <Text strong>{renderCount(queryLicense.data?.user)}</Text>
@@ -210,6 +390,7 @@ const LicenseSetting = () => {
                     </Spin>
                 </Col>
             </Row>
+            <MultiFactorAuthentication open={mfaOpen} handleOk={handleMfaOk} handleCancel={handleMfaCancel}/>
         </div>
     );
 };

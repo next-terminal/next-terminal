@@ -1,5 +1,5 @@
-import React, {useState} from 'react';
-import {App, Button, Empty, Form, Input, Modal, Table, Tag, Typography} from "antd";
+import {useState} from 'react';
+import {App, Button, Empty, Form, Input, Modal, Space, Table, Tag, Typography} from "antd";
 import {useMutation, useQuery} from "@tanstack/react-query";
 import {useTranslation} from "react-i18next";
 import accountApi, {AccountSSHKeyItem} from "@/api/account-api";
@@ -13,14 +13,21 @@ interface CreateSSHKeyForm {
     publicKey: string;
 }
 
+interface UpdateSSHKeyNameForm {
+    name: string;
+}
+
 const SSHKey = () => {
     const {t} = useTranslation();
     const {message, modal} = App.useApp();
     const [form] = Form.useForm<CreateSSHKeyForm>();
+    const [editForm] = Form.useForm<UpdateSSHKeyNameForm>();
     const [createOpen, setCreateOpen] = useState(false);
+    const [editOpen, setEditOpen] = useState(false);
     const [mfaOpen, setMfaOpen] = useState(false);
     const [mfaAction, setMfaAction] = useState<MFAAction>(null);
     const [pendingCreate, setPendingCreate] = useState<CreateSSHKeyForm | null>(null);
+    const [editTarget, setEditTarget] = useState<AccountSSHKeyItem | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<AccountSSHKeyItem | null>(null);
 
     const sshKeyQuery = useQuery({
@@ -30,6 +37,14 @@ const SSHKey = () => {
 
     const createMutation = useMutation({
         mutationFn: (values: CreateSSHKeyForm & { securityToken?: string }) => accountApi.createSSHKey(values),
+        onSuccess: () => {
+            sshKeyQuery.refetch();
+            message.success(t('general.success'));
+        }
+    });
+
+    const updateNameMutation = useMutation({
+        mutationFn: ({id, name}: { id: string; name: string }) => accountApi.updateSSHKey(id, {name}),
         onSuccess: () => {
             sshKeyQuery.refetch();
             message.success(t('general.success'));
@@ -57,6 +72,18 @@ const SSHKey = () => {
         setCreateOpen(true);
     };
 
+    const openEditModal = (item: AccountSSHKeyItem) => {
+        setEditTarget(item);
+        editForm.setFieldsValue({name: item.name});
+        setEditOpen(true);
+    };
+
+    const closeEditModal = () => {
+        setEditOpen(false);
+        setEditTarget(null);
+        editForm.resetFields();
+    };
+
     const handleCreateSubmit = async () => {
         const values = await form.validateFields();
         setPendingCreate(values);
@@ -76,6 +103,18 @@ const SSHKey = () => {
         setDeleteTarget(item);
         setMfaAction('delete');
         setMfaOpen(true);
+    };
+
+    const handleEditSubmit = async () => {
+        if (!editTarget) {
+            return;
+        }
+        const values = await editForm.validateFields();
+        await updateNameMutation.mutateAsync({
+            id: editTarget.id,
+            name: values.name,
+        });
+        closeEditModal();
     };
 
     const handleMfaOk = async (securityToken: string) => {
@@ -148,16 +187,25 @@ const SSHKey = () => {
             title: t('actions.label'),
             dataIndex: 'id',
             render: (_: string, record: AccountSSHKeyItem) => (
-                <Button
-                    type="link"
-                    danger
-                    loading={deleteMutation.isPending && deleteMutation.variables?.id === record.id}
-                    onClick={() => handleDelete(record)}
-                >
-                    {t('actions.delete')}
-                </Button>
+                <Space size={0}>
+                    <Button
+                        type="link"
+                        loading={updateNameMutation.isPending && updateNameMutation.variables?.id === record.id}
+                        onClick={() => openEditModal(record)}
+                    >
+                        {t('actions.edit')}
+                    </Button>
+                    <Button
+                        type="link"
+                        danger
+                        loading={deleteMutation.isPending && deleteMutation.variables?.id === record.id}
+                        onClick={() => handleDelete(record)}
+                    >
+                        {t('actions.delete')}
+                    </Button>
+                </Space>
             ),
-            width: 100,
+            width: 140,
         }
     ];
 
@@ -217,6 +265,26 @@ const SSHKey = () => {
                             rows={6}
                             placeholder={t('account.ssh_key_public_key_placeholder')}
                         />
+                    </Form.Item>
+                </Form>
+            </Modal>
+
+            <Modal
+                open={editOpen}
+                title={t('account.ssh_key_edit_name')}
+                onCancel={closeEditModal}
+                onOk={handleEditSubmit}
+                okText={t('actions.confirm')}
+                cancelText={t('actions.cancel')}
+                confirmLoading={updateNameMutation.isPending}
+            >
+                <Form form={editForm} layout="vertical">
+                    <Form.Item
+                        name="name"
+                        label={t('account.ssh_key_name')}
+                        rules={[{required: true, whitespace: true, message: t('account.ssh_key_name_required')}]}
+                    >
+                        <Input placeholder={t('account.ssh_key_name_placeholder')}/>
                     </Form.Item>
                 </Form>
             </Modal>

@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 // @ts-ignore
 import Guacamole from "@dushixiang/guacamole-common-js";
 import {useWindowSize} from "react-use";
@@ -19,7 +19,7 @@ const GuacamolePage = () => {
 
     const [searchParams] = useSearchParams();
     let sharerToken = maybe(searchParams.get('sharerToken'), '');
-    let sessionId = searchParams.get('sessionId');
+    let sessionId = searchParams.get('sessionId') ?? '';
 
     const terminalRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -104,7 +104,7 @@ const GuacamolePage = () => {
         const sink = new Guacamole.InputSink();
         let sinkElement = sink.getElement();
         // 修复粘贴问题
-        sinkElement.addEventListener("paste", function (e) {
+        sinkElement.addEventListener("paste", function (e: ClipboardEvent) {
             // 阻止浏览器默认的按键拆分
             e.preventDefault();
         })
@@ -128,8 +128,8 @@ const GuacamolePage = () => {
             return true;
         }
 
-        keyboard.onkeydown = keysym => handleKeyEvent(true, keysym);
-        keyboard.onkeyup = keysym => handleKeyEvent(false, keysym);
+        keyboard.onkeydown = (keysym: number) => handleKeyEvent(true, keysym);
+        keyboard.onkeyup = (keysym: number) => handleKeyEvent(false, keysym);
         keyboardRef.current = keyboard;
 
         const mouse = new Guacamole.Mouse(element);
@@ -175,7 +175,7 @@ const GuacamolePage = () => {
     }
 
     useEffect(() => {
-        portalApi.getSessionById(sessionId)
+        portalApi.getSessionById(sessionId, sharerToken)
             .then((session) => {
                 connect(session);
             })
@@ -197,7 +197,7 @@ const GuacamolePage = () => {
             <RenderState
                 state={state}
                 status={status}
-                tunnelState={tunnelState}
+                tunnelState={tunnelState ?? Guacamole.Tunnel.State.CONNECTING}
             />
             <div className={'flex items-center justify-center'}>
                 <div className={''}

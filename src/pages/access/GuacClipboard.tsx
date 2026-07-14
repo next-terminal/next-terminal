@@ -56,12 +56,12 @@ const GuacClipboard: React.FC<Props> = ({
                     rules={[
                         {
                             required: true,
-                            message: t('access.guacamole.clipboard_required', 'Please enter clipboard text')
+                            message: t('access.guacamole.clipboard_required')
                         },
                     ]}
                 >
                     <Input.TextArea rows={10}
-                                    placeholder={t('access.guacamole.clipboard_placeholder', 'Paste here...')}/>
+                                    placeholder={t('access.guacamole.clipboard_placeholder')}/>
                 </Form.Item>
             </Form>
         </Modal>

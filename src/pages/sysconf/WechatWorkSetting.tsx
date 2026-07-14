@@ -1,5 +1,5 @@
-import React, {useState} from 'react';
-import {Alert, Button, Form, Input, Switch} from "antd";
+import {useState} from 'react';
+import {Button, Form, Input, Switch} from "antd";
 import {SettingProps} from "./SettingPage";
 import {useTranslation} from "react-i18next";
 import Disabled from "@/components/Disabled";
@@ -25,10 +25,7 @@ const WechatWorkSetting = ({
     };
     useFormRequest(form, ["form-request", "web/src/pages/sysconf/WechatWorkSetting.tsx"], wrapGet, true);
     return <div>
-        <Disabled disabled={!license.isEnterprise()}>
-            <Alert title={t('settings.wechat_work.tip')} type="info" showIcon style={{
-                marginBottom: 16
-            }}/>
+        <Disabled disabled={!license.hasPremiumFeatures()}>
             <Form form={form} onFinish={set} layout="vertical">
                 <Form.Item name="wechat-work-enabled" label={t("settings.wechat_work.enabled")} rules={[{
                     required: true

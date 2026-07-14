@@ -1,26 +1,18 @@
-import React, {useEffect, useState} from 'react';
-import {App, Button, Typography} from "antd";
 import {useTranslation} from "react-i18next";
-import {useMutation, useQuery} from "@tanstack/react-query";
+import {useQuery} from "@tanstack/react-query";
 import brandingApi from "@/api/branding-api";
 import propertyApi from "@/api/property-api";
-import {useLicense} from "@/hook/LicenseContext";
 import {useMobile} from "@/hook/use-mobile";
 import {cn} from "@/lib/utils";
 import {VersionInfo} from "@/components/VersionInfo";
 
-const {Title} = Typography;
-const CHANGELOG_URL = 'https://license.typesafe.cn/changelog';
+const CHANGELOG_URL = 'https://www.next-terminal.com/changelog';
 
 const About = () => {
 
     const {isMobile} = useMobile();
     const {t} = useTranslation();
 
-    let {modal} = App.useApp();
-
-    let [canUpgrade, setCanUpgrade] = useState(false);
-    let {license} = useLicense();
     let brandingQuery = useQuery({
         queryKey: ['branding'],
         queryFn: brandingApi.getBranding,
@@ -31,70 +23,8 @@ const About = () => {
         queryFn: propertyApi.getLatestVersion,
     });
 
-    let upgradeStatus = useQuery({
-        queryKey: ['upgradeStatus'],
-        queryFn: propertyApi.upgradeStatus,
-        refetchInterval: 1000,
-    });
-
-    // 处理升级状态变化
-    useEffect(() => {
-        const status = upgradeStatus.data?.status;
-        if (!status) return;
-
-        switch (status) {
-            case "failed":
-                modal.error({
-                    title: t('settings.about.upgrade.failed'),
-                    content: upgradeStatus.data?.message,
-                });
-                break;
-            case "success":
-                modal.success({
-                    title: t('settings.about.upgrade.success'),
-                    content: t('settings.about.upgrade.success_content'),
-                    onOk: () => {
-                        window.location.reload();
-                    }
-                });
-                break;
-        }
-    }, [upgradeStatus.data?.status, upgradeStatus.data?.message, modal, t]);
-
-    let selfUpgrade = useMutation({
-        mutationKey: ['upgrade'],
-        mutationFn: propertyApi.upgrade,
-        onSuccess: async () => {
-            upgradeStatus.refetch();
-        }
-    });
-
-
-    // 更新可升级状态
-    useEffect(() => {
-        if (versionQuery.data?.upgrade !== undefined) {
-            setCanUpgrade(versionQuery.data.upgrade);
-        }
-    }, [versionQuery.data?.upgrade]);
-
-    // 处理升级按钮点击
-    const handleUpgrade = () => {
-        modal.confirm({
-            title: t('settings.about.upgrade.title'),
-            content: t('settings.about.upgrade.content'),
-            onOk: () => {
-                selfUpgrade.mutate();
-            }
-        });
-    };
     return (
         <div>
-            <div className={cn(
-                'flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-3',
-                isMobile && 'items-stretch'
-            )}>
-                <Title level={5} style={{margin: 0}}>{t('settings.about.setting')}</Title>
-            </div>
             <div className={'flex flex-col gap-4'}>
                 <div className={cn(
                     'space-y-4',
@@ -132,18 +62,6 @@ const About = () => {
                             </a>
                         </div>
                     </div>
-                    {
-                        !brandingQuery.data?.hiddenUpgrade && !license.isFree() &&
-                        <div className={cn(isMobile && 'text-center')}>
-                            <Button type="primary"
-                                    size={isMobile ? 'middle' : 'large'}
-                                    loading={upgradeStatus.isPending || upgradeStatus.data?.status == "running"}
-                                    disabled={!canUpgrade}
-                                    onClick={handleUpgrade}>
-                                {t('settings.about.upgrade.action')}
-                            </Button>
-                        </div>
-                    }
                 </div>
             </div>
         </div>

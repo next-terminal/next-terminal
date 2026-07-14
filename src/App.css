@@ -57,6 +57,12 @@
     color: red !important;
 }
 
+.authorised-row-expired,
+.authorised-row-expired a,
+.authorised-row-expired .ant-btn-link {
+    color: #9ca3af !important;
+}
+
 .app-page-container {
     background-color: white;
     padding: 16px;
@@ -107,6 +113,14 @@
     scrollbar-width: thin;
     scrollbar-color: #eaeaea transparent;
     scrollbar-gutter: stable;
+}
+
+.setting-tabs,
+.setting-tabs > .ant-tabs-content-holder,
+.setting-tabs > .ant-tabs-content-holder > .ant-tabs-content,
+.setting-tabs > .ant-tabs-content-holder > .ant-tabs-content > .ant-tabs-tabpane {
+    min-height: 0;
+    overflow: visible;
 }
 
 /* 暗黑模式 */
@@ -185,11 +199,6 @@
         border-radius: 8px;
     }
     
-    /* 抽屉移动端优化 */
-    .ant-drawer-content-wrapper {
-        max-width: 90vw !important;
-    }
-    
     /* 选择器移动端优化 */
     .ant-select-dropdown {
         max-height: 200px;
@@ -228,7 +237,7 @@
         padding: 8px 12px;
         font-size: 14px;
     }
-    
+
     /* 输入框移动端优化 */
     .ant-input, .ant-input-number {
         font-size: 16px; /* 防止iOS缩放 */

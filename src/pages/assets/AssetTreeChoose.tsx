@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import {type Key, useEffect, useState} from 'react';
 import assetApi from "@/api/asset-api";
 import {useTranslation} from "react-i18next";
 import {Drawer, Tree, TreeDataNode} from "antd";
@@ -13,8 +13,8 @@ interface Props {
 const AssetTreeChoose = ({assetIds, open, onClose}: Props) => {
     let {t} = useTranslation();
 
-    const [treeData, setTreeData] = useState([]);
-    let [expandedKeys, setExpandedKeys] = useState([]);
+    const [treeData, setTreeData] = useState<TreeDataNode[]>([]);
+    let [expandedKeys, setExpandedKeys] = useState<Key[]>([]);
     let [selectedKey, setSelectedKey] = useState('');
 
     let query = useQuery({
@@ -39,7 +39,7 @@ const AssetTreeChoose = ({assetIds, open, onClose}: Props) => {
     }, [query.data]);
 
     const getAllKeys = (data: TreeDataNode[]) => {
-        let keys = [];
+        let keys: Key[] = [];
         data.forEach((item) => {
             keys.push(item.key);
             if (item.children) {

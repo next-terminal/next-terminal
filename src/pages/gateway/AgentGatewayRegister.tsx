@@ -1,12 +1,11 @@
-import {Input, Modal, Select, Typography} from 'antd';
-import React, {useEffect, useState} from 'react';
-import agentGatewayApi, {RegisterParam} from "@/api/agent-gateway-api";
-import clsx from "clsx";
-import {useQuery} from "@tanstack/react-query";
+import agentGatewayApi,{ RegisterParam } from "@/api/agent-gateway-api";
 import agentGatewayTokenApi from "@/api/agent-gateway-token-api";
-import {baseUrl} from "@/api/core/requests";
-import strings from "@/utils/strings";
-import {useTranslation} from "react-i18next";
+import { baseUrl } from "@/api/core/requests";
+import { useQuery } from "@tanstack/react-query";
+import { Input,Modal,Select,Typography } from 'antd';
+import clsx from "clsx";
+import { useEffect,useState } from 'react';
+import { useTranslation } from "react-i18next";
 
 const {Paragraph} = Typography;
 
@@ -47,7 +46,7 @@ const AgentGatewayRegister = ({
             let data = query.data;
             if (data.endpoint === '') {
                 data.endpoint = window.location.origin;
-                agentGatewayApi.setRegisterAddr(data.endpoint).then(r => {
+                agentGatewayApi.setRegisterAddr(data.endpoint).then(_r => {
                     setParam(data);
                 });
             } else {
@@ -150,7 +149,7 @@ const AgentGatewayRegister = ({
         }
     }
 
-    function sanitizeBaseUrl(input: string): string | null {
+    function sanitizeBaseUrl(input: string): string {
         try {
             const url = new URL(input);
             return `${url.protocol}//${url.host}`;
@@ -179,10 +178,7 @@ const AgentGatewayRegister = ({
                         setParam({...param, endpoint: e.target.value});
                     }}
                     onBlur={async () => {
-                        let endpoint = sanitizeBaseUrl(param.endpoint);
-                        if (!strings.hasText(endpoint)) {
-                            endpoint = window.location.origin;
-                        }
+                        let endpoint = sanitizeBaseUrl(param.endpoint) || window.location.origin;
                         setParam({...param, endpoint: endpoint});
                         await agentGatewayApi.setRegisterAddr(endpoint);
                     }}

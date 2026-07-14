@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import {useState} from 'react';
 import {Button, Form, Input, message, Typography} from "antd";
 import accountApi from "../../api/account-api";
 import {ValidateStatus} from "antd/es/form/FormItem";
@@ -16,6 +16,7 @@ const ChangePassword = () => {
     let [newPassword2, setNewPassword2] = useState('');
     let [newPasswordStatus, setNewPasswordStatus] = useState<ValidateStatus>();
     let [error, setError] = useState<string>('');
+    const currentUser = getCurrentUser();
 
     let passwordPolicyQuery = useQuery({
         queryKey: ['get-password-policy'],
@@ -52,7 +53,7 @@ const ChangePassword = () => {
             }
         }
         let user = getCurrentUser();
-        if (policy.mustNotContainUsername && newPassword.includes(user.username)) {
+        if (policy.mustNotContainUsername && user && newPassword.includes(user.username)) {
             return t('settings.security.password.cannot_contain_username');
         }
 
@@ -115,17 +116,19 @@ const ChangePassword = () => {
                   layout={'vertical'}
             >
                 <input type='password' hidden={true} autoComplete='new-password'/>
-                <Form.Item
-                    name="oldPassword"
-                    label={t('account.old_password')}
-                    rules={[
-                        {
-                            required: true,
-                        },
-                    ]}
-                >
-                    <Input type='password' style={{width: 240}} placeholder={t('account.enter')}/>
-                </Form.Item>
+                {currentUser?.passwordSet && (
+                    <Form.Item
+                        name="oldPassword"
+                        label={t('account.old_password')}
+                        rules={[
+                            {
+                                required: true,
+                            },
+                        ]}
+                    >
+                        <Input type='password' style={{width: 240}} placeholder={t('account.enter')}/>
+                    </Form.Item>
+                )}
                 <Form.Item
                     name="newPassword"
                     label={t('identity.user.reset_password.new')}

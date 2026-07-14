@@ -1,7 +1,7 @@
 import {useParams, useSearchParams} from "react-router-dom";
 import {Tabs} from "antd";
 import RoleInfo from "./RoleInfo";
-import React, {useState} from "react";
+import {useState} from "react";
 import {maybe} from "../../utils/maybe";
 import {useTranslation} from "react-i18next";
 

@@ -33,11 +33,6 @@ class AccessSettingApi {
     set = async (data: Record<string, string>) => {
         await requests.put('/access/settings', data);
     }
-
-    getShellAssistantEnabled = async () => {
-        let data = await requests.get('/access/settings/shell-assistant-enabled');
-        return data as { enabled: boolean };
-    }
 }
 
 export default new AccessSettingApi();

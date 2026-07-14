@@ -5,9 +5,9 @@ export interface License {
     name?: string;
     userName?: string;
     machineId: string;
+    bindingType?: 'machine' | 'domain';
+    domain?: string;
     asset: number;
-    database?: number;
-    concurrent: number;
     user: number;
     expired: number;
 }
@@ -15,34 +15,15 @@ export interface License {
 // 定义 License 类
 export class SimpleLicense {
     type: string | '' | 'free' | 'test' | 'premium' | 'enterprise';
-    expired?: number;
     oem?: boolean;
 
-    constructor(type: string, expired?: number, oem?: boolean) {
+    constructor(type: string, oem?: boolean) {
         this.type = type;
-        this.expired = expired;
         this.oem = oem;
     }
 
-    // 添加方法
-    isPremium(): boolean {
-        return this.type === 'premium';
-    }
-
-    isEnterprise(): boolean {
-        return this.type === 'enterprise';
-    }
-
-    isTest(): boolean {
-        return this.type === 'test';
-    }
-
-    isFree(): boolean {
-        return this.type === '' || this.type === 'free';
-    }
-
-    isExpired(): boolean {
-        return this.expired !== undefined && this.expired > 0 && this.expired < new Date().getTime();
+    hasPremiumFeatures(): boolean {
+        return this.type === 'test' || this.type === 'premium' || this.type === 'enterprise';
     }
 
     isOEM(): boolean {
@@ -64,7 +45,7 @@ class LicenseApi {
 
     getSimpleLicense = async () => {
         let data = await requests.get(`/license?noerr`);
-        return new SimpleLicense(data.type, data.expired, data.oem);
+        return new SimpleLicense(data.type, data.oem);
     }
 
     setLicense = async (values: any) => {

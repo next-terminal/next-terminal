@@ -1,11 +1,7 @@
-import React from 'react';
-import { Button, Form, Space, Switch, Typography } from "antd";
+import { Button, Form, Space, Switch } from "antd";
 import { SettingProps } from "./SettingPage";
 import { useTranslation } from "react-i18next";
 import { useFormRequest } from "@/hook/use-antd-form-query";
-const {
-  Title
-} = Typography;
 const RdpSetting = ({
   get,
   set
@@ -21,9 +17,6 @@ const RdpSetting = ({
         </Form.Item>;
   useFormRequest(form, ['settings', 'rdp'], get);
   return <div>
-            <Title level={5} style={{
-      marginTop: 0
-    }}>{t('settings.rdp.setting')}</Title>
             <Form form={form} layout="vertical" onFinish={set}>
                 {renderSwitchItem('enable-wallpaper', t('settings.rdp.enable.wallpaper'))}
                 {renderSwitchItem('enable-theming', t("settings.rdp.enable.theming"))}

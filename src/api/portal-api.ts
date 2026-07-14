@@ -1,7 +1,12 @@
+import { SessionSharer,SessionWatermark } from "@/api/session-api";
+import { Strategy } from "@/api/strategy-api";
 import requests from "./core/requests";
-import {TreeDataNode} from "antd";
-import {Strategy} from "@/api/strategy-api";
-import {SessionSharer, SessionWatermark} from "@/api/session-api";
+
+export interface SessionAttrs {
+    'ai-enabled'?: boolean;
+    backspaceMode?: string;
+    [key: string]: unknown;
+}
 
 export interface ExportSession {
     id: string;
@@ -15,6 +20,7 @@ export interface ExportSession {
     fileSystem: boolean
     width: number;
     height: number;
+    attrs?: SessionAttrs;
 }
 
 export interface AssetUser {
@@ -32,6 +38,21 @@ export interface AssetUser {
     groupId: string; // 分组ID
     users: string[];
     attrs?: Record<string, any>; // 资产属性，包含 WOL 配置等
+}
+
+export interface WebsiteUser {
+    id: string;
+    logo: string;
+    name: string;
+    alias?: string;
+    address: string;
+    protocol: string;
+    tags: string[];
+    description: string;
+    type: string;
+    groupId: string;
+    users: string[];
+    attrs?: Record<string, any>;
 }
 
 export interface DatabaseAssetUser {
@@ -142,12 +163,24 @@ export interface AccessPreferences {
     assetAccessMode: AssetAccessMode;
 }
 
+export interface RdpProxyTicket {
+    ticketId: string;
+    username: string;
+    secret: string;
+    expiresAt: number;
+    proxyAddr: string;
+    rdpFileUrl: string;
+}
+
 class PortalApi {
     group = "portal";
 
-    assets = async (type?: string) => {
-        const params = type ? `?type=${type}` : '';
-        return await requests.get(`/${this.group}/assets${params}`) as AssetUser[];
+    assets = async () => {
+        return await requests.get(`/${this.group}/assets?type=asset`) as AssetUser[];
+    }
+
+    websites = async () => {
+        return await requests.get(`/${this.group}/assets?type=website`) as WebsiteUser[];
     }
 
     databaseAssets = async (type?: string) => {
@@ -163,6 +196,10 @@ class PortalApi {
     getAccessPreferences = async () => {
         const data = await requests.get(`/${this.group}/access-preferences`);
         return data as AccessPreferences;
+    }
+
+    createRdpProxyTicket = async (assetId: string) => {
+        return await requests.post(`/${this.group}/rdp-proxy/tickets`, {assetId}) as RdpProxyTicket;
     }
 
     getAssetsTree = async (protocol?: string, keyword?: string) => {
@@ -202,8 +239,9 @@ class PortalApi {
         return await requests.post(`/${this.group}/sessions?securityToken=${securityToken}`, {"assetId": assetId}) as ExportSession;
     }
 
-    getSessionById = async (sessionId: string) => {
-        return await requests.get(`/${this.group}/sessions/${sessionId}`) as ExportSession;
+    getSessionById = async (sessionId: string, sharerToken?: string) => {
+        const query = sharerToken ? `?sharerToken=${encodeURIComponent(sharerToken)}` : '';
+        return await requests.get(`/${this.group}/sessions/${sessionId}${query}`) as ExportSession;
     }
 
     stats = async (sessionId: string) => {

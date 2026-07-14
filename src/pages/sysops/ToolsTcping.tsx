@@ -1,13 +1,13 @@
-import {Button, Form, Input, InputNumber, Space} from 'antd';
-import React, {useState} from 'react';
-import {baseUrl} from "@/api/core/requests";
-import {useTranslation} from "react-i18next";
+import { baseUrl } from "@/api/core/requests";
+import { Button,Form,Input,InputNumber } from 'antd';
+import { useState } from 'react';
+import { useTranslation } from "react-i18next";
 
 const ToolsTcping = () => {
 
     let {t} = useTranslation();
     let [host, setHost] = useState('');
-    let [port, setPort] = useState(22);
+    let [port, setPort] = useState<number>(22);
     const [attempts, setAttempts] = useState<number>(4);
 
     const [logs, setLogs] = useState<string[]>([]);
@@ -32,7 +32,7 @@ const ToolsTcping = () => {
     }
 
     return (
-        <div className={'flex flex-col gap-4 min-h-[75vh]'}>
+        <div className={'flex min-h-[calc(100vh-240px)] flex-col gap-4'}>
             <Form layout="inline" className="w-full">
                 <Form.Item
                     label={t('sysops.tools.target')}
@@ -49,7 +49,7 @@ const ToolsTcping = () => {
                 <Form.Item label={t('gateways.port')}>
                     <InputNumber
                         value={port}
-                        onChange={(value) => setPort(value)}
+                        onChange={(value) => setPort(value ?? 22)}
                         style={{width: '100px'}}
                         min={1}
                         max={65535}
@@ -79,8 +79,8 @@ const ToolsTcping = () => {
                 </Form.Item>
             </Form>
 
-            <div className='border rounded-lg p-4 flex-grow'>
-                <pre>{logs.join("\n")}</pre>
+            <div className='min-h-0 flex-grow overflow-auto rounded-lg border p-4'>
+                <pre className='m-0'>{logs.join("\n")}</pre>
             </div>
         </div>
     );

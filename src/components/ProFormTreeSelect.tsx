@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {Form, TreeSelect} from 'antd';
 import type {FormItemProps} from 'antd';
 
@@ -63,6 +63,7 @@ const ProFormTreeSelect = ({
                 disabled={disabled}
                 loading={loading}
                 placeholder={placeholder}
+                treeNodeFilterProp="title"
                 variant={fieldProps?.variant}
                 {...fieldProps}
                 treeData={fieldProps?.treeData ?? treeData}

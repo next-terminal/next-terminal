@@ -11,6 +11,9 @@ export interface OidcClient {
     scopes: string[];
     description?: string;
     accessControl?: string; // all/department/user
+    boundUserIds?: string[];
+    boundDepartmentIds?: string[];
+    skipConsent?: boolean;
     status: string;
     createdBy: string;
     createdAt: number;
@@ -24,6 +27,10 @@ export interface OidcClientCreateRequest {
     grantTypes?: string[];
     scopes?: string[];
     description?: string;
+    accessControl?: string;
+    boundUserIds?: string[];
+    boundDepartmentIds?: string[];
+    skipConsent?: boolean;
 }
 
 export interface OidcClientUpdateRequest {
@@ -34,6 +41,10 @@ export interface OidcClientUpdateRequest {
     scopes?: string[];
     description?: string;
     status?: string;
+    accessControl?: string;
+    boundUserIds?: string[];
+    boundDepartmentIds?: string[];
+    skipConsent?: boolean;
 }
 
 export interface OidcClientCreateResponse {

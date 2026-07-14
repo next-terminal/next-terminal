@@ -2,6 +2,7 @@
   "general": {
     "created_at": "创建时间",
     "updated_at": "更新时间",
+    "expired_at": "过期时间",
     "creator": "创建人",
     "enabled": "启用",
     "disabled": "禁用",
@@ -56,6 +57,7 @@
   },
   "actions": {
     "new": "新建",
+    "add": "添加",
     "edit": "编辑",
     "delete": "删除",
     "clear": "清空",
@@ -66,11 +68,14 @@
     "copy": "复制",
     "view_private_key": "查看私钥",
     "import": "导入",
+    "export": "导出",
+    "download": "下载",
     "download_import_sample": "下载示例",
     "cancel": "取消",
     "save": "保存",
     "label": "操作",
     "more": "更多",
+    "config": "配置",
     "batch_delete": "批量删除",
     "refresh": "刷新",
     "retry": "重试",
@@ -119,16 +124,20 @@
   "facade": {
     "asset_placeholder": "资产名称、协议、标签、网络地址",
     "database_asset_placeholder": "资产名称、账号、标签、类型",
-    "database_access_tip": "使用数据库代理连接，或通过 SQL 工单提交执行。",
     "database_access_work_order": "前往 SQL 工单",
     "website_placeholder": "网站名称、标签、类型",
     "processing": "处理中...",
     "in_use": "使用中",
-    "clear_search": "清除搜索"
+    "clear_search": "清除搜索",
+    "list_view": "列表",
+    "card_view": "卡片"
   },
   "menus": {
     "dashboard": {
       "label": "数据概览"
+    },
+    "ai": {
+      "label": "AI 助手"
     },
     "resource": {
       "label": "资源管理",
@@ -139,8 +148,14 @@
         "snippet": "命令片段",
         "storage": "存储",
         "website": "Web资产",
-        "db_work_order": "SQL 工单",
         "certificate": "证书管理"
+      }
+    },
+    "work_order": {
+      "label": "工单管理",
+      "submenus": {
+        "db_work_order": "SQL 工单",
+        "access_request": "访问申请"
       }
     },
     "gateway": {
@@ -161,6 +176,7 @@
         "access_log_stats": "访问日志统计",
         "login_log": "登录日志",
         "operation_log": "操作日志",
+        "exec_command_log": "远程命令记录",
         "database_sql_log": "SQL 日志"
       }
     },
@@ -169,7 +185,8 @@
       "submenus": {
         "scheduled_task": "定时任务",
         "tools": "实用工具",
-        "monitoring": "系统监控"
+        "monitoring": "系统监控",
+        "system_event": "系统事件"
       }
     },
     "identity": {
@@ -362,6 +379,28 @@
         "action": "重置双因素认证",
         "confirm_title": "确认重置用户双因素认证？",
         "confirm_content": "重置后用户无需双因素认证即可登录。"
+      },
+      "external_identity": {
+        "title": "第三方账号",
+        "provider": "类型",
+        "provider_oidc": "OIDC",
+        "provider_wechat": "企业微信",
+        "provider_ldap": "LDAP",
+        "external_account": "外部账号",
+        "account_identifier": "账号标识",
+        "display_name": "显示名称",
+        "identifier": "身份标识",
+        "last_login_at": "最近登录",
+        "legacy": "旧版本兼容",
+        "empty": "暂无绑定的第三方账号",
+        "unbind_confirm": "确认解绑此第三方账号？如果这是用户最后一种登录方式，系统会拒绝解绑。"
+      },
+      "admin_auth": {
+        "title": "认证方式",
+        "password_set": "已设置",
+        "password_not_set": "未设置",
+        "passkey_empty": "暂无 Passkey",
+        "access_token_empty": "暂无授权令牌"
       }
     },
     "options": {
@@ -370,14 +409,14 @@
     "oidc_client": {
       "created_success": "OIDC 客户端创建成功",
       "created_copy_tip": "⚠️ 请立即复制保存密钥，关闭后将无法再次查看",
-      "secret_regenerated": "客户端密钥重新生成成功",
+      "secret_regenerated": "客户端密钥轮换成功",
       "new_secret_label": "新密钥",
       "new_secret_tip": "⚠️ 请立即复制保存新密钥，关闭后将无法再次查看",
       "redirect_uris": "回调地址",
       "grant_types": "授权类型",
       "scopes": "Scopes",
-      "regenerate_secret": "重新生成密钥",
-      "regenerate_secret_confirm": "确定要重新生成此客户端的密钥吗？旧密钥将立即失效。",
+      "regenerate_secret": "轮换密钥",
+      "regenerate_secret_confirm": "确定要轮换此客户端的密钥吗？旧密钥将立即失效。",
       "title": "OIDC 客户端列表",
       "selected_count": "已选择 {{count}} 项",
       "client_id_label": "Client ID",
@@ -402,6 +441,9 @@
       "bound_departments": "授权部门",
       "bound_departments_placeholder": "请选择可以使用此客户端的部门",
       "bound_departments_required": "请至少选择一个部门",
+      "skip_consent": "免认证",
+      "skip_consent_enabled": "启用免认证",
+      "skip_consent_tip": "开启后，用户登录并通过访问控制后不再展示授权确认页。",
       "description_placeholder": "请输入客户端描述"
     }
   },
@@ -466,12 +508,142 @@
     "spec_tooltip": "支持秒级定时任务，与标准cron表达式不同，首字段表示秒（兼容Quartz表达式规范），但不支持年份字段。",
     "last_exec_at": "最后执行时间",
     "command": "命令",
+    "system_event": {
+      "title": "系统事件",
+      "detail": "事件详情",
+      "id": "事件 ID",
+      "type": "事件类型",
+      "category": "事件分类",
+      "severity": "级别",
+      "title_field": "标题",
+      "summary": "摘要",
+      "actor": "操作人",
+      "target": "目标",
+      "ip": "IP",
+      "source": "来源",
+      "args": "参数",
+      "metadata": "元数据",
+      "created_at": "发生时间",
+      "actors": {
+        "system": "系统"
+      },
+      "categories": {
+        "system": "系统",
+        "identity": "身份",
+        "auth": "认证",
+        "access": "访问",
+        "database": "数据库",
+        "backup": "备份",
+        "agent": "Agent"
+      }
+    },
     "options": {
       "exec": "立即执行",
       "logs": "查看日志"
     },
     "monitoring": {
-      "todo": "尚未完成..."
+      "title": "系统监控",
+      "description": "集中查看 CPU、内存、本地存储和关键后台服务状态。",
+      "generated_at": "数据时间",
+      "load_failed": "监控数据加载失败",
+      "health_title": "健康检查",
+      "alert_title": "告警概览",
+      "protocol_title": "在线协议分布",
+      "database_in_use": "使用中",
+      "database_idle": "空闲",
+      "database_wait": "等待次数",
+      "metrics": {
+        "cpu": "CPU",
+        "memory": "内存",
+        "storage": "本地存储"
+      },
+      "storage_volumes": {
+        "storage": "存储",
+        "recording": "录像存储"
+      },
+      "levels": {
+        "warning": "警告",
+        "critical": "严重"
+      },
+      "alert_status": {
+        "active": "待处理",
+        "acknowledged": "已确认",
+        "resolved": "已恢复"
+      },
+      "logical_cores": "逻辑核心",
+      "available": "可用",
+      "swap": "交换分区",
+      "service_runtime": "服务运行",
+      "access_runtime": "访问运行",
+      "database_runtime": "数据库连接",
+      "version": "版本",
+      "goroutines": "Goroutine",
+      "runtime_memory": "运行内存",
+      "last_triggered_at": "最近触发",
+      "acknowledge": "确认处理",
+      "critical_alert": "存在严重系统告警",
+      "critical_alert_desc": "请尽快处理 CPU、内存或本地存储异常，避免影响服务可用性。",
+      "global_critical_title": "系统存在严重告警",
+      "global_critical_desc": "检测到后台运行环境达到严重阈值，请尽快进入系统监控查看并处理。",
+      "go_monitoring": "去系统监控",
+      "remind_later": "稍后提醒",
+      "no_alerts": "暂无告警",
+      "no_online_protocols": "暂无在线会话协议数据",
+      "status": {
+        "ok": "正常",
+        "warning": "预警",
+        "critical": "严重",
+        "error": "异常"
+      },
+      "cards": {
+        "service": {
+          "metrics": {
+            "uptime": "运行时长"
+          }
+        },
+        "session": {
+          "metrics": {
+            "active": "活跃会话",
+            "recording": "录像中"
+          }
+        },
+        "database": {
+          "metrics": {
+            "connections": "连接数"
+          }
+        }
+      },
+      "health": {
+        "gateway": "安全网关",
+        "storage": "录像存储",
+        "scheduler": "计划任务",
+        "cpu": "CPU",
+        "memory": "内存"
+      },
+      "health_messages": {
+        "scheduler": {
+          "ok": "计划任务已初始化"
+        },
+        "gateway": {
+          "ok": "网关运行正常",
+          "not_configured": "网关未配置",
+          "warning": "全部网关离线"
+        },
+        "storage": {
+          "ok": "存储路径可用",
+          "warning": "录像路径未配置或不可访问"
+        },
+        "cpu": {
+          "ok": "CPU 使用率正常",
+          "warning": "CPU 使用率较高",
+          "error": "CPU 使用率严重过高"
+        },
+        "memory": {
+          "ok": "内存使用率正常",
+          "warning": "内存使用率较高",
+          "error": "内存使用率严重过高"
+        }
+      }
     },
     "logs": {
       "label": "日志",
@@ -525,6 +697,22 @@
     "login_status": "登陆状态",
     "login_reason": "失败原因",
     "user_agent": "客户端",
+    "exec_command": {
+      "scope_tip": "仅记录通过 SSH exec 方式执行的非交互式命令，例如 ssh user@host asset \"ls -la\"。交互式终端中的命令请在离线会话回放中查看。",
+      "command": "命令",
+      "result": "执行结果",
+      "exit_code": "退出码",
+      "duration_ms": "耗时(ms)",
+      "started_at": "执行时间",
+      "risk_level": "风险等级",
+      "status": {
+        "forbidden": "已阻断"
+      },
+      "risk": {
+        "high": "高危",
+        "normal": "普通"
+      }
+    },
     "accessLog": {
       "uri": "请求URI",
       "statusCode": "状态码",
@@ -593,27 +781,131 @@
     },
     "operation": {
       "account": "账户",
-      "at": "操作时间"
+      "module": "模块",
+      "resource": "资源",
+      "request": "请求",
+      "at": "操作时间",
+      "modules": {
+        "identity": "身份",
+        "assets": "资产",
+        "authorised": "授权",
+        "access": "访问",
+        "dbproxy": "数据库代理",
+        "sysconf": "系统配置",
+        "sysops": "系统运维",
+        "backup": "备份",
+        "entrance": "工作台"
+      },
+      "actions": {
+        "create": "创建",
+        "delete": "删除",
+        "update": "更新",
+        "enable": "启用",
+        "disable": "禁用",
+        "clear": "清空",
+        "import": "导入",
+        "export": "导出",
+        "upload": "上传",
+        "download": "下载",
+        "renew": "续期",
+        "sort": "排序",
+        "move": "移动",
+        "bind": "绑定",
+        "unbind": "解绑",
+        "approve": "通过",
+        "reject": "拒绝",
+        "share": "共享",
+        "cancel_share": "取消共享",
+        "disconnect": "断开",
+        "execute": "执行",
+        "generate": "生成",
+        "revoke": "撤销",
+        "set_default": "设为默认",
+        "sync": "同步",
+        "test": "测试",
+        "access": "访问",
+        "allow": "放行",
+        "audit": "审计",
+        "reset_password": "重置密码",
+        "reset_otp": "重置 OTP",
+        "authorize": "授权"
+      },
+      "resources": {
+        "user": "用户",
+        "user_client_cert": "用户客户端证书",
+        "user_ssh_key": "用户 SSH 密钥",
+        "webauthn_credential": "WebAuthn 凭证",
+        "access_token": "访问令牌",
+        "role": "角色",
+        "department": "部门",
+        "login_policy": "登录策略",
+        "login_lock": "登录锁定",
+        "login_log": "登录日志",
+        "oidc_client": "OIDC 客户端",
+        "oidc_consent": "OIDC 授权",
+        "asset": "资产",
+        "asset_group": "资产分组",
+        "database_asset": "数据库资产",
+        "credential": "凭据",
+        "snippet": "代码片段",
+        "storage": "存储",
+        "website": "网站",
+        "website_group": "网站分组",
+        "certificate": "证书",
+        "dns_provider": "DNS 服务商",
+        "ssh_gateway": "SSH 网关",
+        "agent_gateway": "Agent 网关",
+        "agent_gateway_token": "Agent 网关令牌",
+        "gateway_group": "网关分组",
+        "strategy": "授权策略",
+        "command_filter": "命令过滤器",
+        "command_filter_rule": "命令过滤规则",
+        "authorised_asset": "资产授权",
+        "authorised_website": "网站授权",
+        "authorised_database_asset": "数据库资产授权",
+        "session": "会话",
+        "session_share": "会话共享",
+        "session_audit": "会话审计",
+        "filesystem": "文件系统",
+        "filesystem_log": "文件日志",
+        "access_setting": "访问设置",
+        "access_log": "访问日志",
+        "website_temp_allow": "网站临时放行",
+        "database_sql_log": "数据库 SQL 日志",
+        "database_work_order": "数据库工单",
+        "property": "系统参数",
+        "license": "许可证",
+        "operation_log": "操作日志",
+        "logo": "Logo",
+        "backup": "备份",
+        "job": "计划任务",
+        "job_log": "任务日志",
+        "tool": "工具"
+      }
     },
     "options": {
       "playback": "回放",
-      "audit": "审计",
       "disconnect": {
         "action": "断开",
         "confirm": "您确认要断开此会话吗？"
       }
     },
-    "audit_analyzing": "正在分析录屏内容，请稍候...",
-    "audit_failed": "审计失败",
     "unknown_protocol": "未知协议：{{protocol}}",
-    "audit_status": {
-      "label": "审计状态",
-      "pending": "分析中",
-      "completed": "已完成",
-      "start": "开始分析",
-      "pending_tip": "AI 正在后台分析录屏内容，完成后请刷新页面查看结果",
-      "view": "查看报告",
-      "retry": "重新分析"
+    "recording": "录屏",
+    "original_recording": "原录屏",
+    "video_recording": "视频",
+    "command_count": "命令数",
+    "rdp_proxy": {
+      "label": "RDP Proxy",
+      "unsupported_online_action": "RDP Proxy 会话暂不支持在线监控和断开"
+    },
+    "recording_convert_status": {
+      "pending": "等待转码",
+      "processing": "转码中",
+      "failed": "转码失败",
+      "start": "转码",
+      "retry": "重新转码",
+      "trigger_failed": "提交转码失败"
     }
   },
   "access": {
@@ -683,18 +975,6 @@
       "failed": "唤醒失败",
       "check_now": "立即检测",
       "connect": "立即连接"
-    },
-    "shell_assistant": {
-      "title": "运维助手",
-      "placeholder": "描述您需要的运维命令功能，例如：查找大于100MB的文件",
-      "use_snippets": "优先使用命令片段",
-      "shortcut_tip": "Enter 发送 • Shift+Enter 换行",
-      "ask": "询问",
-      "command_label": "运维命令",
-      "request_failed": "请求失败",
-      "request_failed_retry": "请求失败，请稍后重试",
-      "ready_title": "运维助手准备就绪",
-      "ready_subtitle": "输入您的需求，我会为您生成合适的命令"
     },
     "terminal": {
       "search": "搜索终端内容",
@@ -767,16 +1047,35 @@
       "back": "返回上一步",
       "processing": "正在处理登录...",
       "failed": "登录失败",
+      "oidc_error": "OIDC 登录失败，请重试",
       "wechat_work_error": "企业微信登录失败，请重试",
       "back_to_login": "返回登录页面"
+    },
+    "external_binding": {
+      "title": "关联本地账号",
+      "provider_wechat": "企业微信身份尚未关联本地账号",
+      "provider_oidc": "OIDC 身份尚未关联本地账号",
+      "create": "创建新账号",
+      "bind": "绑定已有账号",
+      "username": "登录账号",
+      "nickname": "昵称",
+      "password_optional": "本地密码（可选）",
+      "password_mismatch": "两次输入的密码不一致",
+      "totp_optional": "动态验证码（已启用时必填）",
+      "create_and_login": "创建并登录",
+      "bind_and_login": "绑定并登录",
+      "or": "或",
+      "bind_with_passkey": "使用 Passkey 登录并绑定"
     },
     "passkey": "Passkey",
     "ssh_key": "SSH 密钥",
     "ssh_key_desc": "管理桌面客户端登录堡垒机时使用的 SSH 公钥。",
     "ssh_key_add": "添加 SSH 密钥",
+    "ssh_key_edit_name": "编辑 SSH 密钥名称",
     "ssh_key_empty": "暂无 SSH 密钥",
     "ssh_key_name": "名称",
     "ssh_key_name_tip": "可选，不填时服务端会根据注释或指纹自动生成名称。",
+    "ssh_key_name_required": "请输入名称",
     "ssh_key_name_placeholder": "例如：MacBook-Pro",
     "ssh_key_algorithm": "算法",
     "ssh_key_fingerprint": "密钥指纹",
@@ -866,6 +1165,7 @@
         "openid": "访问您的基本身份信息",
         "profile": "访问您的个人资料（昵称、用户名）",
         "email": "访问您的电子邮件地址",
+        "phone": "访问您的手机号",
         "offline_access": "离线访问您的账户",
         "default": "访问您的相关信息"
       },
@@ -902,10 +1202,10 @@
     "content": "内容",
     "sort": "排序",
     "group": "分组",
+    "default_group": "默认分组",
     "new_group": "新建分组",
     "expand_group_tree": "展开分组",
     "collapse_group_tree": "收起分组",
-    "group_tip": "右键可编辑/删除（Default 分组除外）",
     "width": "宽度",
     "height": "高度",
     "passphrase": "私钥密码",
@@ -918,10 +1218,8 @@
     "asset_count": "资产数量",
     "private_key": "私钥",
     "password": "密码",
+    "gateway": "网关",
     "gateway_type": "网关类型",
-    "no_gateway": "不使用网关",
-    "select_gateway_type": "请选择网关类型",
-    "select_gateway_group": "请选择网关分组",
     "display_settings": "显示设置",
     "color_depth": "色彩深度",
     "force_lossless": "无损压缩",
@@ -953,12 +1251,32 @@
     "scheme": "资产协议",
     "forward_host_or_ip": "资产的IP或域名",
     "forward_port": "资产端口",
+    "origin_host": "回源主机名",
+    "origin_host_follow_service": "跟随访问域名",
+    "origin_host_follow_origin": "跟随源站",
+    "origin_host_custom": "指定主机名",
+    "origin_host_custom_name": "自定义回源主机名",
+    "origin_timeout": "回源超时时间",
+    "origin_timeout_tip": "代理等待源站响应的最长时间，超时后返回错误。",
     "entrance": "入口路径",
     "entrance_tip": "入口路径是首次访问自动打开的地址",
     "change_group": "修改分组",
     "change_gateway": "配置网关",
-    "select_agent_gateway": "请选择安全网关",
-    "select_ssh_gateway": "请选择SSH网关",
+    "batch_edit": {
+      "title": "批量编辑",
+      "scope_tip": "AI 设置仅修改所选 SSH 资产，其他协议资产会自动跳过；网关设置将修改全部所选资产。未勾选的设置不会发生变化。",
+      "update_gateway": "修改网关",
+      "gateway_mode": "网关设置",
+      "gateway_inherit": "使用分组默认网关",
+      "gateway_custom": "自定义网关链路",
+      "gateway_required": "请至少添加一个网关，或选择使用分组默认网关",
+      "success_ai": "已修改 {{count}} 个 SSH 资产的 AI 设置，跳过 {{skippedCount}} 个非 SSH 资产",
+      "success_gateway": "已修改 {{count}} 个资产的网关设置",
+      "success_ai_gateway": "已修改 {{aiCount}} 个 SSH 资产的 AI 设置，跳过 {{skippedCount}} 个非 SSH 资产；已修改 {{gatewayCount}} 个资产的网关设置",
+      "no_ssh_asset": "所选资产中没有 SSH 资产，未修改任何 AI 设置"
+    },
+    "group_default_gateway": "分组默认网关",
+    "ssh_gateway_required_after_first_hop": "第二跳及之后只能选择 SSH 网关",
     "general": "常规",
     "custom_header": "自定义请求头",
     "custom_header_tip": "可以添加多个自定义请求头，格式为：键: 值。",
@@ -967,6 +1285,7 @@
     "header_value": "值",
     "active": "活跃",
     "access": "接入",
+    "rdp_proxy_access": "下载RDP文件",
     "import": "导入资产",
     "copy": "复制资产",
     "import_asset_tip": "导入资产时，账号、密码和密钥、密码属于二选一，都填写时优先选择私钥和密码。",
@@ -974,6 +1293,9 @@
     "import_asset_error": "导入资产失败",
     "import_asset_error_title": "请检查导入的文件，以下资产导入失败：",
     "copy_public_key": "复制公钥",
+    "credential_delete_referenced_title": "凭据正在使用中，无法删除",
+    "credential_delete_referenced_assets": "引用的资产：",
+    "credential_delete_referenced_ssh_gateways": "引用的 SSH 网关：",
     "filesystem": "文件系统",
     "conn_test": "网络状态检测",
     "generate_private_key": "生成私钥",
@@ -1065,12 +1387,27 @@
     },
     "dns_provider_config": "DNS 供应商配置",
     "terminal_settings": "终端设置",
-    "disable_alive_check": "禁用存活检查",
-    "disable_alive_check_extra": "前端会定时发送心跳包，以保持连接的活跃状态，同时后端会向目标服务器发送请求并要求回复。",
-    "disable_detect_os": "禁用操作系统自动识别",
-    "disable_detect_os_extra": "当资产Logo为空时，系统会自动识别资产的操作系统类型，并设置合适的Logo。",
+    "enable_alive_check": "存活检查",
+    "enable_alive_check_extra": "连接期间会定时检测目标资产是否在线，用于及时发现连接异常。部分硬件交换机可能不支持该检测，若连接失败或频繁断开，可关闭此项。",
+    "enable_detect_os": "自动识别操作系统",
+    "enable_detect_os_extra": "资产 Logo 为空时，系统会尝试识别操作系统并自动设置匹配的图标。部分硬件交换机可能不支持该识别，若连接失败或识别异常，可关闭此项。",
+    "connect_timeout": "连接超时时间",
+    "backspace_mode": "Backspace 模式",
+    "backspace_mode_del": "Del",
+    "backspace_mode_bs": "Ctrl+H(BS)",
     "env": "环境变量",
     "env_placeholder": "格式：name=value 每行一个。",
+    "ai": {
+      "settings": "AI 设置",
+      "enabled": "启用 AI",
+      "enabled_extra": "启用后，全局 AI 才能搜索和操作该 SSH 资产。",
+      "restricted_shell": "受限 Shell",
+      "restricted_shell_extra": "适用于网络设备、防火墙、交换机等需要更严格命令确认的环境。",
+      "restricted_shell_tip": "受限 Shell 会强制每条 AI 命令都经过确认。",
+      "command_policy": "AI 执行命令策略",
+      "command_policy_extra": "为空时跟随全局 AI 设置。",
+      "follow_global": "跟随全局设置"
+    },
     "wol": {
       "settings": "WOL 唤醒配置",
       "enabled": "启用 WOL 唤醒",
@@ -1112,9 +1449,6 @@
       }
     },
     "website_response_modify": {
-      "save_success": "保存成功",
-      "save_success_desc": "HTTP 响应修改规则已成功保存",
-      "save_failed": "保存失败，请重试",
       "header_key_required": "请输入键",
       "header_value_required": "请输入值",
       "rule_name_required": "请输入规则名称",
@@ -1127,7 +1461,6 @@
       "match_method_placeholder": "选择请求方法",
       "match_status": "响应状态码",
       "match_status_tip": "要匹配的 HTTP 状态码，例如: 200, 404（为0时匹配所有状态码）",
-      "actions_title": "修改动作",
       "header_operations": "头部操作",
       "set_headers_label": "设置头部",
       "set_headers_tip": "设置或覆盖响应头部",
@@ -1141,7 +1474,6 @@
       "remove_header_name_placeholder": "要移除的头部名称",
       "add_remove_header_button": "添加要移除的头部",
       "body_replace_title": "响应体替换",
-      "replace_rule_title": "替换规则 {{index}}",
       "search_text_label": "搜索文本",
       "search_text_required": "请输入搜索文本",
       "search_text_placeholder": "要搜索的文本",
@@ -1167,18 +1499,22 @@
     "public_path_whitelist": "路径白名单",
     "public_path_whitelist_tip": "匹配任一路径即放行，支持正则表达式。",
     "public_path_whitelist_placeholder": "如：^/public/.* 或 /health",
-    "auto_detect_logo": "自动识别图标",
     "detect_os_success": "操作系统检测成功，图标已更新",
     "detect_os_failed": "操作系统检测失败",
     "wol_send": "发送 WOL",
     "wol_send_success": "WOL 唤醒包已发送",
     "wol_send_failed": "WOL 唤醒包发送失败"
   },
-  "websites": {
-    "group_tip": "拖拽可以调整顺序",
-    "add_group": "新增分组",
-    "edit_group": "编辑分组",
-    "group_name_required": "分组名称不能为空"
+  "group_tree": {
+    "title": "分组",
+    "tip": "拖拽可以调整顺序，右键可新建、编辑或删除（默认分组除外）",
+    "add_title": "新增分组",
+    "edit_title": "编辑分组",
+    "name": "分组名称",
+    "name_placeholder": "请输入分组名称",
+    "name_required": "分组名称不能为空",
+    "parent": "上级分组",
+    "parent_placeholder": "请选择上级分组"
   },
   "gateway_group": {
     "name": "分组名称",
@@ -1205,8 +1541,14 @@
     "username": "账号",
     "account_type": {},
     "register": "注册",
-    "free_limit_tip": "免费版仅支持注册 1 个安全网关，如需更多请升级商业版。",
     "token_manage": "通信令牌管理",
+    "gateway_delete_referenced_title": "网关正在使用中，无法删除",
+    "gateway_delete_referenced_assets": "引用的资产：",
+    "gateway_delete_referenced_websites": "引用的网站：",
+    "gateway_delete_referenced_database_assets": "引用的数据库资产：",
+    "gateway_delete_referenced_asset_groups": "引用的资产分组：",
+    "gateway_delete_referenced_website_groups": "引用的网站分组：",
+    "gateway_delete_referenced_gateway_groups": "引用的网关分组：",
     "install_shell": "安装脚本",
     "download_binary": "下载二进制文件",
     "stat": {
@@ -1262,23 +1604,23 @@
   },
   "settings": {
     "system": {
+      "setting": "系统",
       "name": "系统名称",
       "logo": "系统图标",
       "copyright": "系统版权",
       "icp": "备案号",
       "ip": {
         "extractor": "IP地址获取方式",
-        "trust_list": "信任的IP地址（CIDR格式）",
+        "trust_list": "可信代理 IP/CIDR 列表",
         "trust_placeholder": "输入后请回车确认"
       },
       "asset_access": {
-        "setting": "资产接入",
-        "mode": "资产接入方式",
-        "access_page": "接入页面",
+        "mode": "资产访问入口",
+        "access_page": "统一访问页",
         "standalone_page": "独立标签页"
       },
       "watermark": {
-        "setting": "接入水印",
+        "enabled_tip": "开启后，用户访问 SSH、RDP、VNC、TELNET 资产时，终端或远程桌面画面将显示水印信息。",
         "content": "水印内容",
         "append": {},
         "font": {},
@@ -1287,15 +1629,26 @@
         "font_color": "水印字体颜色",
         "font_size": "水印字体大小"
       },
-      "basic_info_title": "系统基本信息"
+      "recording_convert": {
+        "enabled": "录屏转码",
+        "mode": "转码时机",
+        "immediate": "断开后立即转码",
+        "idle": "在闲时时段转码",
+        "idle_time_range": "闲时时段",
+        "idle_time_required": "请选择闲时时段",
+        "keep_raw": "保留原录屏文件",
+        "tip": "转码后录屏会保存为 MP4，可下载到本地播放器查看；未转码的录屏只能在系统网页中回放。"
+      },
+      "basic": "基本信息",
+      "network": "网络"
     },
     "security": {
-      "setting": "安全设置",
+      "setting": "安全",
       "protection": "登录保护",
       "captcha": "图形验证码",
       "force_otp": "强制多因素认证",
-      "access_require_mfa": "接入资产需要多因素认证",
-      "access_mfa_expires_at": "接入资产多因素认证有效时间",
+      "access_require_mfa": "访问资产需要多因素认证",
+      "access_mfa_expires_at": "访问资产多因素认证有效时间",
       "disable_password_login": "禁用密码登陆",
       "devices": "设备",
       "session": {
@@ -1305,6 +1658,7 @@
       },
       "client_cert_valid_days": "客户端证书有效期",
       "password": {
+        "policy": "密码策略",
         "complexity": "密码复杂度",
         "recommend": "推荐",
         "customize": "自定义",
@@ -1317,7 +1671,7 @@
         "character": "字符"
       },
       "login_lock": {
-        "setting": "登陆锁定",
+        "setting": "登录锁定",
         "tip": "开启后，在指定时间内连续登录失败时，账号或IP将会被限制登录，解除限制请访问",
         "enabled": "登录失败锁定",
         "failed_duration": "登录失败统计时长",
@@ -1335,8 +1689,174 @@
       },
       "session_management": "会话管理"
     },
+    "asset_access": {
+      "setting": "资产访问",
+      "entry": "访问入口",
+      "watermark": "水印",
+      "recording": "会话录制",
+      "recording_tip": "开启后，用户访问 SSH、RDP、VNC、TELNET 资产时会保存会话记录，便于后续审计和回放。",
+      "recording_storage_tip": "后台设置会优先于启动配置；本地录屏目录固定读取配置文件，WebDAV 只支持在后台配置。",
+      "recording_storage_type": "存储类型",
+      "recording_storage_local": "本地存储",
+      "recording_path": "录屏目录",
+      "recording_path_readonly_tip": "本地录屏目录不支持在后台修改，请在配置文件中调整后重启服务。",
+      "recording_s3_endpoint": "S3 Endpoint",
+      "recording_s3_endpoint_required": "请输入 S3 Endpoint",
+      "recording_s3_access_key_id": "S3 Access Key ID",
+      "recording_s3_access_key_id_required": "请输入 S3 Access Key ID",
+      "recording_s3_secret_access_key": "S3 Secret Access Key",
+      "recording_s3_secret_access_key_required": "请输入 S3 Secret Access Key",
+      "recording_s3_bucket": "S3 Bucket",
+      "recording_s3_bucket_required": "请输入 S3 Bucket",
+      "recording_s3_use_ssl": "使用 SSL",
+      "recording_s3_path_style": "Path Style",
+      "recording_webdav_endpoint": "WebDAV Endpoint",
+      "recording_webdav_endpoint_required": "请输入 WebDAV Endpoint",
+      "recording_webdav_username": "WebDAV 用户名",
+      "recording_webdav_username_required": "请输入 WebDAV 用户名",
+      "recording_webdav_password": "WebDAV 密码",
+      "recording_webdav_directory": "WebDAV 目录",
+      "recording_convert": "录制转码"
+    },
+    "ai": {
+      "setting": "AI 助手",
+      "enabled": "启用 AI 助手",
+      "disclaimer_title": "AI 助手免责声明",
+      "disclaimer_description": "AI 助手生成的内容和命令可能存在错误、遗漏、误导或危险操作，启用后请自行评估输出结果，并在执行任何命令前确认其意图和影响。因使用 AI 助手产生的任何风险和后果由使用者自行承担。",
+      "disclaimer_accepted": "我已了解风险",
+      "disclaimer_required": "请先勾选我已了解风险",
+      "profile": "AI 环境",
+      "profile_active": "当前",
+      "profile_empty": "暂无 AI 环境，请先新建一个环境。",
+      "new_profile": "新建 AI 环境",
+      "edit_profile": "编辑 AI 环境",
+      "model_count": "{{count}} 个模型",
+      "add_profile": "新建 AI 环境",
+      "profile_name": "配置名称",
+      "api_preset": "服务商预设",
+      "api_type": "API 类型",
+      "api_type_openai": "OpenAI Chat Completions",
+      "api_type_openai_responses": "OpenAI Responses",
+      "api_type_tip": "选择模型服务兼容的接口类型。",
+      "base_url": "Base URL",
+      "base_url_tip": "OpenAI 兼容接口地址，末尾的斜杠会自动移除。",
+      "api_key_edit_tip": "编辑时可留空，保存后将继续使用当前 API Key；填写新值则会替换当前 API Key。",
+      "model": "模型",
+      "models": "模型列表",
+      "models_tip": "可手动输入模型名称，或点击加载模型列表自动刷新。",
+      "add_model": "添加模型",
+      "load_models": "加载模型列表",
+      "models_loaded": "模型列表已加载",
+      "models_empty": "模型服务未返回可用模型",
+      "models_load_failed": "模型列表加载失败",
+      "models_load_config_required": "请先填写 Base URL 和 API Key",
+      "advanced_profile": "高级配置",
+      "reasoning_protocol": "思考协议",
+      "reasoning_protocol_default": "不透传思考参数",
+      "reasoning_protocol_openai": "OpenAI reasoning_effort",
+      "reasoning_protocol_thinking_object": "thinking 参数（DeepSeek/Kimi/GLM）",
+      "reasoning_protocol_qwen": "Qwen enable_thinking",
+      "reasoning_protocol_tip": "无法确认模型协议时保持默认，后端不会附加思考字段。",
+      "thinking_mode": "思考模式",
+      "thinking_mode_default": "使用模型默认",
+      "thinking_mode_default_enabled": "启用（协议默认）",
+      "thinking_mode_tip": "thinking 参数协议默认启用思考；禁用时不会发送 reasoning_effort。",
+      "thinking_mode_qwen_tip": "Qwen 默认不透传 enable_thinking；启用或禁用会以 enable_thinking 透传。",
+      "reasoning_effort": "思考强度",
+      "reasoning_effort_default": "使用模型默认",
+      "reasoning_effort_tip": "仅对支持 reasoning_effort 的模型生效。",
+      "reasoning_effort_thinking_object_tip": "thinking 参数协议仅支持 high 或 max。",
+      "thinking_budget": "思考预算",
+      "thinking_budget_tip": "Qwen enable_thinking 的 thinking_budget，0 表示使用服务默认值。",
+      "context_window": "上下文窗口（tokens）",
+      "context_window_tip": "所选模型的最大上下文长度，用于 AI 会话上下文控制。",
+      "max_retries": "最大重试次数",
+      "max_retries_tip": "模型服务请求失败时的最大自动重试次数。",
+      "user_agent_tip": "留空时使用内置默认 User-Agent。",
+      "http_proxy": "HTTP 代理",
+      "http_proxy_tip": "留空直连，当前 API 环境的对话和加载模型列表都会通过该代理访问。",
+      "behavior": "行为设置",
+      "command_policy": "AI 执行命令策略",
+      "command_policy_auto": "自动模式",
+      "command_policy_balanced": "平衡模式",
+      "command_policy_always": "严格模式",
+      "command_timeout": "命令超时时间",
+      "recent_output_lines": "携带最近终端输出行数",
+      "include_command_snippets": "携带命令片段",
+      "include_command_snippets_tip": "启用后，AI 可读取当前用户可见的命令片段摘要，必要时再请求读取具体内容。",
+      "custom_system_prompt": "自定义系统提示词",
+      "custom_system_prompt_tip": "会追加到内置系统提示词之后，最多 8000 字。"
+    },
+    "access_request": {
+      "setting": "访问申请",
+      "enabled": "启用访问申请",
+      "enabled_tip": "开启后，普通用户可以在资源页提交访问申请；关闭后隐藏普通用户入口，并禁止用户侧访问申请接口。"
+    },
+    "proxy_service": {
+      "setting": "代理服务"
+    },
+    "http_proxy": {
+      "setting": "HTTP 反向代理",
+      "readonly_tip": "运行配置来自 config.yaml，此处仅供查看；修改配置后需要重启服务生效。",
+      "enabled": "反向代理服务",
+      "http_enabled": "HTTP 监听",
+      "http_addr": "HTTP 监听地址",
+      "http_redirect_https": "HTTP 跳转 HTTPS",
+      "https_enabled": "HTTPS 监听",
+      "https_addr": "HTTPS 监听地址",
+      "self_proxy_enabled": "代理当前系统",
+      "self_domain": "当前系统域名",
+      "ip_extractor": "客户端 IP 获取方式",
+      "ip_trust_list": "可信代理 IP/CIDR",
+      "mtls_mode": "mTLS 客户端认证模式",
+      "custom_pages": "自定义页面",
+      "template_tip": "模板将作为 HTML 直接返回。请保留所需占位符，并确保密码页面包含一个名为 password 的表单字段。保存后立即生效。",
+      "error_page": "通用错误页面",
+      "error_page_help": "可用占位符：{{status}}、{{statusText}}、{{error}}",
+      "error_502_page": "502 错误页面",
+      "error_502_page_help": "可用占位符：{{remoteAddr}}、{{requestHost}}、{{requestId}}",
+      "password_page": "密码验证页面",
+      "password_page_help": "页面需通过 POST 提交名为 password 的字段。",
+      "reset_default": "重置为原模板"
+    },
+    "log_retention": {
+      "setting": "日志保留"
+    },
+    "identity_auth": {
+      "setting": "身份认证"
+    },
+    "notification_integration": {
+      "setting": "通知与集成"
+    },
+    "maintenance": {
+      "setting": "系统维护"
+    },
+    "geodata": {
+      "setting": "GEO 数据库",
+      "current_database": "当前数据库",
+      "unavailable": "当前没有可用的 GEO 数据库，地区查询暂不可用。",
+      "database_type": "数据库类型",
+      "file_size": "文件大小",
+      "build_time": "数据构建时间",
+      "modified_at": "更新时间",
+      "upload_title": "上传更新",
+      "upload_tip": "点击或拖拽 .mmdb 文件到此处，最大 200 MB",
+      "mmdb_only": "只允许上传 .mmdb 文件",
+      "file_too_large": "文件必须大于 0 且不超过 200 MB",
+      "upload_success": "GEO 数据库上传并加载成功",
+      "online_update": "在线更新",
+      "auto_update": "自动在线更新",
+      "auto_update_time": "每日更新时间",
+      "check_update": "检查更新",
+      "update_now": "立即更新",
+      "update_available": "发现新的 GEO 数据版本",
+      "already_latest": "当前已经是最新版本",
+      "update_started": "GEO 在线更新任务已启动",
+      "update_success": "GEO 数据库更新成功",
+      "update_failed": "GEO 数据库更新失败"
+    },
     "sshd": {
-      "setting": "SSH 代理服务器",
+      "setting": "SSH 代理",
       "tip": "开启后，将会在本地监听一个端口，可以使用ssh客户端进行访问授权的SSH资产，账号密码与本系统一致。",
       "enabled": "SSH服务",
       "addr": "监听地址",
@@ -1351,7 +1871,7 @@
         "host_port": "允许转发到的目标地址",
         "host_port_tip": "多个目标用英文逗号分隔，格式为 host:port。port 可写 * 表示任意端口。VS Code Remote-SSH 需要允许 127.0.0.1:*。"
       },
-      "usage": "使用示例",
+      "usage": "使用说明",
       "usage_tip": "SSH 服务支持进入资产选择界面，也支持在连接时直接指定资产。",
       "mode_proxy": "代理模式",
       "mode_proxy_tip": "只登录堡垒机账号，连接后在终端资产列表中选择目标资产。",
@@ -1363,7 +1883,7 @@
       "private_key_required_to_enable": "开启 SSH 服务前请先设置认证私钥"
     },
     "rdp": {
-      "setting": "RDP 设置",
+      "setting": "RDP",
       "enable": {
         "wallpaper": "启用壁纸",
         "theming": "启用主题",
@@ -1377,8 +1897,23 @@
         "offscreen_caching": "禁用离屏缓存"
       }
     },
+    "rdp_proxy": {
+      "setting": "RDP 代理",
+      "tip": "开启后，用户可通过短期票据下载 .rdp 文件，并使用固定 RDP 代理地址访问已授权的 RDP 资产。",
+      "enabled": "RDP 代理服务",
+      "addr": "监听地址",
+      "public_addr": "对外访问地址",
+      "public_addr_extra": "生成 .rdp 文件时使用的地址；为空时根据监听地址和当前请求自动推导。",
+      "ticket_ttl": "票据有效期（秒）",
+      "ticket_ttl_extra": "默认 300 秒，票据解析成功后会被标记为已使用。",
+      "usage": "使用说明",
+      "usage_tip": "用户在 Web 端选择 RDP 资产后生成票据，RDP 客户端连接代理地址，再由代理解析到真实资产。",
+      "ticket_flow": "票据格式",
+      "ticket_flow_tip": ".rdp 文件中的用户名为 NTICKET:<ticketId>，密码为用户连接时输入的票据 secret。",
+      "rdp_file": ".rdp 文件示例"
+    },
     "vnc": {
-      "setting": "VNC 设置",
+      "setting": "VNC",
       "cursor": {
         "setting": "光标设置",
         "remote": "远程"
@@ -1386,7 +1921,7 @@
       "swap_red_blue": "交换红蓝"
     },
     "mail": {
-      "setting": "邮箱设置",
+      "setting": "邮件服务",
       "enabled": "邮件服务",
       "host": "邮箱服务器",
       "port": "邮箱端口",
@@ -1399,12 +1934,107 @@
       "content": "邮箱正文",
       "send": "发送邮件"
     },
+    "notification": {
+      "channels": "通知渠道",
+      "rules": "通知规则",
+      "deliveries": "发送记录",
+      "channel": "通知渠道",
+      "channel_types": {
+        "mail": "邮件",
+        "wecom": "企业微信机器人",
+        "wecomApp": "企业微信应用",
+        "feishu": "飞书机器人",
+        "dingtalk": "钉钉机器人",
+        "webhook": "自定义 Webhook"
+      },
+      "language": "通知语言",
+      "languages": {
+        "zh-CN": "简体中文",
+        "zh-TW": "繁體中文",
+        "en-US": "English",
+        "ja-JP": "日本語"
+      },
+      "severities": {
+        "info": "提示",
+        "warning": "警告",
+        "critical": "严重"
+      },
+      "event_types": {
+        "identity.user.created": "用户已创建",
+        "identity.admin.created": "管理员已创建",
+        "identity.user.disabled": "用户已禁用",
+        "identity.user.deleted": "用户已删除",
+        "auth.login.failed": "登录失败",
+        "auth.admin.login.success": "管理员登录成功",
+        "access.session.started": "会话已开始",
+        "access.session.ended": "会话已结束",
+        "access.command.risk_detected": "高风险命令",
+        "access.command.blocked": "命令已阻断",
+        "access.recording.failed": "录屏处理失败",
+        "database.sql.blocked": "数据库 SQL 已阻断",
+        "database.sql.failed": "数据库 SQL 执行失败",
+        "backup.succeeded": "备份成功",
+        "backup.failed": "备份失败",
+        "agent.online": "Agent 上线",
+        "agent.offline": "Agent 离线",
+        "system.cpu.warning": "CPU 使用率过高",
+        "system.cpu.critical": "CPU 使用率严重过高",
+        "system.cpu.recovered": "CPU 使用率已恢复",
+        "system.memory.warning": "内存使用率过高",
+        "system.memory.critical": "内存使用率严重过高",
+        "system.memory.recovered": "内存使用率已恢复",
+        "system.storage.warning": "本地存储使用率过高",
+        "system.storage.critical": "本地存储空间严重不足",
+        "system.storage.recovered": "本地存储使用率已恢复",
+        "system.notification.test": "测试通知"
+      },
+      "event_groups": {
+        "identity": "身份认证",
+        "access": "访问会话",
+        "database": "数据库",
+        "backup": "备份",
+        "agent": "Agent",
+        "system": "系统"
+      },
+      "new_rule": "新建通知规则",
+      "edit_rule": "编辑通知规则",
+      "recipients": "收件人",
+      "recipients_placeholder": "多个收件人可用逗号、分号或换行分隔",
+      "webhook_url": "Webhook 地址",
+      "robot_webhook_url": "机器人 Webhook 完整地址",
+      "webhook_url_required": "请输入完整的 Webhook 地址",
+      "webhook_url_invalid": "请输入以 http:// 或 https:// 开头的完整 URL",
+      "sign_secret": "签名密钥",
+      "wecom_app_origin": "企业微信 API 地址",
+      "wecom_app_origin_required": "请输入企业微信 API 地址",
+      "wecom_app_corp_id": "企业 ID（corpid）",
+      "wecom_app_corp_id_required": "请输入企业微信企业 ID",
+      "wecom_app_corp_id_placeholder": "输入您的企业 corpid",
+      "wecom_app_corp_secret": "应用 Secret（corpsecret）",
+      "wecom_app_corp_secret_required": "请输入企业微信应用 Secret",
+      "wecom_app_corp_secret_placeholder": "输入您的企业微信应用 Secret",
+      "wecom_app_agent_id": "应用 ID（agentid）",
+      "wecom_app_agent_id_required": "请输入企业微信应用 ID",
+      "wecom_app_agent_id_placeholder": "输入您的企业微信应用 agentid",
+      "wecom_app_to_user": "接收用户（touser）",
+      "wecom_app_to_user_required": "请输入接收消息的用户",
+      "wecom_app_to_user_placeholder": "输入接收告警消息的用户，全部可填 @all",
+      "recipients_required": "请输入收件人",
+      "test": "测试",
+      "test_success": "测试通知已发送",
+      "event_types_label": "事件类型",
+      "severities_label": "告警等级",
+      "quiet_minutes": "静默时间（分钟）",
+      "event_type": "事件类型",
+      "severity": "告警等级",
+      "result": "响应结果",
+      "error": "错误信息"
+    },
     "webauthn": {
-      "setting": "Passkey 设置"
+      "setting": "Passkey"
     },
     "ldap": {
-      "setting": "LDAP 认证",
-      "tip": "开启后，将会使用LDAP进行用户身份认证。",
+      "setting": "LDAP",
       "url": "LDAP地址",
       "user": "LDAP用户",
       "password": "LDAP密码",
@@ -1418,8 +2048,7 @@
       "user_property_mapping": "LDAP用户属性映射"
     },
     "wechat_work": {
-      "setting": "企业微信认证",
-      "tip": "开启后，用户可以使用企业微信扫码登录系统。",
+      "setting": "企业微信",
       "enabled": "启用企业微信登录",
       "corp_id": "企业ID",
       "corp_id_placeholder": "请输入企业微信企业ID",
@@ -1429,8 +2058,7 @@
       "redirect_uri_placeholder": "https://your-domain.com/wechat-work/callback"
     },
     "oidc": {
-      "setting": "OIDC认证",
-      "tip": "开启后，用户可以使用OIDC身份提供商登录系统。",
+      "setting": "OIDC",
       "enabled": "启用OIDC登录",
       "issuer": "身份提供商地址",
       "issuer_placeholder": "请输入OIDC身份提供商的Issuer URL",
@@ -1444,7 +2072,6 @@
       "department_placeholder": "请选择用户默认部门"
     },
     "log": {
-      "setting": "日志设置",
       "session": {
         "saved_limit_days": "会话保存限制"
       },
@@ -1456,17 +2083,76 @@
       },
       "access_log": {
         "saved_limit_days": "访问日志保存限制"
+      },
+      "database_sql_log": {
+        "saved_limit_days": "SQL 日志保存天数"
       }
     },
     "backup": {
       "setting": "备份与恢复",
-      "tip": "恢复数据时，如存在登录账号相同的用户时，会保留原系统中的数据，此外由于登录密码加密之后不可逆，恢复的账户密码将随机产生。",
       "recovery": "恢复备份",
-      "restore_success": "恢复成功"
+      "restore_success": "恢复成功",
+      "source": {
+        "auto": "自动",
+        "manual": "手动",
+        "before_restore": "恢复前"
+      },
+      "create_task_success": "备份任务已创建",
+      "restore_task_success": "恢复任务已创建",
+      "task_failed": "任务失败",
+      "restore_confirm_title": "确认恢复备份",
+      "restore_confirm_content": "恢复会覆盖当前 PostgreSQL 数据库，系统会先自动创建一份恢复前安全备份。",
+      "backup_file": "备份文件：{{name}}",
+      "exclude_tip": "不包含：录像文件、Windows 挂载盘文件",
+      "restore": "恢复",
+      "file_name": "文件名",
+      "backup_time": "备份时间",
+      "source_label": "来源",
+      "size": "大小",
+      "version": "版本",
+      "delete_confirm_title": "确认删除备份文件？",
+      "backup_directory_tip": "备份目录：{{directory}}，备份不包含录屏文件和 Windows 挂载盘文件。",
+      "schedule_enabled": "启用定时备份",
+      "retention_days": "自动备份保留",
+      "save_settings": "保存备份设置",
+      "backup_now": "立即备份",
+      "upload_restore": "上传并恢复",
+      "upload_restore_task_success": "本地备份恢复任务已创建",
+      "upload_restore_confirm_title": "确认上传并恢复备份",
+      "upload_restore_confirm_content": "将上传本地备份文件并覆盖当前 PostgreSQL 数据库，适用于跨服务器迁移。系统会先自动创建一份恢复前安全备份。",
+      "legacy_import": "旧版 JSON 数据导入",
+      "legacy_import_tip": "仅用于导入旧版本导出的 JSON 数据，不适用于当前版本完整备份恢复。",
+      "success_actions": "备份成功后动作",
+      "success_actions_tip": "备份文件生成成功后上传到远端存储。远端上传失败不会删除本地备份文件。",
+      "saved_secret_placeholder": "已保存，留空则不修改",
+      "upload_to_s3": "上传到 S3",
+      "upload_to_sftp": "上传到 SFTP",
+      "upload_to_webdav": "上传到 WebDAV",
+      "s3_endpoint": "Endpoint",
+      "s3_bucket": "Bucket",
+      "s3_access_key_id": "Access Key ID",
+      "s3_secret_access_key": "Secret Access Key",
+      "s3_region": "Region",
+      "s3_prefix": "对象前缀",
+      "s3_use_ssl": "使用 HTTPS",
+      "s3_path_style": "Path Style",
+      "sftp_mode": "连接方式",
+      "sftp_mode_asset": "复用资产",
+      "sftp_mode_custom": "手动配置",
+      "sftp_asset": "SSH 资产",
+      "sftp_directory": "远端目录",
+      "sftp_host": "主机",
+      "sftp_port": "端口",
+      "sftp_username": "用户名",
+      "sftp_auth_type": "认证类型",
+      "webdav_endpoint": "Endpoint",
+      "webdav_username": "用户名",
+      "webdav_password": "密码",
+      "webdav_directory": "远端目录",
+      "webdav_chinese_path_tip": "请不要使用中文路径，避免 WebDAV 服务端因路径编码或权限映射导致上传失败。"
     },
     "license": {
-      "setting": "授权许可",
-      "device": "设备信息",
+      "setting": "授权",
       "machine_id": "机器码",
       "import": "导入授权",
       "request": "更新授权",
@@ -1474,10 +2160,15 @@
       "info": "许可证信息",
       "name": "授权名称",
       "user_name": "授权所属用户名称",
+      "domain": "授权域名",
+      "domain_tip": "用于向授权系统请求域名授权，并校验当前访问域名。请输入不带协议、端口和路径的域名。",
+      "domain_error": "请输入不带协议、端口、路径和通配符的有效域名",
+      "auto_detect_domain": "自动检测",
+      "license_binding_type": "授权方式",
+      "binding_type_machine": "机器码",
+      "binding_type_domain": "域名",
       "max": {
         "asset_count": "最大资产数",
-        "database_count": "最大数据库数",
-        "concurrent_count": "最大并发数",
         "user_count": "最大用户数"
       },
       "expired_at": "许可到期时间",
@@ -1496,7 +2187,7 @@
       }
     },
     "logo": {
-      "setting": "资产Logo",
+      "setting": "资产 Logo",
       "preset": "系统预设",
       "custom": "自定义Logo"
     },
@@ -1504,57 +2195,12 @@
       "setting": "关于",
       "current_version": "当前版本",
       "latest_version": "最新版本",
-      "update_content": "更新内容",
-      "upgrade": {
-        "action": "立即更新",
-        "title": "升级系统",
-        "content": "您确定要升级系统版本吗？",
-        "failed": "更新失败",
-        "success": "更新成功",
-        "success_content": "更新成功，是否立即刷新页面？"
-      }
-    },
-    "llm": {
-      "title": "LLM 设置",
-      "base_config": "基础配置",
-      "enable": "启用LLM",
-      "api_key": "API Key",
-      "api_key_placeholder": "输入您的API Key",
-      "api_key_required": "请输入API Key",
-      "base_url": "Base URL",
-      "base_url_required": "请输入Base URL",
-      "proxy_url": "网络代理",
-      "proxy_url_placeholder": "例如: http://127.0.0.1:7890",
-      "model": "模型",
-      "model_required": "请输入模型名称",
-      "temperature": "Temperature",
-      "max_tokens": "Max Tokens",
-      "shell_config": "运维助手配置",
-      "shell_enable": "启用运维助手",
-      "shell_prompt": "运维助手提示词",
-      "shell_prompt_placeholder": "输入运维助手的提示词...",
-      "shell_prompt_default": "你是一个 IT 运维助手，负责将用户的需求直接转换为 Linux shell 命令。\n\n规则：\n\n1. **只输出命令**，不要加任何说明、解释、Markdown 包裹或额外文字。\n2. 如果存在多种写法，只输出最常用且安全的一种。\n3. 使用 Bash 语法，确保在 Ubuntu/Debian/CentOS 等常见发行版中通用。\n4. 对危险操作（如 `rm -rf /`、`:(){:|:&};:` 等），直接输出：\"该操作有风险，请谨慎执行\"。\n5. 如果用户输入不完整，自动补全为最常见、合理的完整命令。",
-      "audit_config": "SSH/Telnet 审计助手配置",
-      "audit_config_desc": "分析 SSH/Telnet 会话的 asciinema 终端录屏，识别高危命令与安全风险",
-      "audit_enable": "启用 SSH/Telnet 审计助手",
-      "audit_prompt": "SSH/Telnet 审计提示词",
-      "audit_prompt_placeholder": "输入 SSH/Telnet 审计助手的提示词...",
-      "audit_prompt_default": "你是一位专业的 **Linux/Unix 运维行为审计专家**，擅长分析 **用户在终端中执行的命令行为**。\n\n以下是一段 **SSH/Telnet 会话记录**（来源于终端 asciinema 录屏，已去除 ANSI 控制字符）。\n\n请重点分析 **用户输入执行的命令及操作行为**，还原用户的操作过程，并识别其中可能存在的关键或高风险操作。\n\n请生成一份 **Markdown 格式的命令行为审计报告**。\n\n---\n\n# SSH 会话命令行为审计报告\n\n## 一、操作摘要\n\n简要总结本次会话中 **用户的主要操作行为**，包括：\n\n* 用户主要做了哪些事情（如：查看日志、修改配置、删除文件、安装软件等）\n* 是否存在明显的高风险操作\n* 整体操作性质（如：日常运维 / 故障排查 / 系统维护 / 可疑行为）\n\n用 **2–4 句话总结**。\n\n---\n\n## 二、时间轴操作事件\n\n按时间顺序梳理 **用户执行的关键命令和行为**。\n\n| 序号 | 用户命令 | 操作类型 | 行为说明 |\n| -- | ---- | ---- | ---- |\n| 1  |      |      |      |\n| 2  |      |      |      |\n| 3  |      |      |      |\n\n说明：\n\n* **用户命令**：记录用户输入的命令\n* **操作类型**：如文件操作 / 系统管理 / 网络访问 / 权限操作 / 软件安装等\n* **行为说明**：解释该命令的作用\n\n如果有明显的 **连续操作行为（如批量删除、批量下载）**，可以合并描述。\n\n---\n\n## 三、关键操作分析\n\n识别本次会话中的 **重要或高风险操作**，并进行重点分析。\n\n|  风险等级  | 用户命令 | 操作说明 | 风险分析 |\n| :----: | :--- | :--- | :--- |\n| 🔴 高风险 |      |      |      |\n| 🟠 中风险 |      |      |      |\n| 🟡 低风险 |      |      |      |\n\n重点关注：\n\n* **权限提升**\n\n  * sudo\n  * su\n  * 修改 sudoers\n  * 修改用户密码\n\n* **危险文件操作**\n\n  * rm -rf\n  * 覆盖文件\n  * 批量删除\n\n* **关键系统配置修改**\n\n  * /etc/passwd\n  * /etc/shadow\n  * /etc/sudoers\n  * crontab\n  * SSH 配置\n\n* **外部下载或执行**\n\n  * curl\n  * wget\n  * 下载并执行脚本\n\n* **敏感信息访问**\n\n  * 私钥\n  * .env\n  * 数据库配置\n\n* **数据打包或传输**\n\n  * tar\n  * scp\n  * rsync\n  * 数据库导出\n\n如果未发现明显风险操作，请说明。\n\n---\n\n## 审计原则\n\n1. **只分析用户执行的命令行为，不分析系统漏洞或主机安全配置。**\n2. **不要臆测用户意图，仅基于命令行为进行分析。**\n3. **如果信息不足，请明确说明\"信息不足\"。**\n4. 保持描述 **客观、专业、简洁**。",
-      "audit_rdp_config": "RDP/VNC 审计助手配置",
-      "audit_rdp_config_desc": "分析 RDP/VNC 图形化远程桌面会话，识别可疑操作与安全风险",
-      "audit_rdp_enable": "启用 RDP/VNC 审计助手",
-      "audit_rdp_prompt": "RDP/VNC 审计提示词",
-      "audit_rdp_prompt_placeholder": "输入 RDP/VNC 审计助手的提示词...",
-      "test": "连接测试",
-      "test_button": "测试连接",
-      "test_tip": "将使用当前表单值（API Key / Base URL / 模型等）向 LLM 发送一次简短请求，验证配置是否可用。",
-      "test_failed": "测试失败",
-      "test_response": "模型回复",
-      "test_response_empty": "模型未返回任何内容",
-      "audit_rdp_prompt_default": "你是一位专业的桌面远程运维安全审计专家。以下是一段 RDP/VNC 图形化远程桌面会话的相关信息。\n\n请对本次会话进行安全审计，并输出一份 Markdown 格式的审计报告，结构如下：\n\n## 一、执行摘要\n- **整体风险等级**：低 / 中 / 高 / 严重\n- **核心发现**：2–3 句话概括\n\n## 二、操作行为分析\n分析可识别的操作行为，包括：\n- 应用程序使用（浏览器、编辑器、终端、管理工具等）\n- 文件管理操作（复制、移动、删除、下载等）\n- 系统配置变更\n- 网络访问与传输行为\n\n## 三、安全风险清单\n| 风险等级 | 具体行为 | 风险说明 |\n|:-------:|:--------|:--------|\n| 🔴 高危 | | |\n| 🟠 中危 | | |\n| 🟡 低危 | | |\n\n## 四、合规性评估\n指出违规操作，给出改进建议。\n\n## 五、审计结论\n总体评价与处置建议。\n\n注意：信息不足时请注明，不要臆测。"
+      "update_content": "更新内容"
     },
     "oidc_server": {
-      "description": "配置 OIDC Server 使 Next Terminal 成为 OpenID Connect 身份提供者，允许其他应用使用此系统进行单点登录认证。",
+      "setting": "身份提供服务",
+      "server": "OIDC Server",
+      "description": "配置 OIDC Server 使本系统成为 OpenID Connect 身份提供者，允许其他应用使用此系统进行单点登录认证。",
       "manage_tip_prefix": "启用后，您可以在「",
       "manage_link": "身份认证 - OIDC 客户端",
       "manage_tip_suffix": "」中管理接入的应用。",
@@ -1568,7 +2214,7 @@
       },
       "enable_label": "启用 OIDC Server",
       "issuer_label": "Issuer URL",
-      "issuer_tooltip": "OIDC Issuer 标识符，通常是 Next Terminal 的访问地址 + /api",
+      "issuer_tooltip": "OIDC Issuer 标识符，通常是本系统的访问地址 + /api",
       "issuer_required": "请输入 Issuer URL",
       "ttl_required": "请输入有效期",
       "access_token_ttl_label": "Access Token 有效期（秒）",
@@ -1580,15 +2226,84 @@
       "auth_code_ttl_label": "授权码有效期（秒）",
       "auth_code_ttl_tooltip": "授权码的有效时间，默认 600 秒（10 分钟）"
     },
-    "identity_methods": "认证方式",
-    "identity_source": {
-      "setting": "身份服务"
-    },
     "network": {
-      "setting": "网络设置",
       "not_detected": "未检测到",
-      "trust_ip_tip": "配置可信任的代理服务器IP地址，支持CIDR格式"
+      "trust_ip_tip": "用于决定是否信任转发 IP 头",
+      "custom_header": "自定义 Header",
+      "custom_header_name": "Header 名称",
+      "custom_header_placeholder": "例如：CF-Connecting-IP",
+      "custom_header_required": "请输入 Header 名称"
     }
+  },
+  "access_request": {
+    "new": "新建申请",
+    "resource": "申请资源",
+    "resource_type": "资源类型",
+    "request_reason": "申请原因",
+    "request_reason_placeholder": "请输入申请访问该资源的原因",
+    "duration_minutes": "申请时长（分钟）",
+    "approved_duration_minutes": "批准时长（分钟）",
+    "requester": "申请人",
+    "approver": "审批人",
+    "approve": "审批通过",
+    "reject_reason": "请输入拒绝原因",
+    "cancel_confirm": "确认取消该访问申请？",
+    "resource_type_asset": "资产",
+    "resource_type_database": "数据库资产",
+    "resource_type_website": "Web资产",
+    "authorised": "已授权",
+    "requestable_resource_empty": "暂无可申请资源",
+    "status": {
+      "pending": "待审批",
+      "approved": "已通过",
+      "rejected": "已拒绝",
+      "cancelled": "已取消",
+      "closed": "已关闭"
+    }
+  },
+  "ai_assistant": {
+    "title": "AI 助手",
+    "history": "历史会话",
+    "new_chat": "新会话",
+    "connected": "已连接",
+    "disconnected": "未连接",
+    "connection_error": "AI 连接失败",
+    "unknown_error": "AI 请求失败",
+    "empty": "输入问题开始使用 AI 助手",
+    "placeholder": "输入问题，Shift + Enter 换行",
+    "select_asset": "选择执行命令的资产",
+    "command_confirm": "确认执行命令",
+    "command_shortcut_hint": "按 Enter 执行，Esc 拒绝",
+    "pending_placeholder": "按 Enter 确认执行，按 Esc 拒绝",
+    "approve": "执行",
+    "reject": "拒绝",
+    "send": "发送",
+    "cancel": "停止生成",
+    "reasoning": "思考过程",
+    "queued": "等待发送",
+    "tool_pending": "等待确认",
+    "tool_rejected": "已拒绝",
+    "tool_cancelled": "已取消",
+    "tool_timed_out": "已超时",
+    "tool_done": "已完成",
+    "tool_failed": "执行失败",
+    "full_command": "完整命令",
+    "tool_output": "执行输出",
+    "no_output": "无输出",
+    "connecting": "连接中",
+    "context_usage": "上下文 {{percent}}%",
+    "context_usage_detail": "已使用 {{used}} / {{total}} tokens",
+    "thinking": "正在思考",
+    "generating": "正在生成",
+    "running_tool": "正在执行工具",
+    "history_search": "搜索历史会话",
+    "no_history": "暂无历史会话",
+    "delete_confirm": "确认删除此会话？",
+    "clear_confirm": "确认清空全部 AI 历史会话？",
+    "history_load_error": "加载会话失败：{{message}}",
+    "history_delete_error": "删除会话失败：{{message}}",
+    "history_clear_error": "清空会话失败：{{message}}",
+    "invalid_response": "收到无法解析的 AI 响应"
   },
   "db": {
     "asset": {
@@ -1620,7 +2335,6 @@
       "sql": "SQL",
       "duration_ms": "耗时（ms）",
       "rows_affected": "影响行数",
-      "saved_limit_days": "SQL 日志保存天数",
       "status": {
         "blocked": "已拦截"
       },
@@ -1636,11 +2350,13 @@
       "block_dml_tip": "启用后仅允许只读 SQL。",
       "tip": "启用代理以允许客户端连接并执行 SQL。",
       "usage_title": "使用说明",
+      "usage_tip": "用户可通过数据库客户端连接代理地址，再由代理转发到已授权的数据库资产。",
       "usage_client": "客户端连接",
+      "public_addr": "对外访问地址",
+      "public_addr_extra": "普通用户快速访问入口展示的地址；为空时根据监听地址自动推导。",
       "password_tip_prefix": "请前往",
       "password_tip_link": "个人中心-授权令牌",
-      "password_tip_suffix": "生成数据库密码。",
-      "external_quick_access_tip": "外部访问 Host/Port 仅用于给普通用户提供快速访问入口，不影响数据库代理实际监听地址。"
+      "password_tip_suffix": "生成数据库密码。"
     }
   }
 }

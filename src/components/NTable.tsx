@@ -1,24 +1,24 @@
-import React, {useEffect, useImperativeHandle, useRef, useState} from 'react';
-import {
-    Alert,
-    Button,
-    Form,
-    type FormInstance,
-    Input,
-    Radio,
-    Select,
-    Space,
-    Table,
-    Tabs,
-    Typography,
-    type TableColumnType,
-    type TableProps
-} from 'antd';
-import type {SortOrder} from 'antd/es/table/interface';
-import {useQuery} from '@tanstack/react-query';
-import dayjs from 'dayjs';
 import DraggableTable from '@/components/DraggableTable';
-import {useTranslation} from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
+import {
+Alert,
+Button,
+Form,
+Input,
+Radio,
+Select,
+Space,
+Table,
+Tabs,
+Typography,
+type FormInstance,
+type TableColumnType,
+type TableProps
+} from 'antd';
+import type { SortOrder } from 'antd/es/table/interface';
+import dayjs from 'dayjs';
+import React,{ useEffect,useImperativeHandle,useRef,useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export interface NTableActionType {
     reload: () => void;
@@ -209,7 +209,6 @@ const NTable = <T extends object, >({
                                        formRef,
                                        form: formConfig,
                                        onSubmit,
-                                       onReset,
                                        pagination: paginationProp,
                                        rowSelection,
                                        tableAlertRender,
@@ -232,6 +231,7 @@ const NTable = <T extends object, >({
     const [keyword, setKeyword] = useState('');
     const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
     const [selectedRows, setSelectedRows] = useState<T[]>([]);
+    const [manualRefreshing, setManualRefreshing] = useState(false);
     const initialValuesKey = JSON.stringify(formConfig?.initialValues || {});
 
     const query = useQuery({
@@ -284,9 +284,15 @@ const NTable = <T extends object, >({
         setPagination((prev) => ({...prev, current: 1}));
     }, [params]);
 
-    const reload = () => {
-        if (request) {
-            query.refetch();
+    const reload = async () => {
+        if (!request) {
+            return;
+        }
+        setManualRefreshing(true);
+        try {
+            await query.refetch();
+        } finally {
+            setManualRefreshing(false);
         }
     };
 
@@ -294,13 +300,6 @@ const NTable = <T extends object, >({
         const values = await form.validateFields();
         setFilters(normalizeSearchValues(values));
         onSubmit?.(values);
-        setPagination((prev) => ({...prev, current: 1}));
-    };
-
-    const handleReset = () => {
-        form.resetFields();
-        setFilters({});
-        onReset?.();
         setPagination((prev) => ({...prev, current: 1}));
     };
 
@@ -366,7 +365,7 @@ const NTable = <T extends object, >({
         ...tableProps,
         columns: tableColumns,
         dataSource: tableData,
-        loading: request ? query.isFetching : tableProps.loading,
+        loading: request ? query.isPending : tableProps.loading,
         rowSelection: mergedRowSelection,
         pagination: paginationProp === false ? false : {
             current: pagination.current,
@@ -429,7 +428,7 @@ const NTable = <T extends object, >({
                             />
                         )}
                         {request && (
-                            <Button loading={query.isFetching} onClick={reload}>
+                            <Button loading={manualRefreshing} onClick={reload}>
                                 {t('actions.refresh')}
                             </Button>
                         )}

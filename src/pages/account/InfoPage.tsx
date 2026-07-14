@@ -1,5 +1,4 @@
 import {Layout, Tabs} from 'antd';
-import React from 'react';
 import ChangePassword from "./ChangePassword";
 import OTP from "./OTP";
 import {useTranslation} from "react-i18next";

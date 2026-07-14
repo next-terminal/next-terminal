@@ -2,6 +2,12 @@ import {Api} from "@/api/core/api";
 import requests from "@/api/core/requests";
 import type { TreeDataNode } from 'antd';
 import type {WebsiteFormData, WebsiteOriginHostMode} from "@/pages/assets/website-drawer/types";
+import type {GatewayHop} from "@/api/gateway-chain";
+
+export interface WebsiteGroupNode extends TreeDataNode {
+    gatewayChain?: GatewayHop[];
+    children?: WebsiteGroupNode[];
+}
 
 export interface Website {
     id: string;
@@ -15,12 +21,10 @@ export interface Website {
     asciiDomain: string;
     entrance: string;
     description: string;
-    status: string;
-    statusText: string;
-    gatewayType: string;
-    gatewayId: string;
+    gatewayChain: GatewayHop[];
     originHostMode?: WebsiteOriginHostMode;
     originHostCustom?: string;
+    originTimeout?: number;
     basicAuth: BasicAuth;
     headers?: any;
     cert: Cert;
@@ -81,11 +85,22 @@ export interface WebsiteBasicUpdateRequest {
     entrance?: string;
     targetUrl: string;
     groupId?: string;
-    gatewayType?: string;
-    gatewayId?: string;
+    gatewayChain?: GatewayHop[];
     originHostMode?: WebsiteOriginHostMode;
     originHostCustom?: string;
+    originTimeout?: number;
     headers?: Array<{ name: string; value: string }>;
+}
+
+export interface WebsiteGeoOptions {
+    countries: WebsiteGeoOption[];
+    provinces: WebsiteGeoOption[];
+    cities: WebsiteGeoOption[];
+}
+
+export interface WebsiteGeoOption {
+    label: string;
+    value: string;
 }
 
 class WebsiteApi extends Api<Website> {
@@ -94,7 +109,7 @@ class WebsiteApi extends Api<Website> {
     }
 
     getGroups = async () => {
-        return await requests.get(`/${this.group}/groups`) as TreeDataNode[]
+        return await requests.get(`/${this.group}/groups`) as WebsiteGroupNode[]
     }
 
     setGroups = async (data: any) => {
@@ -110,7 +125,7 @@ class WebsiteApi extends Api<Website> {
     }
 
     // 统一的修改网关接口，支持 ssh/agent/group 三种类型
-    changeGateway = async (data: { websiteIds: string[], gatewayType: string, gatewayId: string }) => {
+    changeGateway = async (data: { websiteIds: string[], gatewayChain: GatewayHop[] }) => {
         return await requests.post(`/${this.group}/change-gateway`, data);
     }
 
@@ -120,6 +135,13 @@ class WebsiteApi extends Api<Website> {
 
     getFavicon = async (url: string): Promise<string> => {
         return await requests.get(`/${this.group}/favicon?url=${encodeURIComponent(url)}`);
+    }
+
+    getGeoOptions = async (language: string, countries: string[], provinces: string[]): Promise<WebsiteGeoOptions> => {
+        const params = new URLSearchParams({language, noerr: '1'});
+        countries.forEach(country => params.append('country', country));
+        provinces.forEach(province => params.append('province', province));
+        return await requests.get(`/${this.group}/geo-options?${params.toString()}`) as WebsiteGeoOptions;
     }
 
     updateEnabled = async (id: string, enabled: boolean) => {

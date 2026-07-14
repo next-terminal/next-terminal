@@ -1,4 +1,5 @@
 import qs from "qs";
+import type {RegionInfo} from "@/api/region-info";
 import requests from "./core/requests";
 
 export interface DatabaseSQLLog {
@@ -9,6 +10,7 @@ export interface DatabaseSQLLog {
     userId: string;
     userName: string;
     clientIp: string;
+    regionInfo?: RegionInfo;
     sql: string;
     durationMs: number;
     rowsAffected: number;

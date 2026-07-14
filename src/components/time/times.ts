@@ -8,7 +8,7 @@ class Times {
         return dayjs(date, format, locale, strict).format(DateTime)
     }
 
-    formatTime = function formatTime(millis) {
+    formatTime = function formatTime(millis: number) {
         const totalSeconds = Math.floor(millis / 1000);
 
         // Split into seconds and minutes

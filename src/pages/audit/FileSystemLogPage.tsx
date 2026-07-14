@@ -1,11 +1,12 @@
-import React, {useRef} from 'react';
-import NTable, {type NTableActionType, type NColumn} from "@/components/NTable";
-import {useTranslation} from "react-i18next";
-import {getSort} from "@/utils/sort";
-import {Link} from "react-router-dom";
-import fileSystemLogApi, {FileSystemLog} from "@/api/fileystem-log-api";
-import {App, Button} from "antd";
-import {useMutation} from "@tanstack/react-query";
+import fileSystemLogApi,{ FileSystemLog } from "@/api/fileystem-log-api";
+import IPRegion from "@/components/IPRegion";
+import NTable,{ type NColumn,type NTableActionType } from "@/components/NTable";
+import { getSort } from "@/utils/sort";
+import { useMutation } from "@tanstack/react-query";
+import { App,Button } from "antd";
+import { useRef } from 'react';
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 
 const FileSystemLogPage = () => {
@@ -69,6 +70,13 @@ const FileSystemLogPage = () => {
             hideInSearch: true,
         },
         {
+            title: t('audit.client_ip'),
+            key: 'clientIp',
+            dataIndex: 'clientIp',
+            hideInSearch: true,
+            render: (_, record) => <IPRegion ip={record.clientIp} regionInfo={record.regionInfo}/>,
+        },
+        {
             title: t('audit.operation.at'),
             key: 'createdAt',
             dataIndex: 'createdAt',
@@ -83,7 +91,7 @@ const FileSystemLogPage = () => {
                 defaultSize={'small'}
                 columns={columns}
                 actionRef={actionRef}
-                    request={async (params = {}, sort, filter) => {
+                    request={async (params = {}, sort, _filter) => {
                         let [sortOrder, sortField] = getSort(sort);
                         
                         let queryParams = {

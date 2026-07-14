@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import {type Key, useEffect, useState} from 'react';
 import {Transfer} from "antd";
 import {TransferDirection} from "antd/es/transfer";
 import {useQuery} from "@tanstack/react-query";
@@ -38,16 +38,18 @@ const LoginPolicyUser = ({id}: any) => {
         }
     });
 
-    const onChange = async (nextTargetKeys: string[], direction: TransferDirection, moveKeys: string[]) => {
+    const onChange = async (nextTargetKeys: Key[], direction: TransferDirection, moveKeys: Key[]) => {
+        const nextKeys = nextTargetKeys.map(String);
+        const movedKeys = moveKeys.map(String);
         switch (direction){
             case 'left':
-                await loginPolicyApi.unbindUser(id, moveKeys);
+                await loginPolicyApi.unbindUser(id, movedKeys);
                 break;
             case 'right':
-                await loginPolicyApi.bindUser(id, moveKeys);
+                await loginPolicyApi.bindUser(id, movedKeys);
                 break;
         }
-        setTargetKeys(nextTargetKeys);
+        setTargetKeys(nextKeys);
     };
 
     return (

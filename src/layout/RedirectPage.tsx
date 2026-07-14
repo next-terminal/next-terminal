@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import {useEffect} from 'react';
 import Landing from "@/components/Landing";
 import {useNavigate} from "react-router-dom";
 import {useQuery} from "@tanstack/react-query";

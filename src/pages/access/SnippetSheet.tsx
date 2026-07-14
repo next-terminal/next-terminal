@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {useMutation, useQuery} from "@tanstack/react-query";
 import {App, Button, Drawer, Input, Spin} from "antd";
 import type {DrawerProps} from "antd";
@@ -8,18 +8,20 @@ import {useTranslation} from "react-i18next";
 import {ChevronDown, ChevronUp, CirclePlay} from "lucide-react";
 import SnippetUserModal from "@/pages/facade/SnippetUserModal";
 import {isMobileByMediaQuery} from "@/utils/utils";
+import {MOBILE_TOOL_DRAWER_SIZE, MOBILE_TOOL_DRAWER_STYLES} from "@/pages/access/terminal-tool-drawer";
 
 interface Props {
     open: boolean
     onClose: () => void
     onUse: (content: string) => void
     placement?: 'top' | 'right' | 'bottom' | 'left'
+    size?: DrawerProps['size']
     mask?: boolean
     maskClosable?: boolean
     getContainer?: DrawerProps['getContainer']
 }
 
-const SnippetSheet = ({open, onClose, onUse, placement, mask, maskClosable, getContainer = false}: Props) => {
+const SnippetSheet = ({open, onClose, onUse, placement, size, mask, maskClosable, getContainer = false}: Props) => {
 
     let {t} = useTranslation();
     let {message} = App.useApp();
@@ -83,14 +85,9 @@ const SnippetSheet = ({open, onClose, onUse, placement, mask, maskClosable, getC
         return lines > 5 || content.length > 200;
     }
 
-    if (!placement) {
-        placement = 'right';
-    }
     const isMobile = isMobileByMediaQuery();
-    const drawerPlacement = isMobile ? 'bottom' : placement;
-    const drawerSizeProps = isMobile
-        ? {size: '82svh'}
-        : {size: 378};
+    const drawerPlacement = placement ?? (isMobile ? 'bottom' : 'right');
+    const drawerSize = size ?? (isMobile ? MOBILE_TOOL_DRAWER_SIZE : 378);
 
     return (
         <>
@@ -98,21 +95,22 @@ const SnippetSheet = ({open, onClose, onUse, placement, mask, maskClosable, getC
                     placement={drawerPlacement}
                     onClose={onClose}
                     open={open}
-                    {...drawerSizeProps}
+                    size={drawerSize}
                     mask={mask}
                     maskClosable={maskClosable}
                     push={false}
+                    styles={drawerPlacement === 'bottom' ? MOBILE_TOOL_DRAWER_STYLES : undefined}
                     extra={
                         <div className="flex items-center gap-2">
                             <Button type={'link'}
                                     onClick={() => setModalOpen(true)}
-                                    style={{padding: 0}}
+                                    style={{padding: 0, marginBottom: 0}}
                             >
                                 {t('actions.new')}
                             </Button>
                             <Button type={'link'}
                                     onClick={() => query.refetch()}
-                                    style={{padding: 0}}
+                                    style={{padding: 0, marginBottom: 0}}
                             >
                                 {t('actions.refresh')}
                             </Button>

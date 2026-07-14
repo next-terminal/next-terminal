@@ -48,7 +48,7 @@ const FacadeSearchBar: React.FC<FacadeSearchBarProps> = React.memo(({
                 {value && (
                     <button
                         onClick={handleClear}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        className="cursor-pointer p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                         aria-label={t('facade.clear_search')}
                     >
                         <X className="h-3.5 w-3.5" />

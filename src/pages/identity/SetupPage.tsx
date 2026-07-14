@@ -1,7 +1,7 @@
 import { useFormRequest } from "@/hook/use-antd-form-query";
-import React, { useRef, useState } from 'react';
+import {useState} from 'react';
 import { useTranslation } from "react-i18next";
-import { Alert, Button, FormInstance, Result, Spin, Typography, Form, Input } from "antd";
+import {Alert, Button, Result, Spin, Typography, Form, Input} from "antd";
 import { useQuery } from "@tanstack/react-query";
 import brandingApi from "@/api/branding-api";
 import userApi from "@/api/user-api";
@@ -29,7 +29,7 @@ const SetupPage = () => {
   let [newPassword2, setNewPassword2] = useState('');
   let [newPasswordStatus, setNewPasswordStatus] = useState<ValidateStatus>();
   let [error, setError] = useState<string>('');
-  const formRef = useRef<FormInstance>(null);
+  const [form] = Form.useForm();
   let {
     t
   } = useTranslation();
@@ -97,7 +97,7 @@ const SetupPage = () => {
             {strings.hasText(error) && <div className={'mb-4'}>
                     <Alert showIcon type="warning" title={error} />
                 </div>}
-            <Form onFinish={handleSubmit} ref={formRef} layout="vertical">
+            <Form onFinish={handleSubmit} form={form} layout="vertical">
                 <Form.Item name={'username'} label={t('audit.operation.account')} rules={[{
           required: true
         }]}>
@@ -122,7 +122,7 @@ const SetupPage = () => {
       </Form>
         </div>;
   };
-  useFormRequest(formRef, ["form-request", "web/src/pages/identity/SetupPage.tsx"], get, true);
+  useFormRequest(form, ["form-request", "web/src/pages/identity/SetupPage.tsx"], get, true);
   return <StyleProvider hashPriority="high">
             <div className="bg-gray-100 h-screen w-screen flex flex-col items-center justify-center">
                 <div className={'bg-white rounded-lg shadow-md p-8 min-w-[480px]'}>

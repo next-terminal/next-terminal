@@ -1,5 +1,7 @@
 import {WebsiteFormData, WebsiteOriginHostMode} from "@/pages/assets/website-drawer/types";
 
+export const DEFAULT_ORIGIN_TIMEOUT = 30;
+
 export interface WebsiteBasicFormData extends WebsiteFormData {
     originHostMode?: WebsiteOriginHostMode;
     originHostCustom?: string;
@@ -9,13 +11,13 @@ export const getDefaultWebsiteData = (): Partial<WebsiteBasicFormData> => ({
     enabled: true,
     scheme: 'http',
     port: 80,
-    gatewayType: '',
+    gatewayChain: [],
     cert: {
         enabled: false
     },
     public: {
         enabled: false,
-        expiredAt: 0,
+        expiredAt: undefined,
         countries: [],
         provinces: [],
         cities: [],
@@ -28,13 +30,9 @@ export const getDefaultWebsiteData = (): Partial<WebsiteBasicFormData> => ({
         autoRenew: false
     },
     originHostMode: 'origin',
-    originHostCustom: ''
+    originHostCustom: '',
+    originTimeout: DEFAULT_ORIGIN_TIMEOUT
 });
-
-interface WebsiteOriginHostData {
-    originHostMode?: string;
-    originHostCustom?: string;
-}
 
 export const normalizeOriginHostMode = (originHostMode?: string): WebsiteOriginHostMode => {
     if (originHostMode === 'service' || originHostMode === 'custom') {
@@ -43,18 +41,11 @@ export const normalizeOriginHostMode = (originHostMode?: string): WebsiteOriginH
     return 'origin';
 };
 
-export const inferOriginHost = (website: WebsiteOriginHostData) => {
-    const originHostMode = normalizeOriginHostMode(website.originHostMode);
-    if (website.originHostMode) {
-        return {
-            originHostMode,
-            originHostCustom: website.originHostCustom || ''
-        };
+export const normalizeOriginTimeout = (originTimeout?: number): number => {
+    if (originTimeout && originTimeout > 0) {
+        return originTimeout;
     }
-    return {
-        originHostMode: 'origin',
-        originHostCustom: ''
-    };
+    return DEFAULT_ORIGIN_TIMEOUT;
 };
 
 export const getWebsiteHeaders = (

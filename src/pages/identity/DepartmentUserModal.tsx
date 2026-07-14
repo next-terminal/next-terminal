@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import {type Key, useEffect, useState} from 'react';
 import {message, Modal, Transfer} from "antd";
 import {useTranslation} from "react-i18next";
 import {useMutation, useQuery} from "@tanstack/react-query";
@@ -65,8 +65,8 @@ const DepartmentUserModal = ({
         }
     });
 
-    const handleTransferChange = (newTargetKeys: string[]) => {
-        setTargetKeys(newTargetKeys);
+    const handleTransferChange = (newTargetKeys: Key[]) => {
+        setTargetKeys(newTargetKeys.map(String));
     };
 
     const handleModalOk = () => {
@@ -97,7 +97,7 @@ const DepartmentUserModal = ({
                 showSearch
                 filterOption={(inputValue, option) =>
                     option.title.toLowerCase().includes(inputValue.toLowerCase()) ||
-                    (option.description && option.description.toLowerCase().includes(inputValue.toLowerCase()))
+                    Boolean(option.description && option.description.toLowerCase().includes(inputValue.toLowerCase()))
                 }
                 listStyle={{
                     width: 250,

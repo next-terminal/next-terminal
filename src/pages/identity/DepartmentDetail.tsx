@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import {useState} from 'react';
 import {useParams, useSearchParams} from "react-router-dom";
 import {Tabs} from "antd";
 import DepartmentInfo from "./DepartmentInfo";

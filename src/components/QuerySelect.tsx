@@ -1,15 +1,16 @@
-import React from 'react';
 import type {SelectProps} from 'antd';
 import {Select} from 'antd';
 import {useSelectRequest} from '@/hook/use-antd-form-query';
 
+type QueryKeyPart = string | number | boolean | null | undefined | Record<string, unknown> | QueryKeyPart[];
+
 type QuerySelectProps = SelectProps & {
     request?: (params?: Record<string, any>) => Promise<any[]>;
     params?: Record<string, any>;
-    queryKey?: unknown[];
+    queryKey?: QueryKeyPart[];
 };
 
-const QuerySelect = ({request, params, queryKey, options, loading, ...props}: QuerySelectProps) => {
+const QuerySelect = ({request, params, queryKey, options, loading, optionFilterProp = 'label', ...props}: QuerySelectProps) => {
     const query = useSelectRequest(
         ['query-select', ...(queryKey ?? []), request?.toString()],
         request,
@@ -20,6 +21,7 @@ const QuerySelect = ({request, params, queryKey, options, loading, ...props}: Qu
         <Select
             {...props}
             loading={loading ?? query.isFetching}
+            optionFilterProp={optionFilterProp}
             options={options ?? query.data ?? []}
         />
     );

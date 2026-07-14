@@ -1,12 +1,8 @@
-import React from 'react';
-import {Button, Form, Select, Space, Switch, Typography} from "antd";
+import {Button, Form, Select, Space} from "antd";
 import {SettingProps} from "./SettingPage";
 import {useTranslation} from "react-i18next";
 import {useFormRequest} from "@/hook/use-antd-form-query";
 
-const {
-    Title
-} = Typography;
 const LogSetting = ({
                         get,
                         set
@@ -27,16 +23,7 @@ const LogSetting = ({
 
     useFormRequest(form, ['settings', 'log'], get);
     return <div>
-        <Title level={5} style={{
-            marginTop: 0
-        }}>{t('settings.log.setting')}</Title>
         <Form form={form} layout="vertical" onFinish={set}>
-            <Form.Item name="recording-enabled" label={t('identity.user.recording')} rules={[{
-                required: true
-            }]} valuePropName="checked">
-                <Switch checkedChildren={t('general.enabled')} unCheckedChildren={t('general.disabled')}/>
-            </Form.Item>
-
             {renderDaysSelect('session-saved-limit-days', t('settings.log.session.saved_limit_days'), [{
                 value: '',
                 label: '∞'
@@ -92,6 +79,25 @@ const LogSetting = ({
                 label: '360'
             }])}
             {renderDaysSelect('access-log-saved-limit-days', t('settings.log.access_log.saved_limit_days'), [{
+                value: '',
+                label: '∞'
+            }, {
+                value: '7',
+                label: '7'
+            }, {
+                value: '15',
+                label: '15'
+            }, {
+                value: '30',
+                label: '30'
+            }, {
+                value: '60',
+                label: '60'
+            }, {
+                value: '180',
+                label: '180'
+            }])}
+            {renderDaysSelect('db-sql-log-saved-limit-days', t('settings.log.database_sql_log.saved_limit_days'), [{
                 value: '',
                 label: '∞'
             }, {

@@ -1,20 +1,17 @@
-import React, {useState} from 'react';
-import {
-    App,
-    Button,
-    Popconfirm,
-    Tag} from "antd";
-import NTable, {type NColumn} from "@/components/NTable";
-import {useTranslation} from "react-i18next";
-import {useMutation, useQuery} from "@tanstack/react-query";
-import NButton from "@/components/NButton";
-import SnippetUserModal from "@/pages/facade/SnippetUserModal";
-import snippetUserApi from "@/api/snippet-user-api";
 import {Snippet} from "@/api/snippet-api";
+import snippetUserApi from "@/api/snippet-user-api";
+import NButton from "@/components/NButton";
+import NTable, {type NColumn} from "@/components/NTable";
 import {useMobile} from "@/hook/use-mobile";
 import {cn} from "@/lib/utils";
+import FacadeCompactSearch from "@/pages/facade/components/FacadeCompactSearch";
+import SnippetUserModal from "@/pages/facade/SnippetUserModal";
 import {getCurrentUser} from "@/utils/permission";
-import FacadeSearchBar from "@/pages/facade/components/FacadeSearchBar";
+import {useMutation, useQuery} from "@tanstack/react-query";
+import {Plus} from "lucide-react";
+import {App, Button, Popconfirm, Space, Tag} from "antd";
+import {useState} from 'react';
+import {useTranslation} from "react-i18next";
 
 const api = snippetUserApi;
 
@@ -110,16 +107,16 @@ const SnippetUserPage = () => {
             title: t('actions.label'),
             valueType: 'option',
             key: 'option',
-            width: isMobile ? 80 : undefined, // 移动端固定宽度
-            render: (text, record) => {
+            width: isMobile ? 80 : 120, // 移动端固定宽度
+            render: (_text, record) => {
                 // 只有创建者才能编辑和删除
-                const isOwner = record.createdBy === currentUser.id;
+                const isOwner = record.createdBy === currentUser?.id;
 
                 if (!isOwner) {
                     return null;
                 }
 
-                return [
+                return <Space>
                     <NButton
                         key="edit"
                         onClick={() => {
@@ -128,7 +125,7 @@ const SnippetUserPage = () => {
                         }}
                     >
                         {t('actions.edit')}
-                    </NButton>,
+                    </NButton>
                     <Popconfirm
                         key={'delete-confirm'}
                         title={t('general.confirm_delete')}
@@ -143,62 +140,54 @@ const SnippetUserPage = () => {
                         >
                             {t('actions.delete')}
                         </NButton>
-                    </Popconfirm>,
-                ];
+                    </Popconfirm>
+                </Space>
             },
         },
     ];
 
-    return (<div className={cn('px-4 lg:px-20', isMobile && 'px-2')}>
-        <div className={cn('py-6', isMobile && 'p-4')}>
-            <div className={'rounded-2xl border border-slate-200/70 dark:border-slate-700/70 p-4 lg:p-5'}>
-                <div className={'flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3'}>
-                    <div className={'flex flex-col gap-1'}>
-                        <div className={'text-xl font-bold text-slate-900 dark:text-slate-100'}>
-                            {t('menus.resource.submenus.snippet')}
-                        </div>
-                    </div>
+    return (<div className={cn('min-h-full px-4 py-5 lg:px-20 lg:py-6', isMobile && 'px-3 py-3')}>
+        <div className={'mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between'}>
+            <div className={'flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center'}>
+                <div className={'truncate text-lg font-semibold leading-7 text-slate-900 dark:text-slate-100'}>
+                    {t('menus.resource.submenus.snippet')}
                 </div>
-                <div className={'pt-3'}>
-                    <FacadeSearchBar
+                <div className={'w-full sm:w-72 lg:w-80'}>
+                    <FacadeCompactSearch
                         value={keyword}
                         onChange={setKeyword}
-                        resultCount={filteredSnippets.length}
-                        totalCount={snippetsQuery.data?.length || 0}
+                        placeholder={t('general.search_placeholder')}
                     />
                 </div>
             </div>
-        </div>
-        <div className={'rounded-xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 p-1'}>
-            <NTable
-                columns={columns}
-                dataSource={filteredSnippets}
-                loading={snippetsQuery.isFetching}
-                rowKey="id"
-                search={false}
-                pagination={false}
-                dateFormatter="string"
-                headerTitle={null}
-                toolBarRender={() => [
-                    <Button
-                        key="button"
-                        type="primary"
-                        size={isMobile ? 'middle' : 'middle'}
-                        onClick={() => {
-                            setOpen(true)
-                        }}
-                    >
-                        {t('actions.new')}
-                    </Button>,
-                ]}
-                options={{
-                    density: !isMobile, // 移动端隐藏密度设置
-                    fullScreen: !isMobile, // 移动端隐藏全屏按钮
-                    reload: false,
-                    setting: !isMobile, // 移动端隐藏列设置
+            <Button
+                type="primary"
+                icon={<Plus className={'h-4 w-4'}/>}
+                size="middle"
+                onClick={() => {
+                    setOpen(true)
                 }}
-            />
+            >
+                {t('actions.new')}
+            </Button>
         </div>
+
+        <NTable
+            columns={columns}
+            dataSource={filteredSnippets}
+            loading={snippetsQuery.isFetching}
+            rowKey="id"
+            search={false}
+            pagination={false}
+            dateFormatter="string"
+            headerTitle={false}
+            options={{
+                density: !isMobile, // 移动端隐藏密度设置
+                fullScreen: !isMobile, // 移动端隐藏全屏按钮
+                reload: false,
+                setting: !isMobile, // 移动端隐藏列设置
+            }}
+        />
 
         <SnippetUserModal
             id={selectedRowKey}

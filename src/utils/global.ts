@@ -2,7 +2,7 @@ import {AccountInfo} from "@/api/account-api";
 import {Branding} from "@/api/branding-api";
 
 export type Global = {
-    user: AccountInfo;
+    user: AccountInfo | null;
     branding?: Branding
 }
 

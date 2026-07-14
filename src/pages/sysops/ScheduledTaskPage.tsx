@@ -1,16 +1,14 @@
-import React, {useRef, useState} from 'react';
-import {useTranslation} from "react-i18next";
-import {getSort} from "@/utils/sort";
-import NTable, {type NTableActionType, type NColumn} from "@/components/NTable";
-import {App, Button, Popconfirm, Space, Switch, Tag} from "antd";
-import {useMutation} from "@tanstack/react-query";
-import scheduledTaskApi, {ScheduledTask} from "@/api/scheduled-task-api";
-import ScheduledTaskModal from "@/pages/sysops/ScheduledTaskModal";
+import scheduledTaskApi,{ ScheduledTask } from "@/api/scheduled-task-api";
 import NButton from "@/components/NButton";
-import ScheduledTaskLogPage from "@/pages/sysops/ScheduledTaskLogPage";
-import {generateRandomId} from "@/utils/utils";
-import AccessTerminalBulk from "@/pages/access/AccessTerminalBulk";
+import NTable,{ type NColumn,type NTableActionType } from "@/components/NTable";
 import MultiFactorAuthentication from "@/pages/account/MultiFactorAuthentication";
+import ScheduledTaskLogPage from "@/pages/sysops/ScheduledTaskLogPage";
+import ScheduledTaskModal from "@/pages/sysops/ScheduledTaskModal";
+import { getSort } from "@/utils/sort";
+import { useMutation } from "@tanstack/react-query";
+import { App,Button,Popconfirm,Space,Switch,Tag } from "antd";
+import { useRef,useState } from 'react';
+import { useTranslation } from "react-i18next";
 
 const api = scheduledTaskApi;
 
@@ -22,7 +20,7 @@ const ScheduledTaskPage = () => {
     let [selectedRowKey, setSelectedRowKey] = useState<string>('');
 
     let [mfaOpen, setMfaOpen] = useState(false);
-    let [values, setValues] = useState({});
+    let [values, setValues] = useState<Record<string, any>>({});
 
     const {message} = App.useApp();
 
@@ -39,7 +37,7 @@ const ScheduledTaskPage = () => {
         onSuccess: () => {
             actionRef.current?.reload();
             setOpen(false);
-            setSelectedRowKey(undefined);
+            setSelectedRowKey('');
             showSuccess();
         }
     });
@@ -73,7 +71,7 @@ const ScheduledTaskPage = () => {
                     checkedChildren={t('general.enabled')}
                     unCheckedChildren={t('general.disabled')}
                     checked={enabled === true}
-                    onChange={(checked) => handleChangeStatus(record['id'], !enabled, index)}
+                    onChange={(_checked) => handleChangeStatus(record['id'], !enabled, index)}
                 />
             }
         }, {
@@ -81,7 +79,7 @@ const ScheduledTaskPage = () => {
             dataIndex: 'type',
             key: 'type',
             hideInSearch: true,
-            render: (func, record) => {
+            render: (func, _record) => {
                 switch (func) {
                     case "asset-check-status":
                         return <Tag color="blue" variant="filled">{t('sysops.type.options.check_status')}</Tag>;
@@ -120,7 +118,7 @@ const ScheduledTaskPage = () => {
             valueType: 'option',
             key: 'option',
             width: 200,
-            render: (text, record, index, action) => (
+            render: (_text: unknown, record: ScheduledTask, index: number) => (
                 <Space>
                     <NButton
                         key="exec"
@@ -159,12 +157,12 @@ const ScheduledTaskPage = () => {
         },
     ];
 
-    const handleChangeStatus = async (id: string, enabled: boolean, index: number) => {
+    const handleChangeStatus = async (id: string, enabled: boolean, _index: number) => {
         await api.changeStatus(id, enabled);
         actionRef.current?.reload();
     }
 
-    const handleExec = async (id: string, index: number) => {
+    const handleExec = async (id: string, _index: number) => {
         message.loading({content: 'loading...', key: id, duration: 30});
         try {
             await api.exec(id);
@@ -185,7 +183,7 @@ const ScheduledTaskPage = () => {
             <NTable
                 columns={columns}
                 actionRef={actionRef}
-                request={async (params = {}, sort, filter) => {
+                request={async (params = {}, sort, _filter) => {
                     let [sortOrder, sortField] = getSort(sort);
                     
                     let queryParams = {

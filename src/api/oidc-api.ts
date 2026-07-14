@@ -1,14 +1,10 @@
 import {Api} from './core/api';
 import requests from './core/requests';
+import type {ExternalLoginResult} from './account-api';
 
 export interface OidcAuthorizeResponse {
     authorizeUrl: string;
     state: string;
-}
-
-export interface OidcLoginResponse {
-    token: string;
-    needTotp: boolean;
 }
 
 export interface OidcStatusResponse {
@@ -27,7 +23,7 @@ class OidcApi extends Api<any> {
     }
 
     // OIDC 登录
-    login = async (code: string, state?: string): Promise<OidcLoginResponse> => {
+    login = async (code: string, state?: string): Promise<ExternalLoginResult> => {
         const params = new URLSearchParams();
         params.append('code', code);
         if (state) {

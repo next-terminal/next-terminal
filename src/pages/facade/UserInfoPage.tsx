@@ -1,4 +1,3 @@
-import React from 'react';
 import InfoPage from "@/pages/account/InfoPage";
 import {useTranslation} from "react-i18next";
 

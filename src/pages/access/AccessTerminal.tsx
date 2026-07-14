@@ -1,11 +1,17 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {Terminal} from "@xterm/xterm";
-import {FitAddon} from "@xterm/addon-fit";
-import {SearchAddon} from "@xterm/addon-search";
-import {WebglAddon} from "@xterm/addon-webgl";
-import {CanvasAddon} from "@xterm/addon-canvas";
-import "@xterm/xterm/css/xterm.css";
+import accessSettingApi, {Setting} from "@/api/access-setting-api";
+import {baseWebSocketUrl} from "@/api/core/requests";
 import portalApi, {ExportSession} from "@/api/portal-api";
+import {ResizableHandle, ResizablePanel, ResizablePanelGroup} from "@/components/ui/resizable";
+import {cn} from "@/lib/utils";
+import AccessStats from "@/pages/access/AccessStats";
+import AIAssistant from "@/pages/ai/AIAssistant";
+import FileSystemPage from "@/pages/access/FileSystemPage";
+import {useAccessContentSize} from "@/pages/access/hooks/use-access-size";
+import {useAccessTab} from "@/pages/access/hooks/use-access-tab";
+import {CleanTheme, useTerminalTheme} from "@/pages/access/hooks/use-terminal-theme";
+import SessionSharerModal from "@/pages/access/SessionSharerModal";
+import SessionWatermark from "@/pages/access/SessionWatermark";
+import SnippetSheet from "@/pages/access/SnippetSheet";
 import {
     Message,
     MessageTypeAuthPrompt,
@@ -15,16 +21,25 @@ import {
     MessageTypeError,
     MessageTypeExit,
     MessageTypeJoin,
-    MessageTypeKeepAlive,
     MessageTypePing,
     MessageTypeResize
 } from "@/pages/access/Terminal";
-import {useInterval, useWindowSize} from "react-use";
-import {CleanTheme, useTerminalTheme} from "@/pages/access/hooks/use-terminal-theme";
-import {useAccessTab} from "@/pages/access/hooks/use-access-tab";
+import {normalizeTerminalBackspace} from "@/pages/access/terminal-backspace";
+import {MOBILE_TOOL_DRAWER_SIZE} from "@/pages/access/terminal-tool-drawer";
+import MultiFactorAuthentication from "@/pages/account/MultiFactorAuthentication";
+import {debounce} from "@/utils/debounce";
+import {isMac, isMobileByMediaQuery} from "@/utils/utils";
+import {CanvasAddon} from "@xterm/addon-canvas";
+import {FitAddon} from "@xterm/addon-fit";
+import {SearchAddon} from "@xterm/addon-search";
+import {WebglAddon} from "@xterm/addon-webgl";
+import {Terminal} from "@xterm/xterm";
+import "@xterm/xterm/css/xterm.css";
+import {App} from "antd";
+import clsx from "clsx";
+import copy from "copy-to-clipboard";
 import {
     ActivityIcon,
-    BotIcon,
     ChevronDownIcon,
     ChevronUpIcon,
     EraserIcon,
@@ -32,26 +47,13 @@ import {
     FolderIcon,
     SearchIcon,
     Share2Icon,
+    SparklesIcon,
     XIcon
 } from "lucide-react";
-import SnippetSheet from "@/pages/access/SnippetSheet";
-import SessionSharerModal from "@/pages/access/SessionSharerModal";
-import ShellAssistantSheet from "@/pages/access/ShellAssistantSheet";
-import AccessStats from "@/pages/access/AccessStats";
-import {ResizableHandle, ResizablePanel, ResizablePanelGroup} from "@/components/ui/resizable";
-import clsx from "clsx";
-import {debounce} from "@/utils/debounce";
-import FileSystemPage from "@/pages/access/FileSystemPage";
-import {App, Watermark} from "antd";
-import {useAccessContentSize} from "@/pages/access/hooks/use-access-size";
-import {cn} from "@/lib/utils";
-import {baseWebSocketUrl} from "@/api/core/requests";
 import qs from "qs";
-import MultiFactorAuthentication from "@/pages/account/MultiFactorAuthentication";
-import {isMac, isMobileByMediaQuery} from "@/utils/utils";
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {useTranslation} from "react-i18next";
-import copy from "copy-to-clipboard";
-import accessSettingApi, {Setting} from "@/api/access-setting-api";
+import {useInterval, useWindowSize} from "react-use";
 
 interface Props {
     assetId: string;
@@ -59,7 +61,23 @@ interface Props {
     standalone?: boolean;
 }
 
+type MobileToolDrawer = 'ai' | 'snippet' | 'fileSystem' | null;
+
 let _isMac = isMac();
+
+const ANSI_DIM = '\x1b[2m';
+const ANSI_RESET = '\x1b[0m';
+const RESTORE_TERMINAL_STATE = [
+    '\x1b[0m',
+    '\x1b[?7h',
+    '\x1b[?25h',
+    '\x1b[?1000l',
+    '\x1b[?1002l',
+    '\x1b[?1003l',
+    '\x1b[?1006l',
+    '\x1b[?2004l',
+].join('');
+const LEAVE_ALTERNATE_SCREEN_BUFFER = '\x1b[?1049l';
 
 const AccessTerminal = ({assetId, tabKey, standalone = false}: Props) => {
 
@@ -74,9 +92,11 @@ const AccessTerminal = ({assetId, tabKey, standalone = false}: Props) => {
     const rootRef = useRef<HTMLDivElement>(null);
     const mobileTopControlsRef = useRef<HTMLDivElement>(null);
     const mobileBottomControlsRef = useRef<HTMLDivElement>(null);
+    const hasConnectedRef = useRef(false);
 
     let websocketRef = useRef<WebSocket>(null); // 使用 ref 来存储 websocket
     let [session, setSession] = useState<ExportSession>();
+    const aiEnabled = session?.attrs?.['ai-enabled'] === true;
 
     let [accessTheme] = useTerminalTheme();
     let [accessTab] = useAccessTab();
@@ -87,10 +107,10 @@ const AccessTerminal = ({assetId, tabKey, standalone = false}: Props) => {
     let [preFileSystemOpen, setPreFileSystemOpen] = useState(false);
 
     let [snippetOpen, setSnippetOpen] = useState(false);
+    let [aiOpen, setAiOpen] = useState(false);
+    const [mobileToolDrawer, setMobileToolDrawer] = useState<MobileToolDrawer>(null);
     let [sharerOpen, setSharerOpen] = useState(false);
     let [statsOpen, setStatsOpen] = useState(false);
-    let [shellAssistantOpen, setShellAssistantOpen] = useState(false);
-    let [shellAssistantEnabled, setShellAssistantEnabled] = useState(false);
     const [pingDelay, setPingDelay] = useState<number | null>(null);
 
     let [reconnected, setReconnected] = useState('');
@@ -116,7 +136,14 @@ const AccessTerminal = ({assetId, tabKey, standalone = false}: Props) => {
     let [authUsername, setAuthUsername] = useState('');
     let [authPassword, setAuthPassword] = useState('');
 
-    // 获取访问设置和 Shell 助手状态
+    useEffect(() => {
+        if (!aiEnabled) {
+            setAiOpen(false);
+            setMobileToolDrawer((current) => current === 'ai' ? null : current);
+        }
+    }, [aiEnabled]);
+
+    // 获取访问设置
     useEffect(() => {
         const fetchAccessSetting = async () => {
             try {
@@ -127,18 +154,7 @@ const AccessTerminal = ({assetId, tabKey, standalone = false}: Props) => {
             }
         };
 
-        const fetchShellAssistantEnabled = async () => {
-            try {
-                const result = await accessSettingApi.getShellAssistantEnabled();
-                setShellAssistantEnabled(result.enabled);
-            } catch (error) {
-                console.error('Failed to fetch shell assistant enabled status:', error);
-                setShellAssistantEnabled(false);
-            }
-        };
-
         fetchAccessSetting();
-        fetchShellAssistantEnabled();
     }, []);
 
     useInterval(() => {
@@ -339,9 +355,28 @@ const AccessTerminal = ({assetId, tabKey, standalone = false}: Props) => {
         fsRef.current?.changeDir(dir);
     };
 
+    const restoreTerminalStateForReconnect = () => {
+        const terminal = terminalRef.current;
+        if (!terminal) {
+            return;
+        }
+
+        const restoreState = terminal.buffer.active.type === 'alternate'
+            ? `${RESTORE_TERMINAL_STATE}${LEAVE_ALTERNATE_SCREEN_BUFFER}`
+            : RESTORE_TERMINAL_STATE;
+        terminal.write(restoreState, () => {
+            terminal.scrollToBottom();
+        });
+    };
+
     const connect = async (securityToken?: string) => {
         if (websocketRef.current !== null) {
             return;
+        }
+        const reconnecting = hasConnectedRef.current;
+        if (reconnecting) {
+            restoreTerminalStateForReconnect();
+            terminalRef.current?.writeln(`\r\n${ANSI_DIM}Reconnecting...${ANSI_RESET}`);
         }
         let session: ExportSession;
         try {
@@ -351,12 +386,18 @@ const AccessTerminal = ({assetId, tabKey, standalone = false}: Props) => {
                 document.title = session.assetName;
             }
         } catch (e) {
-            terminalRef.current?.writeln(`\x1b[41m ERROR \x1b[0m : ${e.message}`);
+            const message = e instanceof Error ? e.message : String(e);
+            terminalRef.current?.writeln(`\x1b[41m ERROR \x1b[0m : ${message}`);
             return;
         }
 
-        let cols = terminalRef.current.cols;
-        let rows = terminalRef.current.rows;
+        const terminal = terminalRef.current;
+        if (!terminal) {
+            return;
+        }
+
+        let cols = terminal.cols;
+        let rows = terminal.rows;
         let params = {
             'cols': cols,
             'rows': rows,
@@ -366,9 +407,9 @@ const AccessTerminal = ({assetId, tabKey, standalone = false}: Props) => {
         let paramStr = qs.stringify(params);
         let websocket = new WebSocket(`${baseWebSocketUrl()}/access/terminal?${paramStr}`);
 
-        websocket.onopen = (e => {
-            terminalRef.current?.reset();
-            terminalRef.current?.write('\x1b[?25h'); // 显式恢复光标可见
+        websocket.onopen = (_e => {
+            hasConnectedRef.current = true;
+            restoreTerminalStateForReconnect();
             setPingDelay(null);
         });
 
@@ -380,8 +421,7 @@ const AccessTerminal = ({assetId, tabKey, standalone = false}: Props) => {
         }
 
         websocket.onclose = (e) => {
-            terminalRef.current?.reset();
-            terminalRef.current?.write('\x1b[?25h'); // 显式恢复光标可见
+            restoreTerminalStateForReconnect();
             if (e.code === 3886) {
                 terminalRef.current?.writeln('');
                 terminalRef.current?.writeln('');
@@ -401,11 +441,11 @@ const AccessTerminal = ({assetId, tabKey, standalone = false}: Props) => {
             let msg = Message.parse(e.data);
             switch (msg.type) {
                 case MessageTypeError:
-                    terminalRef.current.write(msg.content);
-                    websocketRef?.current.close();
+                    terminal.write(msg.content);
+                    websocketRef.current?.close();
                     break;
                 case MessageTypeData:
-                    terminalRef.current.write(msg.content);
+                    terminal.write(msg.content);
                     break;
                 case MessageTypeJoin:
                     notification.success({
@@ -424,19 +464,16 @@ const AccessTerminal = ({assetId, tabKey, standalone = false}: Props) => {
                 case MessageTypeDirChanged:
                     onDirChanged(msg.content);
                     break;
-                case MessageTypeKeepAlive:
-                    websocket?.send(new Message(MessageTypePing, "").toString());
-                    break;
                 case MessageTypeAuthPrompt:
                     // 收到认证提示，根据内容决定提示什么
                     if (msg.content === 'password') {
                         // 只需要密码
-                        terminalRef.current.write('Password: ');
+                        terminal.write('Password: ');
                         setAuthMode('password');
                         setAuthPassword('');
                     } else {
                         // 需要用户名和密码
-                        terminalRef.current.write('Username: ');
+                        terminal.write('Username: ');
                         setAuthMode('username');
                         setAuthUsername('');
                         setAuthPassword('');
@@ -467,29 +504,34 @@ const AccessTerminal = ({assetId, tabKey, standalone = false}: Props) => {
 
     // 处理认证输入
     const handleAuthInput = (data: string) => {
+        const terminal = terminalRef.current;
+        if (!terminal) {
+            return;
+        }
+
         if (authMode === 'username') {
             // 输入用户名
             if (data === '\r' || data === '\n') {
                 // 用户按下回车，切换到密码输入
-                terminalRef.current.writeln('');
-                terminalRef.current.write('Password: ');
+                terminal.writeln('');
+                terminal.write('Password: ');
                 setAuthMode('password');
             } else if (data === '\x7f' || data === '\b') {
                 // 退格键
                 if (authUsername.length > 0) {
                     setAuthUsername(authUsername.slice(0, -1));
-                    terminalRef.current.write('\b \b');
+                    terminal.write('\b \b');
                 }
             } else if (data >= ' ' && data <= '~') {
                 // 可打印字符
                 setAuthUsername(authUsername + data);
-                terminalRef.current.write(data);
+                terminal.write(data);
             }
         } else if (authMode === 'password') {
             // 输入密码
             if (data === '\r' || data === '\n') {
                 // 用户按下回车，提交认证信息
-                terminalRef.current.writeln('');
+                terminal.writeln('');
 
                 // 根据是否有用户名来决定发送内容
                 let authContent: string;
@@ -507,7 +549,7 @@ const AccessTerminal = ({assetId, tabKey, standalone = false}: Props) => {
                     ws.send(new Message(MessageTypeAuthReply, authContent).toString());
                 } else {
                     console.error('WebSocket is not open', ws?.readyState);
-                    terminalRef.current.writeln('\r\n\x1b[41m ERROR \x1b[0m : Connection lost, please try again');
+                    terminal.writeln('\r\n\x1b[41m ERROR \x1b[0m : Connection lost, please try again');
                 }
 
                 // 重置认证状态
@@ -518,12 +560,12 @@ const AccessTerminal = ({assetId, tabKey, standalone = false}: Props) => {
                 // 退格键
                 if (authPassword.length > 0) {
                     setAuthPassword(authPassword.slice(0, -1));
-                    terminalRef.current.write('\b \b');
+                    terminal.write('\b \b');
                 }
             } else if (data >= ' ' && data <= '~') {
                 // 可打印字符，不回显
                 setAuthPassword(authPassword + data);
-                terminalRef.current.write('*'); // 显示星号
+                terminal.write('*'); // 显示星号
             }
         }
     }
@@ -557,7 +599,7 @@ const AccessTerminal = ({assetId, tabKey, standalone = false}: Props) => {
                 if (data.startsWith('\x1b[<') || data.startsWith('\x1b[M')) return;
                 setReconnected(new Date().toString());
             } else if (ws.readyState === WebSocket.OPEN) {
-                ws.send(new Message(MessageTypeData, data).toString());
+                ws.send(new Message(MessageTypeData, normalizeTerminalBackspace(data, session)).toString());
             }
         });
 
@@ -565,7 +607,7 @@ const AccessTerminal = ({assetId, tabKey, standalone = false}: Props) => {
             sizeListener?.dispose();
             dataListener?.dispose();
         }
-    }, [authMode, authUsername, authPassword]);
+    }, [authMode, authUsername, authPassword, session?.attrs?.backspaceMode]);
 
     const fitFit = useMemo(() => debounce(() => {
         if (terminalRef.current && fitRef.current) {
@@ -884,20 +926,10 @@ const AccessTerminal = ({assetId, tabKey, standalone = false}: Props) => {
             )}
             >
                 <ResizablePanelGroup direction="horizontal" className="min-h-0">
-                    <ResizablePanel order={1} className="h-full min-w-0" onResize={(curr, prev) => {
+                    <ResizablePanel order={1} className="h-full min-w-0" onResize={(_curr, _prev) => {
                         fitFit();
                     }}>
-                        <Watermark content={session?.watermark?.content}
-                                   font={{
-                                       color: session?.watermark?.color,
-                                       fontSize: session?.watermark?.size,
-                                   }}
-                                   zIndex={session?.watermark?.enabled ? 9 : -1}
-                                   style={{
-                                       background: 'transparent',
-                                       height: '100%',
-                                   }}
-                        >
+                        <div className={'relative h-full'}>
                             <div className={'flex min-h-0 flex-col overflow-hidden transition duration-100'}
                                  style={{
                                      height: isMobile ? '100%' : terminalHeight,
@@ -945,14 +977,21 @@ const AccessTerminal = ({assetId, tabKey, standalone = false}: Props) => {
                                                 >
                                                     <Share2Icon className="h-4 w-4"/>
                                                 </button>
+                                                {aiEnabled && (
+                                                    <button
+                                                        type="button"
+                                                        title={t('ai_assistant.title')}
+                                                        className="flex h-7 w-7 items-center justify-center rounded bg-white/10 text-white transition-colors active:bg-white/20"
+                                                        onClick={() => setMobileToolDrawer('ai')}
+                                                    >
+                                                        <SparklesIcon className="h-4 w-4"/>
+                                                    </button>
+                                                )}
                                                 <button
                                                     type="button"
                                                     title="FileSystem"
                                                     className="flex h-7 w-7 items-center justify-center rounded bg-white/10 text-white transition-colors active:bg-white/20"
-                                                    onClick={() => {
-                                                        setFileSystemOpen(true);
-                                                        setPreFileSystemOpen(true);
-                                                    }}
+                                                    onClick={() => setMobileToolDrawer('fileSystem')}
                                                 >
                                                     <FolderIcon className="h-4 w-4"/>
                                                 </button>
@@ -960,20 +999,10 @@ const AccessTerminal = ({assetId, tabKey, standalone = false}: Props) => {
                                                     type="button"
                                                     title={t('menus.resource.submenus.snippet')}
                                                     className="flex h-7 w-7 items-center justify-center rounded bg-white/10 text-white transition-colors active:bg-white/20"
-                                                    onClick={() => setSnippetOpen(true)}
+                                                    onClick={() => setMobileToolDrawer('snippet')}
                                                 >
                                                     <FolderCode className="h-4 w-4"/>
                                                 </button>
-                                                {shellAssistantEnabled && (
-                                                    <button
-                                                        type="button"
-                                                        title={t('access.shell_assistant.title')}
-                                                        className="flex h-7 w-7 items-center justify-center rounded bg-white/10 text-white transition-colors active:bg-white/20"
-                                                        onClick={() => setShellAssistantOpen(true)}
-                                                    >
-                                                        <BotIcon className="h-4 w-4"/>
-                                                    </button>
-                                                )}
                                             </div>
                                         </div>
                                         {searchOpen && (
@@ -1034,7 +1063,8 @@ const AccessTerminal = ({assetId, tabKey, standalone = false}: Props) => {
                                 )}
                             </div>
 
-                        </Watermark>
+                            <SessionWatermark watermark={session?.watermark}/>
+                        </div>
                     </ResizablePanel>
                     {
                         statsOpen && <>
@@ -1048,8 +1078,29 @@ const AccessTerminal = ({assetId, tabKey, standalone = false}: Props) => {
                                 className={'min-w-[340px]'}
                             >
                                 <div>
-                                    <AccessStats sessionId={session?.id} open={statsOpen}/>
+                                    <AccessStats sessionId={session?.id ?? ''} open={statsOpen}/>
                                 </div>
+                            </ResizablePanel>
+                        </>
+                    }
+                    {
+                        !isMobile && aiEnabled && aiOpen && <>
+                            <ResizableHandle withHandle/>
+                            <ResizablePanel
+                                defaultSize={28}
+                                minSize={22}
+                                maxSize={55}
+                                order={2}
+                                id={'ai-assistant'}
+                                className={'relative h-full min-h-0 min-w-[325px] max-w-[800px] overflow-hidden'}
+                            >
+                                <AIAssistant
+                                    embedded
+                                    embeddedHeight={terminalHeight}
+                                    sessionId={session?.id}
+                                    open={Boolean(session?.id)}
+                                    onClose={() => setAiOpen(false)}
+                                />
                             </ResizablePanel>
                         </>
                     }
@@ -1068,24 +1119,38 @@ const AccessTerminal = ({assetId, tabKey, standalone = false}: Props) => {
                                 <EraserIcon className={'h-4 w-4'} onClick={handleClearTerminal}/>
                             </div>
                             <Share2Icon className={'h-4 w-4'} onClick={() => setSharerOpen(true)}/>
+                            {aiEnabled && (
+                                <SparklesIcon className={clsx('h-4 w-4', aiOpen && 'text-blue-500')}
+                                              onClick={() => {
+                                                  setStatsOpen(false);
+                                                  setAiOpen(!aiOpen);
+                                              }}
+                                />
+                            )}
                             <FolderIcon className={'h-4 w-4'} onClick={() => {
                                 setFileSystemOpen(true);
                                 setPreFileSystemOpen(true);
                             }}/>
                             <ActivityIcon className={clsx('h-4 w-4', statsOpen && 'text-blue-500')}
-                                          onClick={() => setStatsOpen(!statsOpen)}
+                                          onClick={() => {
+                                              setAiOpen(false);
+                                              setStatsOpen(!statsOpen);
+                                          }}
                             />
                             <FolderCode className={'h-4 w-4'} onClick={() => setSnippetOpen(true)}/>
-                            {shellAssistantEnabled && (
-                                <BotIcon className={'h-4 w-4'} onClick={() => setShellAssistantOpen(true)}/>
-                            )}
                         </div>
                     </div>
                 }
             </div>
 
             <SnippetSheet
-                onClose={() => setSnippetOpen(false)}
+                onClose={() => {
+                    if (isMobile) {
+                        setMobileToolDrawer(null);
+                    } else {
+                        setSnippetOpen(false);
+                    }
+                }}
                 onUse={(content: string) => {
                     terminalRef.current?.paste(content);
                     const ws = websocketRef.current;
@@ -1093,32 +1158,36 @@ const AccessTerminal = ({assetId, tabKey, standalone = false}: Props) => {
                         ws.send(new Message(MessageTypeData, '\r').toString());
                     }
                 }}
-                open={snippetOpen}
+                open={isMobile ? mobileToolDrawer === 'snippet' : snippetOpen}
+                placement={isMobile ? 'bottom' : 'right'}
+                size={isMobile ? MOBILE_TOOL_DRAWER_SIZE : 378}
                 mask={false}
                 getContainer={drawerGetContainer}
             />
-            <ShellAssistantSheet
-                onClose={() => setShellAssistantOpen(false)}
-                onExecute={(content: string) => {
-                    terminalRef.current?.paste(content);
-                    const ws = websocketRef.current;
-                    if (ws?.readyState === WebSocket.OPEN) {
-                        ws.send(new Message(MessageTypeData, '\r').toString());
-                    }
-                }}
-                open={shellAssistantOpen}
-                mask={false}
-                getContainer={drawerGetContainer}
-            />
-            <SessionSharerModal sessionId={session?.id} open={sharerOpen}
+            <SessionSharerModal sessionId={session?.id ?? ''} open={sharerOpen}
                                 onClose={() => setSharerOpen(false)}/>
 
-            <FileSystemPage fsId={session?.id}
+            {isMobile && aiEnabled && (
+                <AIAssistant
+                    drawer
+                    drawerPlacement="bottom"
+                    drawerSize={MOBILE_TOOL_DRAWER_SIZE}
+                    sessionId={session?.id}
+                    open={mobileToolDrawer === 'ai' && Boolean(session?.id)}
+                    onClose={() => setMobileToolDrawer(null)}
+                    getContainer={drawerGetContainer}
+                />
+            )}
+
+            <FileSystemPage fsId={session?.id ?? ''}
                             strategy={session?.strategy}
-                            open={fileSystemOpen}
+                            open={isMobile ? mobileToolDrawer === 'fileSystem' : fileSystemOpen}
+                            placement={isMobile ? 'bottom' : 'right'}
+                            size={isMobile ? MOBILE_TOOL_DRAWER_SIZE : 720}
                             mask={false}
                             maskClosable={false}
                             onClose={() => {
+                                setMobileToolDrawer(null);
                                 setFileSystemOpen(false)
                                 setPreFileSystemOpen(false);
                             }}

@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import {useState} from 'react';
 import {useQuery} from "@tanstack/react-query";
 import accountApi from "../../api/account-api";
 import {Alert, App, Button, Divider, Form, Input, QRCode, Steps, Typography} from "antd";

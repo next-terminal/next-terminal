@@ -1,4 +1,3 @@
-import React from 'react';
 import {Spin} from "antd";
 import brandingApi from "../api/branding-api";
 import {useQuery} from "@tanstack/react-query";

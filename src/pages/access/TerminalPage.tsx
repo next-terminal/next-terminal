@@ -1,15 +1,16 @@
-import React, {useEffect, useRef, useState} from 'react';
-import {baseWebSocketUrl} from '@/api/core/requests';
-import qs from "qs";
-import {Terminal} from "@xterm/xterm";
-import {FitAddon} from "@xterm/addon-fit";
-import "@xterm/xterm/css/xterm.css";
-import {useSearchParams} from "react-router-dom";
-import {maybe} from "@/utils/maybe";
-import portalApi, {ExportSession} from "@/api/portal-api";
+import { baseWebSocketUrl } from '@/api/core/requests';
+import portalApi,{ ExportSession } from "@/api/portal-api";
+import { maybe } from "@/utils/maybe";
 import strings from "@/utils/strings";
-import {Message, MessageTypeData, MessageTypeKeepAlive, MessageTypeResize} from './Terminal';
-import {useInterval} from "react-use";
+import { FitAddon } from "@xterm/addon-fit";
+import { Terminal } from "@xterm/xterm";
+import "@xterm/xterm/css/xterm.css";
+import qs from "qs";
+import React,{ useEffect,useRef,useState } from 'react';
+import { useSearchParams } from "react-router-dom";
+import { useInterval } from "react-use";
+import { Message,MessageTypeData,MessageTypePing,MessageTypeResize } from './Terminal';
+import { normalizeTerminalBackspace } from './terminal-backspace';
 
 export interface TerminalProps {
     assetId?: string
@@ -24,12 +25,14 @@ const TerminalPage = ({}: TerminalProps) => {
 
     const [searchParams] = useSearchParams();
     let sharerToken = maybe(searchParams.get('sharerToken'), '');
-    let sessionId = searchParams.get('sessionId');
+    let sessionId = searchParams.get('sessionId') ?? '';
 
     let [title, setTitle] = useState('');
 
     useInterval(() => {
-        websocket.current?.send(new Message(MessageTypeKeepAlive, "").toString());
+        if (websocket.current?.readyState === WebSocket.OPEN) {
+            websocket.current.send(new Message(MessageTypePing, Date.now().toString()).toString());
+        }
     }, 5000);
 
     useEffect(() => {
@@ -40,7 +43,8 @@ const TerminalPage = ({}: TerminalProps) => {
         term.writeln(`\x1B[1;3;31m${message}\x1B[0m `);
     }
 
-    const connect = (term: Terminal, {id, idle, assetName}: ExportSession) => {
+    const connect = (term: Terminal, session: ExportSession) => {
+        const {id, idle: _idle, assetName} = session;
         let elementTerm = terminalRef.current;
         if (!elementTerm) {
             return
@@ -72,12 +76,13 @@ const TerminalPage = ({}: TerminalProps) => {
         }
 
         let paramStr = qs.stringify(params);
-        websocket.current = new WebSocket(`${baseWebSocketUrl()}/access/terminal?${paramStr}`);
-        websocket.current.onopen = (e => {
+        const ws = new WebSocket(`${baseWebSocketUrl()}/access/terminal?${paramStr}`);
+        websocket.current = ws;
+        ws.onopen = (_e => {
             term.clear();
             if (!strings.hasText(sharerToken)) {
                 term.onResize(function (evt) {
-                    websocket.current.send(new Message(MessageTypeResize, `${evt.cols},${evt.rows}`).toString());
+                    ws.send(new Message(MessageTypeResize, `${evt.cols},${evt.rows}`).toString());
                 });
             }
             window.addEventListener("resize", () => {
@@ -85,19 +90,19 @@ const TerminalPage = ({}: TerminalProps) => {
             });
         });
 
-        websocket.current.onerror = (e) => {
+        ws.onerror = (_e) => {
             writeErrorMessage(term, `websocket error`);
         }
 
-        websocket.current.onclose = (e) => {
+        ws.onclose = (_e) => {
             writeErrorMessage(term, `connection is closed.`);
         }
 
         term.onData(data => {
-            websocket.current.send(new Message(MessageTypeData, data).toString());
+            ws.send(new Message(MessageTypeData, normalizeTerminalBackspace(data, session)).toString());
         });
 
-        websocket.current.onmessage = (e) => {
+        ws.onmessage = (e) => {
             let msg = Message.parse(e.data);
             switch (msg.type) {
                 case MessageTypeData:
@@ -125,7 +130,7 @@ const TerminalPage = ({}: TerminalProps) => {
             },
         });
 
-        portalApi.getSessionById(sessionId)
+        portalApi.getSessionById(sessionId, sharerToken)
             .then((session) => {
                 connect(term, session);
             })

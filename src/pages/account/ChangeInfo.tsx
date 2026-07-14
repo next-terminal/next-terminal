@@ -1,5 +1,4 @@
 import {useFormRequest} from "@/hook/use-antd-form-query";
-import React from 'react';
 import {useTranslation} from "react-i18next";
 import {useMutation} from "@tanstack/react-query";
 import {App, Button, Form, Input, Typography} from "antd";
@@ -36,9 +35,7 @@ const ChangeInfo = () => {
             margin: 16
         }}></div>
         <Form form={form} onFinish={mutation.mutate} layout="vertical">
-            <Form.Item name={'nickname'} label={t('identity.user.nickname')} rules={[{
-                required: true
-            }]}>
+            <Form.Item name={'nickname'} label={t('identity.user.nickname')} required={true}>
                 <Input/>
             </Form.Item>
             <Form.Item>

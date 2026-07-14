@@ -1,5 +1,4 @@
-import React, { useRef } from 'react';
-import { FormInstance, Modal, Form, Input } from 'antd';
+import { Form, Input, Modal } from 'antd';
 import { useTranslation } from "react-i18next";
 interface Props {
   open: boolean;
@@ -18,24 +17,24 @@ const GuacdRequiredParameters = ({
   let {
     t
   } = useTranslation();
-  const formRef = useRef<FormInstance>(null);
+  const [form] = Form.useForm();
   return <Modal title={t('access.required_auth')} mask={{
     closable: false
   }} open={open} onOk={() => {
-    formRef.current?.validateFields().then(async values => {
+    form.validateFields().then(async values => {
       handleOk(values);
     });
   }} confirmLoading={confirmLoading} onCancel={() => {
     handleCancel();
   }}>
-            <Form ref={formRef} layout="vertical">
+            <Form form={form} layout="vertical">
                 {parameters?.map(parameter => {
         if (parameter == 'password') {
-          return <Form.Item label={t(parameter)} name={parameter}>
+          return <Form.Item key={parameter} label={t(parameter)} name={parameter}>
     <Input.Password />
           </Form.Item>;
         } else {
-          return <Form.Item label={t(parameter)} name={parameter}>
+          return <Form.Item key={parameter} label={t(parameter)} name={parameter}>
     <Input />
           </Form.Item>;
         }

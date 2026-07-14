@@ -1,15 +1,23 @@
-import React, {useEffect, useState} from 'react';
-import {useQuery} from "@tanstack/react-query";
 import portalApi from "@/api/portal-api";
-import {Input, Modal, Tree, TreeDataNode, TreeProps} from "antd";
+import { getImgColor } from "@/helper/asset-helper";
+import { useQuery } from "@tanstack/react-query";
+import { Input,Modal,Tree,TreeDataNode,TreeProps } from "antd";
 import clsx from "clsx";
-import {getImgColor} from "@/helper/asset-helper";
-import {useTranslation} from "react-i18next";
+import { type Key,useEffect,useState } from 'react';
+import { useTranslation } from "react-i18next";
 
 interface Props {
     open: boolean;
     handleOk: (values: string[]) => void
     handleCancel: () => void
+}
+
+interface TreeDataNodeWithExtra extends TreeDataNode {
+    extra?: {
+        logo?: string;
+        protocol?: string;
+    };
+    children?: TreeDataNodeWithExtra[];
 }
 
 const AccessSshChooser = ({handleOk, handleCancel, open}: Props) => {
@@ -31,8 +39,8 @@ const AccessSshChooser = ({handleOk, handleCancel, open}: Props) => {
         treeQuery.refetch();
     }, [open, keyword]);
 
-    const [treeData, setTreeData] = useState([]);
-    let [expandedKeys, setExpandedKeys] = useState([]);
+    const [treeData, setTreeData] = useState<TreeDataNodeWithExtra[]>([]);
+    let [expandedKeys, setExpandedKeys] = useState<Key[]>([]);
     const [sshAssetKeys, setSshAssetKeys] = useState<string[]>([]);
 
     useEffect(() => {
@@ -40,7 +48,7 @@ const AccessSshChooser = ({handleOk, handleCancel, open}: Props) => {
     }, [open]);
 
     const getAllKeys = (data: TreeDataNode[]) => {
-        let keys = [];
+        let keys: Key[] = [];
         data.forEach((item) => {
             keys.push(item.key);
             if (item.children) {
@@ -58,7 +66,7 @@ const AccessSshChooser = ({handleOk, handleCancel, open}: Props) => {
         }
     }, [treeQuery.data]);
 
-    const onCheck: TreeProps['onCheck'] = (checkedKeysValue, {checkedNodes}) => {
+    const onCheck: TreeProps['onCheck'] = (_checkedKeysValue, {checkedNodes}) => {
         // console.log('onCheck', checkedKeysValue, checkedNodes);
         let keys = checkedNodes.filter(item => item.isLeaf).map((item) => item.key);
         setSshAssetKeys(keys as string[]);
@@ -86,16 +94,17 @@ const AccessSshChooser = ({handleOk, handleCancel, open}: Props) => {
 
                     <Tree
                         titleRender={(node) => {
+                            const item = node as TreeDataNodeWithExtra;
                             return <span className={'flex items-center gap-1'}>
-                                    {node.extra?.logo ?
-                                        <img className={'h-4 w-4'} src={node.extra?.logo} alt={'logo'}/>
+                                    {item.extra?.logo ?
+                                        <img className={'h-4 w-4'} src={item.extra?.logo} alt={'logo'}/>
                                         :
                                         <div
-                                            className={clsx(`w-4 h-4 rounded flex items-center justify-center font-bold text-white text-xs`, getImgColor(node.extra?.protocol))}>
+                                            className={clsx(`w-4 h-4 rounded flex items-center justify-center font-bold text-white text-xs`, getImgColor(item.extra?.protocol ?? ''))}>
                                         </div>
                                     }
                                 <span>
-                                        {node.title}
+                                        {typeof item.title === 'function' ? '' : item.title}
                                     </span>
                                 </span>
                         }}

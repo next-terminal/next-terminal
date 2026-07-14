@@ -1,14 +1,14 @@
-import React from 'react';
-import clsx from 'clsx';
-import { Badge, Popover, Tooltip, Typography } from 'antd';
-import { ExternalLink, Shield } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import { AssetUser } from '@/api/portal-api';
+import { AssetUser,WebsiteUser } from '@/api/portal-api';
 import { getProtocolColor } from '@/helper/asset-helper';
+import { Popover,Tooltip,Typography } from 'antd';
+import clsx from 'clsx';
+import { ExternalLink,Shield } from 'lucide-react';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
 import FacadeLogo from './FacadeLogo';
 
 interface FacadeCardProps {
-    item: AssetUser;
+    item: AssetUser | WebsiteUser;
     type: 'website' | 'asset';
     // Website 专用
     onOpen?: (id: string) => void;
@@ -31,7 +31,7 @@ const FacadeCard: React.FC<FacadeCardProps> = React.memo(({
 }) => {
     const { t } = useTranslation();
     const tempAllowEnabled = type === 'website' && Boolean(item.attrs?.tempAllowEnabled);
-    const isInactive = item.status === 'inactive';
+    const isInactive = type === 'asset' && (item as AssetUser).status === 'inactive';
     const hasUsers = item.users && item.users.length > 0;
 
     // 渲染用户徽章(仅资产模式)

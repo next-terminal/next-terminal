@@ -1,25 +1,26 @@
-import React, {useState} from 'react';
-import {
-    App,
-    Button,
-    Input,
-    Modal,
-    Popconfirm,
-    Select,
-    Space,
-    Table,
-    type TableProps,
-    Tag,
-    Tooltip,
-    Typography} from "antd";
-import {useTranslation} from "react-i18next";
-import {useMutation, useQuery} from "@tanstack/react-query";
-import {DatabaseWorkOrder, dbWorkOrderAdminApi} from "@/api/db-work-order-api";
-import NButton from "@/components/NButton";
-import {getSort} from "@/utils/sort";
-import {UserSelect} from "@/components/shared/QuerySelects";
+import { DatabaseWorkOrder,dbWorkOrderAdminApi } from "@/api/db-work-order-api";
 import portalApi from "@/api/portal-api";
+import NButton from "@/components/NButton";
+import { UserSelect } from "@/components/shared/QuerySelects";
+import { getSort } from "@/utils/sort";
+import { useMutation,useQuery } from "@tanstack/react-query";
+import {
+App,
+Button,
+Input,
+Modal,
+Popconfirm,
+Select,
+Space,
+Table,
+type TableProps,
+Tag,
+Tooltip,
+Typography
+} from "antd";
 import dayjs from "dayjs";
+import React,{ useState } from 'react';
+import { useTranslation } from "react-i18next";
 
 const {Text} = Typography;
 
@@ -114,7 +115,7 @@ const DatabaseWorkOrderPage = () => {
         return <Tag color={item.color}>{item.label}</Tag>;
     };
 
-    const handleTableChange: TableProps<DatabaseWorkOrder>['onChange'] = (nextPagination, filters, sorter) => {
+    const handleTableChange: TableProps<DatabaseWorkOrder>['onChange'] = (nextPagination, _filters, sorter) => {
         const activeSorter = Array.isArray(sorter) ? sorter.find((item) => item.order) : sorter;
         const field = activeSorter?.field;
         const fieldName = Array.isArray(field) ? field.join('.') : field ? String(field) : '';
@@ -257,7 +258,7 @@ const DatabaseWorkOrderPage = () => {
         <div>
             <div className="overflow-hidden rounded-md bg-white dark:bg-[#141414]">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-3 dark:border-gray-800">
-                    <div className="font-medium">{t('menus.resource.submenus.db_work_order')}</div>
+                    <div className="font-medium">{t('menus.work_order.submenus.db_work_order')}</div>
                     <Space wrap>
                         <Select
                             allowClear

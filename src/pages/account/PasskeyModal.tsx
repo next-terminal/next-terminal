@@ -1,6 +1,5 @@
 import {useFormRequest} from "@/hook/use-antd-form-query";
-import React, {useRef} from 'react';
-import {Form, FormInstance, Input, Modal} from "antd";
+import {Form, Input, Modal} from "antd";
 import {useTranslation} from "react-i18next";
 import {WebauthnCredential} from "@/api/account-api";
 
@@ -20,16 +19,16 @@ const PasskeyModal = ({
                           credential
                       }: Props) => {
     let {t} = useTranslation();
-    const formRef = useRef<FormInstance>(null);
+    const [form] = Form.useForm();
     const get = async () => {
         return credential ?? {};
     };
-    useFormRequest(formRef, ["form-request", "web/src/pages/account/PasskeyModal.tsx", open, credential?.id], get, open);
+    useFormRequest(form, ["form-request", "web/src/pages/account/PasskeyModal.tsx", open, credential?.id], get, {enabled: open});
     return <Modal title={''}
                   open={open} mask={{closable: false}}
                   destroyOnHidden={true}
                   onOk={() => {
-                      formRef.current?.validateFields().then(async values => {
+                      form.validateFields().then(async values => {
                           handleOk(values);
                       });
                   }}
@@ -38,7 +37,7 @@ const PasskeyModal = ({
                   }}
                   confirmLoading={confirmLoading}>
 
-        <Form ref={formRef} layout="vertical">
+        <Form form={form} clearOnDestroy={true} layout="vertical">
             <Form.Item hidden={true} name={'id'}>
                 <Input/>
             </Form.Item>

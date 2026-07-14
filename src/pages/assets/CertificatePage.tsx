@@ -1,16 +1,16 @@
-import React, {useState} from 'react';
+import { useState } from 'react';
 
-import {App, Badge, Button, Dropdown, Input, Space, Table, type TableProps, Tag, Tooltip, Typography} from "antd";
-import {useTranslation} from "react-i18next";
-import {getSort} from "@/utils/sort";
-import {useMutation, useQuery} from "@tanstack/react-query";
-import NButton from "@/components/NButton";
-import certificateApi, {Certificate} from "@/api/certificate-api";
-import CertificateModal from "@/pages/assets/CertificateModal";
-import CertificateDNSProviderModal from "@/pages/assets/CertificateDNSProviderModal";
+import certificateApi,{ Certificate } from "@/api/certificate-api";
 import dnsProviderApi from "@/api/dns-provider-api";
+import NButton from "@/components/NButton";
+import CertificateDNSProviderModal from "@/pages/assets/CertificateDNSProviderModal";
 import CertificateIssuedLog from "@/pages/assets/CertificateIssuedLog";
+import CertificateModal from "@/pages/assets/CertificateModal";
+import { getSort } from "@/utils/sort";
+import { useMutation,useQuery } from "@tanstack/react-query";
+import { App,Badge,Button,Dropdown,Input,Space,Table,type TableProps,Tag,Tooltip,Typography } from "antd";
 import dayjs from "dayjs";
+import { useTranslation } from "react-i18next";
 
 const api = certificateApi;
 const {Text} = Typography;
@@ -87,7 +87,7 @@ const CertificatePage = () => {
         });
     }
 
-    const handleTableChange: TableProps<Certificate>['onChange'] = (nextPagination, filters, sorter) => {
+    const handleTableChange: TableProps<Certificate>['onChange'] = (nextPagination, _filters, sorter) => {
         const activeSorter = Array.isArray(sorter) ? sorter.find((item) => item.order) : sorter;
         const field = activeSorter?.field;
         const fieldName = Array.isArray(field) ? field.join('.') : field ? String(field) : '';

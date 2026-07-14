@@ -58,37 +58,18 @@ export function isFullScreen() {
     return document.fullscreenElement != null;
 }
 
-export function findScroller(element: HTMLElement) {
-    element.onscroll = function () {
-        console.log(element)
-    }
-    Array.from(element.children).forEach(findScroller)
-}
-
 export const generateRandomId = (): string => {
     const array = new Uint8Array(16); // 16 bytes = 128 bits
     crypto.getRandomValues(array);
     return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
 };
 
-export function openOrSwitchToPage(url: string, windowName: string) {
-    // 尝试切换到已打开的窗口
-    const win = window.open('', windowName);
-    if (win.location.href === 'about:blank') {
-        win.location.href = url;
-        win.focus();
-    } else if (win.location.href !== url) {
-        // 如果窗口 URL 不匹配目标 URL，则更新并切换
-        win.location.href = url;
-        win.focus();
-    } else {
-        win.focus();
-    }
-}
-
 export function isFontAvailable(fontName: string) {
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
+    if (!context) {
+        return false;
+    }
     const text = 'abcdefghijklmnopqrstuvwxyz0123456789';
 
     context.font = '72px monospace';
@@ -198,7 +179,7 @@ export function isMac() {
 // 1、在IE中这个事件你只要去关闭窗口就触发。
 // 2、谷歌、火狐等在F12调试模式中也会起效
 // 3、谷歌、火狐、QQ等浏览器中被优化了，需要用户在页面有过任何操作才会出现提示！（坑）。
-export const beforeUnload = function (event) {
+export const beforeUnload = function (event: BeforeUnloadEvent) {
     // 一些浏览器可能需要设置 returnValue 属性
     event.preventDefault();
     event.returnValue = i18n.t('general.leave_confirm');
@@ -217,7 +198,7 @@ export const browserDownload = (url: string) => {
     window.addEventListener('beforeunload', beforeUnload, true);
 }
 
-export const handleKeyDown = (e) => {
+export const handleKeyDown = (e: KeyboardEvent) => {
     // 禁用所有 F1-F12 功能键
     if ((e.key && e.key.startsWith('F') && parseInt(e.key.substring(1)) >= 1 && parseInt(e.key.substring(1)) <= 12) ||
         (e.keyCode >= 112 && e.keyCode <= 123)) {
@@ -271,7 +252,7 @@ const BLOCKED_CTRL_SHIFT_KEYS = [
     'K', // Developer Tools
 ];
 
-export const dropKeydown = (e) => {
+export const dropKeydown = (e: KeyboardEvent) => {
     // Block Ctrl + specific keys
     if (e.ctrlKey && !e.shiftKey && !e.altKey && BLOCKED_CTRL_KEYS.includes(e.key.toUpperCase())) {
         console.log(`Blocked: Ctrl + ${e.key}`);

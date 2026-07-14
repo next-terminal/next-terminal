@@ -1,18 +1,16 @@
 import React, {useRef, useState} from 'react';
-import {
-    App,
-    Button,
-    Popconfirm,
-    Space,
-    Tag} from 'antd';
-import NTable, {type NTableActionType, type NColumn} from "@/components/NTable";
-import {PlusOutlined} from '@ant-design/icons';
+import {App, Button, Popconfirm, Space, Tag} from 'antd';
+import Disabled from "@/components/Disabled";
+import NTable, {type NColumn, type NTableActionType} from "@/components/NTable";
 import {useTranslation} from 'react-i18next';
 import gatewayGroupApi, {GatewayGroup} from '@/api/gateway-group-api';
 import GatewayGroupDrawer from './GatewayGroupDrawer';
+import {useLicense} from "@/hook/LicenseContext";
 
 const GatewayGroupPage: React.FC = () => {
     const {t} = useTranslation();
+    const {license} = useLicense();
+    const hasPremiumFeatures = license.hasPremiumFeatures();
     const {message} = App.useApp();
     const actionRef = useRef<NTableActionType>(null);
 
@@ -121,11 +119,19 @@ const GatewayGroupPage: React.FC = () => {
     ];
 
     return (
-        <>
+        <Disabled disabled={!hasPremiumFeatures}>
             <NTable<GatewayGroup>
                 columns={columns}
                 actionRef={actionRef}
                 request={async (params) => {
+                    if (!hasPremiumFeatures) {
+                        return {
+                            data: [],
+                            success: true,
+                            total: 0,
+                        };
+                    }
+
                     const result = await gatewayGroupApi.getPaging({
                         pageIndex: params.current || 1,
                         pageSize: params.pageSize || 10,
@@ -151,7 +157,6 @@ const GatewayGroupPage: React.FC = () => {
                     <Button
                         key="create"
                         type="primary"
-                        icon={<PlusOutlined/>}
                         onClick={handleCreate}
                     >
                         {t('actions.new')}
@@ -164,7 +169,7 @@ const GatewayGroupPage: React.FC = () => {
                 group={currentGroup}
                 onClose={handleDrawerClose}
             />
-        </>
+        </Disabled>
     );
 };
 

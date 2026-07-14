@@ -1,5 +1,5 @@
-import React, {useState} from 'react';
-import {Alert, Button, Form, Input, Switch} from "antd";
+import {useState} from 'react';
+import {Button, Form, Input, Switch} from "antd";
 import {SettingProps} from "./SettingPage";
 import {useTranslation} from "react-i18next";
 import Disabled from "@/components/Disabled";
@@ -23,10 +23,7 @@ const OidcSetting = ({
     };
     useFormRequest(form, ["form-request", "web/src/pages/sysconf/OidcSetting.tsx"], wrapGet, true);
     return <div>
-        <Disabled disabled={!license.isEnterprise()}>
-            <Alert title={t('settings.oidc.tip')} type="info" showIcon style={{
-                marginBottom: 16
-            }}/>
+        <Disabled disabled={!license.hasPremiumFeatures()}>
             <Form form={form} onFinish={set} layout="vertical">
                 <Form.Item name="oidc-enabled" label={t("settings.oidc.enabled")} rules={[{
                     required: true

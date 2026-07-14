@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import {useState} from 'react';
 import accountApi from "../../api/account-api";
 import {App, Button, message, Result} from "antd";
 import {ExclamationCircleOutlined} from "@ant-design/icons";

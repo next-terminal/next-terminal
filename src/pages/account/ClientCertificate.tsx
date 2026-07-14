@@ -1,4 +1,3 @@
-import React from 'react';
 import {Button, Descriptions, Empty, Modal, Popconfirm, Space, Tag, Typography, message} from "antd";
 import {useTranslation} from "react-i18next";
 import {useMutation, useQuery} from "@tanstack/react-query";

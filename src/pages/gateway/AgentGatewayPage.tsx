@@ -1,19 +1,20 @@
-import React, {useRef, useState} from 'react';
-import NTable, {type NTableActionType, type NColumn} from "@/components/NTable";
-import {App, Button, Popconfirm, Progress, Space, Tag, Tooltip} from "antd";
-import {useTranslation} from "react-i18next";
-import {useMutation, useQuery} from "@tanstack/react-query";
-import agentGatewayApi, {AgentGateway, SortPositionRequest} from "@/api/agent-gateway-api";
+import agentGatewayApi,{ AgentGateway,GatewayReferenceError,SortPositionRequest } from "@/api/agent-gateway-api";
+import Disabled from "@/components/Disabled";
+import { DragHandle } from "@/components/DraggableTable";
+import NButton from "@/components/NButton";
+import NTable,{ type NColumn,type NTableActionType } from "@/components/NTable";
+import { useLicense } from "@/hook/LicenseContext";
 import AgentGatewayModal from "@/pages/gateway/AgentGatewayModal";
 import AgentGatewayRegister from "@/pages/gateway/AgentGatewayRegister";
-import NButton from "@/components/NButton";
-import {useLicense} from "@/hook/LicenseContext";
-import AgentGatewayTokenDrawer from "@/pages/gateway/AgentGatewayTokenDrawer";
-import {ArrowDown, ArrowUp} from "lucide-react";
-import {formatUptime, getColor, renderSize} from "@/utils/utils";
 import AgentGatewayStat from "@/pages/gateway/AgentGatewayStat";
-import {getSort} from "@/utils/sort";
-import {DragHandle} from "@/components/DraggableTable";
+import AgentGatewayTokenDrawer from "@/pages/gateway/AgentGatewayTokenDrawer";
+import { getSort } from "@/utils/sort";
+import { getColor,renderSize } from "@/utils/utils";
+import { useMutation,useQuery } from "@tanstack/react-query";
+import { App,Button,Popconfirm,Progress,Space,Tag } from "antd";
+import { ArrowDown,ArrowUp } from "lucide-react";
+import { useRef,useState } from 'react';
+import { useTranslation } from "react-i18next";
 
 const api = agentGatewayApi;
 
@@ -28,8 +29,9 @@ const AgentGatewayPage = () => {
 
     let [open, setOpen] = useState<boolean>(false);
     let [registerOpen, setRegisterOpen] = useState<boolean>(false);
-    let [selectedRowKey, setSelectedRowKey] = useState<string>();
+    let [selectedRowKey, setSelectedRowKey] = useState<string>('');
     let { license } = useLicense();
+    const hasPremiumFeatures = license.hasPremiumFeatures();
     let [dataSource, setDataSource] = useState<AgentGateway[]>([]);
 
     let [tokenManageOpen, setTokenManageOpen] = useState<boolean>(false);
@@ -37,12 +39,13 @@ const AgentGatewayPage = () => {
 
     const selectedGateway = selectedRowKey ? dataSource.find(item => item.id === selectedRowKey) : undefined;
 
-    const {message} = App.useApp();
+    const {message, modal} = App.useApp();
 
     // 获取 agent 版本号
     const {data: versionData} = useQuery({
         queryKey: ['agentVersion'],
         queryFn: () => api.getVersion(),
+        enabled: hasPremiumFeatures,
         staleTime: 1000 * 60 * 5, // 5分钟内不重新请求
     });
 
@@ -60,7 +63,7 @@ const AgentGatewayPage = () => {
             // 重新获取数据
             actionRef.current?.reload();
             setOpen(false);
-            setSelectedRowKey(undefined);
+            setSelectedRowKey('');
             showSuccess();
         }
     });
@@ -80,7 +83,49 @@ const AgentGatewayPage = () => {
         });
     }
 
-    const handleDragSortEnd = (beforeIndex: number, afterIndex: number, newDataSource: AgentGateway[]) => {
+    function showDeleteError(error: unknown) {
+        const referenceError = error as GatewayReferenceError;
+        const referenceGroups = [
+            {title: t('gateways.gateway_delete_referenced_assets'), names: referenceError.assetNames || []},
+            {title: t('gateways.gateway_delete_referenced_websites'), names: referenceError.websiteNames || []},
+            {title: t('gateways.gateway_delete_referenced_database_assets'), names: referenceError.databaseAssetNames || []},
+            {title: t('gateways.gateway_delete_referenced_asset_groups'), names: referenceError.assetGroupNames || []},
+            {title: t('gateways.gateway_delete_referenced_website_groups'), names: referenceError.websiteGroupNames || []},
+            {title: t('gateways.gateway_delete_referenced_gateway_groups'), names: referenceError.gatewayGroupNames || []},
+        ];
+        const hasReferences = referenceGroups.some((group) => group.names.length > 0);
+        modal.warning({
+            title: hasReferences ? t('gateways.gateway_delete_referenced_title') : t('general.failed'),
+            content: (
+                <Space direction="vertical" size={12}>
+                    {referenceGroups.map((group) => group.names.length > 0 && (
+                        <div key={group.title}>
+                            <div>{group.title}</div>
+                            <ul className="m-0 pl-5">
+                                {group.names.map((name, index) => (
+                                    <li key={`${name}-${index}`}>{name}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    ))}
+                    {!hasReferences && (
+                        <div>{t('general.error')}</div>
+                    )}
+                </Space>
+            ),
+        });
+    }
+
+    const deleteMutation = useMutation({
+        mutationFn: (id: string) => api.deleteById(id),
+        onSuccess: () => {
+            actionRef.current?.reload();
+            showSuccess();
+        },
+        onError: showDeleteError,
+    });
+
+    const handleDragSortEnd = (_beforeIndex: number, afterIndex: number, newDataSource: AgentGateway[]) => {
         // console.log('排序操作', {beforeIndex, afterIndex});
 
         // 立即更新本地状态，避免闪烁
@@ -137,7 +182,7 @@ const AgentGatewayPage = () => {
             className: 'drag-visible',
             width: 260,
             fixed: 'left',
-            render: (text, record) => {
+            render: (_text, record) => {
                 let osImg = '';
                 switch (record.os) {
                     case 'linux':
@@ -178,7 +223,7 @@ const AgentGatewayPage = () => {
             key: 'online',
             hideInSearch: true,
             width: 90,
-            render: (text, record) => {
+            render: (_text, record) => {
                 if (record.online === false) {
                     return <Tag variant="filled" className="!m-0">{t('general.offline')}</Tag>;
                 }
@@ -191,7 +236,7 @@ const AgentGatewayPage = () => {
             key: 'stat.ping',
             hideInSearch: true,
             width: 90,
-            render: (text, record) => {
+            render: (_text, record) => {
                 if (record.online === false) return '-';
                 return renderPingTag(record.stat?.ping);
             }
@@ -202,7 +247,7 @@ const AgentGatewayPage = () => {
             key: 'stat.load',
             hideInSearch: true,
             width: 120,
-            render: (text, record) => {
+            render: (_text, record) => {
                 if (record.online === false) {
                     return '-';
                 }
@@ -224,7 +269,7 @@ const AgentGatewayPage = () => {
             key: 'stat.cpu',
             hideInSearch: true,
             width: 100,
-            render: (text, record) => {
+            render: (_text, record) => {
                 if (!record.stat?.cpu.percent) return '-';
                 return <Progress
                     size="small"
@@ -240,7 +285,7 @@ const AgentGatewayPage = () => {
             key: 'stat.memory',
             hideInSearch: true,
             width: 100,
-            render: (text, record) => {
+            render: (_text, record) => {
                 if (!record.stat?.memory.percent) return '-';
                 return <Progress
                     size="small"
@@ -256,7 +301,7 @@ const AgentGatewayPage = () => {
             key: 'stat.disk',
             hideInSearch: true,
             width: 100,
-            render: (text, record) => {
+            render: (_text, record) => {
                 if (!record.stat?.disk.percent) return '-';
                 return <Progress
                     size="small"
@@ -272,7 +317,7 @@ const AgentGatewayPage = () => {
             key: 'stat.network_io',
             hideInSearch: true,
             width: 100,
-            render: (text, record) => {
+            render: (_text, record) => {
                 if (!record.stat?.network) return '-';
                 return <div className="flex flex-col gap-0.5 text-xs">
                     <div className={'flex items-center gap-1 text-green-600'}>
@@ -292,7 +337,7 @@ const AgentGatewayPage = () => {
             key: 'option',
             width: 100,
             fixed: 'right',
-            render: (text, record) => (
+            render: (_text, record) => (
                 <Space>
                     <NButton
                         key="stat"
@@ -315,9 +360,8 @@ const AgentGatewayPage = () => {
                     <Popconfirm
                         key={'delete-confirm'}
                         title={t('general.confirm_delete')}
-                        onConfirm={async () => {
-                            await api.deleteById(record.id);
-                            actionRef.current?.reload();
+                        onConfirm={() => {
+                            deleteMutation.mutate(record.id);
                         }}
                     >
                         <NButton key='delete' danger={true}>{t('actions.delete')}</NButton>
@@ -327,135 +371,131 @@ const AgentGatewayPage = () => {
         },
     ];
 
-    const registerLimitReached = license.isFree() && dataSource.length >= 1;
-
-    const renderRegisterButton = () => {
-        const button = (
-            <Button
-                type="primary"
-                disabled={registerLimitReached}
-                onClick={() => {
-                    setRegisterOpen(true)
-                }}
-            >
-                {t('gateways.register')}
-            </Button>
-        );
-
-        if (registerLimitReached) {
-            return (
-                <Tooltip key="register-button" title={t('gateways.free_limit_tip')}>
-                    <span style={{display: 'inline-block'}}>
-                        {button}
-                    </span>
-                </Tooltip>
-            );
-        }
-
-        return React.cloneElement(button, {key: 'register-button'});
-    };
-
     return (
         <div className={'w-full'}>
-            <NTable
-                headerTitle={
-                    <div className={'flex items-center gap-2'}>
-                        <span>{t('menus.gateway.submenus.agent_gateway')}</span>
-                        {versionData?.version && (
-                            <Tag color="blue" variant="filled">v{versionData.version}</Tag>
-                        )}
-                    </div>
-                }
-                columns={columns}
-                actionRef={actionRef}
-                rowKey="id"
-                options={{
-                    search: true,
-                }}
-                search={false}
-                pagination={{
-                    defaultPageSize: 10,
-                    showSizeChanger: true
-                }}
-                request={async (params = {}, sort, filter) => {
-                    let [sortOrder, sortField] = getSort(sort);
-                    if (sortOrder === "" && sortField === "") {
-                        sortOrder = "desc";  // 使用降序，让最大的 sort 显示在最上面
-                        sortField = "sort";
+            <Disabled disabled={!hasPremiumFeatures}>
+                <NTable
+                    headerTitle={
+                        <div className={'flex items-center gap-2'}>
+                            <span>{t('menus.gateway.submenus.agent_gateway')}</span>
+                            {versionData?.version && (
+                                <Tag color="blue" variant="filled">v{versionData.version}</Tag>
+                            )}
+                        </div>
                     }
+                    columns={columns}
+                    actionRef={actionRef}
+                    rowKey="id"
+                    options={{
+                        search: true,
+                    }}
+                    search={false}
+                    pagination={{
+                        defaultPageSize: 10,
+                        showSizeChanger: true
+                    }}
+                    request={async (params = {}, sort, _filter) => {
+                        if (!hasPremiumFeatures) {
+                            setDataSource([]);
+                            return {
+                                data: [],
+                                success: true,
+                                total: 0
+                            };
+                        }
 
-                    let queryParams = {
-                        pageIndex: params.current,
-                        pageSize: params.pageSize,
-                        sortOrder: sortOrder,
-                        sortField: sortField,
-                        keyword: params.keyword,
-                    }
-                    let result = await api.getPaging(queryParams);
-                    // 直接使用后端返回的数据，包含 sortOrder 字段
-                    setDataSource(result['items']);
-                    return {
-                        data: result['items'],
-                        success: true,
-                        total: result['total']
-                    };
-                }}
-                dataSource={dataSource}
-                dragSortKey="sort"
-                onDragSortEnd={handleDragSortEnd}
-                rowClassName={(record) => {
-                    if (record.online == false) {
-                        return 'grayscale';
-                    }
-                }}
-                dateFormatter="string"
-                toolBarRender={() => [
-                    renderRegisterButton(),
-                    <Button key="token-manage" color={'purple'} variant={'filled'} onClick={() => {
-                        setTokenManageOpen(true)
-                    }}>
-                        {t('gateways.token_manage')}
-                    </Button>
-                ]}
-                polling={5000}
-                scroll={{
-                    x: 'max-content'
-                }}
-            />
+                        let [sortOrder, sortField] = getSort(sort);
+                        if (sortOrder === "" && sortField === "") {
+                            sortOrder = "desc";  // 使用降序，让最大的 sort 显示在最上面
+                            sortField = "sort";
+                        }
 
-            <AgentGatewayModal
-                id={selectedRowKey}
-                open={open}
-                confirmLoading={mutation.isPending}
-                handleCancel={() => {
-                    setOpen(false);
-                    setSelectedRowKey(undefined);
-                }}
-                handleOk={mutation.mutate}
-            />
+                        let queryParams = {
+                            pageIndex: params.current,
+                            pageSize: params.pageSize,
+                            sortOrder: sortOrder,
+                            sortField: sortField,
+                            keyword: params.keyword,
+                        }
+                        let result = await api.getPaging(queryParams);
+                        // 直接使用后端返回的数据，包含 sortOrder 字段
+                        setDataSource(result['items']);
+                        return {
+                            data: result['items'],
+                            success: true,
+                            total: result['total']
+                        };
+                    }}
+                    dataSource={dataSource}
+                    dragSortKey="sort"
+                    onDragSortEnd={handleDragSortEnd}
+                    rowClassName={(record) => {
+                        if (!record.online) {
+                            return 'grayscale';
+                        }
+                        return '';
+                    }}
+                    dateFormatter="string"
+                    toolBarRender={() => [
+                        <Button key="token-manage" color={'purple'} variant={'filled'} onClick={() => {
+                            setTokenManageOpen(true)
+                        }}>
+                            {t('gateways.token_manage')}
+                        </Button>,
+                        <Button
+                            key="register-button"
+                            type="primary"
+                            onClick={() => {
+                                setRegisterOpen(true)
+                            }}
+                        >
+                            {t('gateways.register')}
+                        </Button>
+                    ]}
+                    polling={hasPremiumFeatures ? 5000 : undefined}
+                    scroll={{
+                        x: 'max-content'
+                    }}
+                />
 
-            <AgentGatewayRegister
-                open={registerOpen}
-                handleCancel={() => {
-                    setRegisterOpen(false);
-                }}
-            />
+                {hasPremiumFeatures && (
+                    <>
+                        <AgentGatewayModal
+                            id={selectedRowKey}
+                            open={open}
+                            confirmLoading={mutation.isPending}
+                            handleCancel={() => {
+                                setOpen(false);
+                                setSelectedRowKey('');
+                            }}
+                            handleOk={mutation.mutate}
+                        />
 
-            <AgentGatewayTokenDrawer
-                open={tokenManageOpen}
-                onClose={() => {
-                    setTokenManageOpen(false);
-                }}
-            />
+                        <AgentGatewayRegister
+                            open={registerOpen}
+                            handleCancel={() => {
+                                setRegisterOpen(false);
+                            }}
+                        />
 
-            <AgentGatewayStat
-                open={statOpen}
-                id={selectedRowKey}
-                updatedAt={selectedGateway?.updatedAt}
-                onClose={() => {
-                    setStatOpen(false);
-                }}
-            />
+                        <AgentGatewayTokenDrawer
+                            open={tokenManageOpen}
+                            onClose={() => {
+                                setTokenManageOpen(false);
+                            }}
+                        />
+
+                        <AgentGatewayStat
+                            open={statOpen}
+                            id={selectedRowKey}
+                            updatedAt={selectedGateway?.updatedAt}
+                            onClose={() => {
+                                setStatOpen(false);
+                            }}
+                        />
+                    </>
+                )}
+            </Disabled>
         </div>
     );
 };

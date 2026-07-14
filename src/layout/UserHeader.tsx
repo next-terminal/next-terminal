@@ -1,4 +1,4 @@
-import React, {useRef, useState} from 'react';
+import {useRef, useState} from 'react';
 import {Link, useLocation, useNavigate} from "react-router-dom";
 import {useQuery} from "@tanstack/react-query";
 import brandingApi from "@/api/branding-api";
@@ -79,6 +79,8 @@ const UserHeader = () => {
     })
 
 
+    const accessRequestEnabled = infoQuery.data?.accessRequestEnabled;
+
     const menus = [
         {
             key: '/x-asset',
@@ -98,8 +100,12 @@ const UserHeader = () => {
         },
         {
             key: '/x-db-work-order',
-            title: t('menus.resource.submenus.db_work_order'),
+            title: t('menus.work_order.submenus.db_work_order'),
         },
+        ...(accessRequestEnabled ? [{
+            key: '/x-access-request',
+            title: t('menus.work_order.submenus.access_request'),
+        }] : []),
     ]
 
     return (
@@ -108,8 +114,8 @@ const UserHeader = () => {
                 className={clsx(
                     'sticky top-0 z-50 w-full border-b shadow-[0_6px_18px_rgba(15,23,42,0.18)]',
                     isDark
-                        ? 'bg-gradient-to-r from-[#0b1f3a] via-[#0f2a50] to-[#143a6b] border-white/10'
-                        : 'bg-gradient-to-r from-[#1A73E8] via-[#1E7BF2] to-[#3B82F6] border-white/20'
+                        ? 'bg-linear-to-r from-[#0b1f3a] via-[#0f2a50] to-[#143a6b] border-white/10'
+                        : 'bg-linear-to-r from-[#1A73E8] via-[#1E7BF2] to-[#3B82F6] border-white/20'
                 )}
             >
                 <div className="h-14 flex gap-2 lg:gap-8 items-center px-4 lg:px-20 text-white">
@@ -139,7 +145,7 @@ const UserHeader = () => {
                     </Spin>
 
 
-                    <div className={'flex-grow h-full'}>
+                    <div className={'grow h-full'}>
                         <div className={'lg:flex gap-6 items-center h-full text-sm text-white hidden'}>
                             {
                                 menus.map(item => {
@@ -148,7 +154,7 @@ const UserHeader = () => {
                                         className={clsx(
                                             'h-full flex items-center cursor-pointer relative px-1.5 transition-colors',
                                             item.key === pathname
-                                                ? 'text-white font-semibold after:absolute after:bottom-0 after:left-0 after:h-[3px] after:w-full after:bg-white/90'
+                                                ? 'text-white font-semibold after:absolute after:bottom-0 after:left-0 after:h-0.75 after:w-full after:bg-white/90'
                                                 : 'text-white/80 hover:text-white'
                                         )}
                                         onClick={() => {
@@ -169,7 +175,6 @@ const UserHeader = () => {
                             <Select
                                 placeholder={t('general.language')}
                                 variant="borderless"
-                                className="text-white [&_.ant-select-selector]:!bg-white/10 [&_.ant-select-selector]:!text-white [&_.ant-select-selection-item]:!text-white [&_.ant-select-selection-placeholder]:!text-white/70 [&_.ant-select-arrow]:!text-white"
                                 style={{
                                     width: 120,
                                 }}

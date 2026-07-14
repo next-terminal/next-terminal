@@ -1,8 +1,8 @@
 import QuerySelect from "@/components/QuerySelect";
+import { EyeInvisibleOutlined,EyeTwoTone } from '@ant-design/icons';
+import { Button,Form,FormInstance,Input,Space } from 'antd';
 import React from 'react';
-import {Button, Form, FormInstance, Input, Space} from 'antd';
-import {EyeInvisibleOutlined, EyeTwoTone} from '@ant-design/icons';
-import {useTranslation} from "react-i18next";
+import { useTranslation } from "react-i18next";
 import credentialApi from "../../../api/credential-api";
 
 interface AccountTypeFormProps {
@@ -18,7 +18,7 @@ interface AccountTypeFormProps {
 
 const AccountTypeForm: React.FC<AccountTypeFormProps> = ({
                                                              accountType,
-                                                             protocol,
+                                                             protocol: _protocol,
                                                              assetId,
                                                              copy,
                                                              decrypted,

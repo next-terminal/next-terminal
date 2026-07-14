@@ -1,6 +1,12 @@
 import {Api} from "./core/api";
 import requests from "./core/requests";
 import {TreeDataNode} from "antd";
+import type {GatewayHop} from "@/api/gateway-chain";
+
+export interface AssetGroupNode extends TreeDataNode {
+    gatewayChain?: GatewayHop[];
+    children?: AssetGroupNode[];
+}
 
 export interface Asset {
     id: string;
@@ -20,10 +26,9 @@ export interface Asset {
     status: string;
     statusText: string;
     owner: string;
-    gatewayType: string;
-    gatewayId: string;
+    gatewayChain: GatewayHop[];
     tags?: string[];
-    attrs?: any;
+    attrs?: Record<string, any>;
     createdAt: number;
     lastAccessTime: number;
     groupId: string;
@@ -50,9 +55,37 @@ export interface SortPositionRequest {
     afterId: string;   // 目标位置的后一项 ID (空字符串表示移到最后)
 }
 
+export type AICommandPolicy = '' | 'auto' | 'balanced' | 'always';
+
+export interface BatchUpdateAssetRequest {
+    assetIds: string[];
+    changes: {
+        ai?: {
+            enabled?: boolean;
+            restrictedShell?: boolean;
+            commandPolicy?: AICommandPolicy;
+        };
+        gateway?: {
+            gatewayChain: GatewayHop[];
+        };
+    };
+}
+
+export interface BatchUpdateAssetResult {
+    selectedCount: number;
+    aiUpdatedCount: number;
+    aiSkippedCount: number;
+    gatewayUpdatedCount: number;
+}
+
 class AssetApi extends Api<Asset> {
     constructor() {
         super("admin/assets");
+    }
+
+    getAll = async (protocol?: string) => {
+        const query = protocol ? `?protocol=${protocol}` : '';
+        return await requests.get(`/${this.group}${query}`) as Asset[];
     }
 
     checking = async (keys: string[]) => {
@@ -73,9 +106,8 @@ class AssetApi extends Api<Asset> {
         return await requests.post(`/${this.group}/change-group`, data);
     }
 
-    // 统一的修改网关接口，支持 ssh/agent/group 三种类型
-    changeGateway = async (data: { assetIds: string[], gatewayType: string, gatewayId: string }) => {
-        return await requests.post(`/${this.group}/change-gateway`, data);
+    batchUpdate = async (data: BatchUpdateAssetRequest) => {
+        return await requests.post(`/${this.group}/batch-update`, data) as BatchUpdateAssetResult;
     }
 
     getTags = async () => {
@@ -83,7 +115,7 @@ class AssetApi extends Api<Asset> {
     }
 
     getGroups = async () => {
-        return await requests.get(`/${this.group}/groups`) as TreeDataNode[]
+        return await requests.get(`/${this.group}/groups`) as AssetGroupNode[]
     }
 
     setGroups = async (data: any) => {
@@ -117,7 +149,7 @@ class AssetApi extends Api<Asset> {
         return await requests.patch(`/${this.group}/${id}/basic`, data);
     }
 
-    updateAdvanced = async (id: string, data: { attrs?: any }) => {
+    updateAdvanced = async (id: string, data: { attrs?: Record<string, any> }) => {
         return await requests.patch(`/${this.group}/${id}/advanced`, data);
     }
 

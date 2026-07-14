@@ -1,6 +1,6 @@
 import { useFormRequest } from "@/hook/use-antd-form-query";
-import React, { useRef, useState } from 'react';
-import { Form, FormInstance, Modal, Tree, Input } from "antd";
+import {type Key, useState} from 'react';
+import {Form, Modal, Tree, Input} from "antd";
 import roleApi, { TreeNode } from "../../api/role-api";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -13,7 +13,7 @@ export interface RoleProps {
   confirmLoading: boolean;
   id: string | undefined;
 }
-const findTreePath = (tree: TreeNode[], filter: (node: TreeNode) => boolean, path: string[] = []): string[] => {
+const findTreePath = (tree: TreeNode[] | undefined, filter: (node: TreeNode) => boolean, path: string[] = []): string[] => {
   if (!tree) return [];
   for (const data of tree) {
     path.push(data.key);
@@ -36,12 +36,12 @@ const RoleModal = ({
   let {
     t
   } = useTranslation();
-  const formRef = useRef<FormInstance>(null);
+  const [form] = Form.useForm();
   let [checkedMenus, setCheckedMenus] = useState<string[]>([]);
   const get = async () => {
     if (id) {
       let role = await api.getById(id);
-      let strings = role.menus?.filter(item => item.checked === true).map(item => item.key);
+      let strings = role.menus?.filter(item => item.checked === true).map(item => item.key) ?? [];
       setCheckedMenus(strings);
       return role;
     }
@@ -54,19 +54,23 @@ const RoleModal = ({
   };
   const deepT = (parent: string, menus: TreeNode[]) => {
     for (let i = 0; i < menus.length; i++) {
-      if (menus[i].isLeaf) {
-        menus[i].title = t('permissions.' + menus[i].key);
+      const menu = menus[i];
+      if (!menu) {
+        continue;
+      }
+      if (menu.isLeaf) {
+        menu.title = t('permissions.' + menu.key);
       } else {
         let parentKey = parent.replaceAll('-', '_');
-        let key = menus[i].key.replaceAll('-', '_');
+        let key = menu.key.replaceAll('-', '_');
         if (strings.hasText(parent)) {
-          menus[i].title = t(`menus.${parentKey}.submenus.${key}`);
+          menu.title = t(`menus.${parentKey}.submenus.${key}`);
         } else {
-          menus[i].title = t(`menus.${key}.label`);
+          menu.title = t(`menus.${key}.label`);
         }
       }
-      if (menus[i].children) {
-        deepT(menus[i].key, menus[i].children);
+      if (menu.children) {
+        deepT(menu.key, menu.children);
       }
     }
   };
@@ -75,10 +79,12 @@ const RoleModal = ({
     queryFn: wrapGetMenu,
     enabled: open
   });
-  const onCheck = (checkedKeysValue: string[]) => {
+  const onCheck = (checkedKeysValue: Key[] | { checked: Key[]; halfChecked: Key[] }) => {
+    const checkedKeys = Array.isArray(checkedKeysValue) ? checkedKeysValue : checkedKeysValue.checked;
+    const menuKeys = checkedKeys.map(String);
     let menus = new Set<string>();
-    for (let i = 0; i < checkedKeysValue.length; i++) {
-      let key = checkedKeysValue[i];
+    for (let i = 0; i < menuKeys.length; i++) {
+      let key = menuKeys[i];
       let paths = findTreePath(menusQuery.data, item => item.key === key);
       for (let j = 0; j < paths.length; j++) {
         let path = paths[j];
@@ -88,22 +94,22 @@ const RoleModal = ({
         }));
       }
     }
-    setCheckedMenus(checkedKeysValue);
-    formRef.current?.setFieldsValue({
+    setCheckedMenus(menuKeys);
+    form.setFieldsValue({
       menus: Array.from(menus).map(item => JSON.parse(item))
     });
   };
-  useFormRequest(formRef, ["form-request", "web/src/pages/identity/RoleModal.tsx", open, id], get, open);
+  useFormRequest(form, ["form-request", "web/src/pages/identity/RoleModal.tsx", open, id], get, {enabled: open});
   return <Modal title={id ? t('actions.edit') : t('actions.new')} open={open} mask={{
     closable: false
   }} destroyOnHidden={true} onOk={() => {
-    formRef.current?.validateFields().then(async values => {
+    form.validateFields().then(async values => {
       handleOk(values);
     });
   }} onCancel={() => {
     handleCancel();
   }} confirmLoading={confirmLoading}>
-            <Form ref={formRef} layout="vertical">
+            <Form form={form} clearOnDestroy={true} layout="vertical">
                 <Form.Item hidden={true} name={'id'}>
     <Input />
       </Form.Item>
@@ -116,7 +122,7 @@ const RoleModal = ({
                 <Form.Item label={t('identity.role.permission')} name='menus' rules={[{
         required: true
       }]}>
-                    <Tree checkable onCheck={onCheck} checkedKeys={checkedMenus} treeData={menusQuery.data} />
+                    <Tree checkable onCheck={onCheck} checkedKeys={checkedMenus} treeData={menusQuery.data ?? []} />
                 </Form.Item>
             </Form>
         </Modal>;

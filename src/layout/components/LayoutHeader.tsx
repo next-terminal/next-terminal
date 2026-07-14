@@ -12,7 +12,7 @@ interface LayoutHeaderProps {
     onMobileMenuOpen: () => void;
     isDarkMode: boolean;
     onThemeToggle: (isDark: boolean) => void;
-    themeToggleRef: RefObject<HTMLButtonElement>;
+    themeToggleRef: RefObject<HTMLButtonElement | null>;
     userInfo?: any;
     dropMenus: MenuProps['items'];
 }

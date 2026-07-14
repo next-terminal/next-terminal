@@ -1,33 +1,55 @@
 import QuerySelect from "@/components/QuerySelect";
-import React, {useEffect, useRef, useState} from "react";
+import {useEffect, useState} from "react";
 import commandFilterApi from "@/api/command-filter-api";
 import strategyApi from "@/api/strategy-api";
-import {Button, Checkbox, DatePicker, Form, FormInstance, message, Space} from "antd";
+import {Checkbox, DatePicker, Form, message, Modal, Space} from "antd";
+import {CheckboxChangeEvent} from "antd/es/checkbox";
 import dayjs from "dayjs";
 import {useTranslation} from "react-i18next";
-import userApi from "@/api/user-api";
-import departmentApi from "@/api/department-api";
 import {RangePickerProps} from "antd/es/date-picker";
-import assetApi from "@/api/asset-api";
 import authorisedAssetApi from "@/api/authorised-asset-api";
 import {useNavigate} from "react-router-dom";
-import ProFormTreeSelect from "@/components/ProFormTreeSelect";
+import {useMutation} from "@tanstack/react-query";
+import {AssetGroupTreeSelect, AssetTreeSelect, DepartmentTreeSelect, UserSelect} from "@/components/shared/QuerySelects";
+import {useLicense} from "@/hook/LicenseContext";
 
-const AuthorisedAssetPost = () => {
-    const formRef = useRef<FormInstance>(null);
+interface AuthorisedAssetPostProps {
+    open?: boolean;
+    onCancel?: () => void;
+    onSuccess?: () => void;
+}
+
+const AuthorisedAssetPost = ({open, onCancel, onSuccess}: AuthorisedAssetPostProps) => {
+    const [form] = Form.useForm();
     const {t} = useTranslation();
-    const [expiredAtDayjs, setExpiredAtDayjs] = useState<dayjs.Dayjs>();
+    const [expiredAtDayjs, setExpiredAtDayjs] = useState<dayjs.Dayjs | null>();
     const [expiredAtNoLimit, setExpiredAtNoLimit] = useState<boolean>(true);
     const navigate = useNavigate();
+    const modalOpen = open ?? true;
+    const {license} = useLicense();
+    const hasPremiumFeatures = license.hasPremiumFeatures();
 
     useEffect(() => {
-        if (!open) {
-            setExpiredAtDayjs(undefined);
+        if (modalOpen) {
+            setExpiredAtDayjs(dayjs(0));
             setExpiredAtNoLimit(true);
         }
-    }, [open]);
+    }, [modalOpen]);
 
-    const handleNoTimeLimit = e => {
+    const postMutation = useMutation({
+        mutationFn: (values: any) => authorisedAssetApi.post(values),
+        onSuccess: () => {
+            message.success(t("general.success"));
+            form.resetFields();
+            if (onSuccess) {
+                onSuccess();
+                return;
+            }
+            navigate("/authorised-asset");
+        }
+    });
+
+    const handleNoTimeLimit = (e: CheckboxChangeEvent) => {
         setExpiredAtNoLimit(e.target.checked);
         if (e.target.checked === true) {
             setExpiredAtDayjs(dayjs(0));
@@ -36,7 +58,7 @@ const AuthorisedAssetPost = () => {
         }
     };
 
-    const handleTimeLimitChange = (date, dateString) => {
+    const handleTimeLimitChange = (date: dayjs.Dayjs | null, dateString: string | null) => {
         console.log(date, dateString);
         setExpiredAtDayjs(date);
     };
@@ -46,158 +68,90 @@ const AuthorisedAssetPost = () => {
         return current && current < dayjs().endOf("day");
     };
 
+    const handleCancel = () => {
+        form.resetFields();
+        if (onCancel) {
+            onCancel();
+            return;
+        }
+        navigate("/authorised-asset");
+    };
+
+    const handleSubmit = async (values: any) => {
+        if (expiredAtDayjs) {
+            values["expiredAt"] = expiredAtDayjs.valueOf();
+        } else {
+            values["expiredAt"] = 0;
+        }
+        postMutation.mutate(values);
+    };
+
     return (
-        <div>
-            <div className="mb-4 font-bold text-lg">
-                {t("menus.authorised.submenus.authorised_asset")}
-            </div>
+        <Modal
+            title={t("menus.authorised.submenus.authorised_asset")}
+            open={modalOpen}
+            destroyOnHidden={true}
+            onCancel={handleCancel}
+            onOk={() => form.submit()}
+            okText={t("actions.save")}
+            cancelText={t("actions.cancel")}
+            confirmLoading={postMutation.isPending}
+        >
             <Form
-                ref={formRef}
+                form={form}
                 layout="vertical"
-                onFinish={async values => {
-                    if (expiredAtDayjs) {
-                        values["expiredAt"] = expiredAtDayjs.valueOf();
-                    } else {
-                        values["expiredAt"] = 0;
-                    }
-                    await authorisedAssetApi.post(values);
-                    message.success(t("general.success"));
-                    formRef.current?.resetFields();
-                    navigate("/authorised-asset");
-                }}
+                clearOnDestroy={true}
+                onFinish={handleSubmit}
             >
+                <Form.Item label={t("menus.identity.submenus.department")} name="departmentIds">
+                    <DepartmentTreeSelect multiple />
+                </Form.Item>
+
                 <Form.Item label={t("menus.identity.submenus.user")} name="userIds">
-                    <QuerySelect
-                        mode="multiple"
-                        showSearch={true}
-                        request={async () => {
-                            const items = await userApi.getAll();
-                            return items.map(item => {
-                                return {
-                                    label: item.nickname,
-                                    value: item.id
-                                };
-                            });
-                        }}
-                    />
+                    <UserSelect mode="multiple" />
                 </Form.Item>
 
-                <ProFormTreeSelect
-                    label={t("menus.identity.submenus.department")}
-                    name="departmentIds"
-                    fieldProps={{
-                        showSearch: true,
-                        multiple: true,
-                        treeDefaultExpandAll: true
-                    }}
-                    request={async () => {
-                        const items = await departmentApi.getTree();
-                        // let selected = await authorisedAssetApi.selected('departmentId', '', '', assetId);
-                        return items;
-                    }}
-                />
-
-                <ProFormTreeSelect
-                    label={t("authorised.label.asset_group")}
-                    name="assetGroupIds"
-                    fieldProps={{
-                        multiple: true,
-                        showSearch: true,
-                        treeDefaultExpandAll: true,
-                        treeNodeFilterProp: "title"
-                    }}
-                    request={async () => {
-                        const items = await assetApi.getGroups();
-                        // let selected = await authorisedAssetApi.selected('assetId', userId, userGroupId, '');
-                        // 递归把 key 字段设置为 value，并且非叶子节点全部 disabled
-                        function setKeyAndDisabled(item: any) {
-                            item.value = item.key;
-                            if (!item.isLeaf) {
-                                // 递归处理子节点
-                                if (item.children) {
-                                    item.children.forEach(setKeyAndDisabled);
-                                }
-                            }
-                            // if (selected.includes(item.key)) {
-                            //     item.disabled = true;
-                            // }
-                        }
-
-                        // 对获取到的所有节点进行处理
-                        items.forEach((item: any) => {
-                            setKeyAndDisabled(item);
-                        });
-                        return items;
-                    }}
-                />
-
-                <ProFormTreeSelect
-                    label={t("menus.resource.submenus.asset")}
-                    name="assetIds"
-                    fieldProps={{
-                        multiple: true,
-                        showSearch: true,
-                        treeDefaultExpandAll: true,
-                        treeNodeFilterProp: "title"
-                    }}
-                    request={async () => {
-                        const items = await assetApi.tree();
-                        // let selected = await authorisedAssetApi.selected('assetId', userId, userGroupId, '');
-
-                        // 递归把 key 字段设置为 value，并且非叶子节点全部 disabled
-                        function setKeyAndDisabled(item: any) {
-                            item.value = item.key;
-                            if (!item.isLeaf) {
-                                item.disabled = true;
-                                // 递归处理子节点
-                                if (item.children) {
-                                    item.children.forEach(setKeyAndDisabled);
-                                }
-                            } else {
-                                item.title = item.title + " (" + item.extra?.network + ")";
-                            }
-                            // if (selected.includes(item.key)) {
-                            //     item.disabled = true;
-                            // }
-                        }
-
-                        // 对获取到的所有节点进行处理
-                        items.forEach((item: any) => {
-                            setKeyAndDisabled(item);
-                        });
-                        return items;
-                    }}
-                />
-
-                <Form.Item label={t("menus.authorised.submenus.command_filter")} name="commandFilterId">
-                    <QuerySelect
-                        showSearch={true}
-                        request={async () => {
-                            const items = await commandFilterApi.getAll();
-                            return items.map(item => {
-                                return {
-                                    label: item.name,
-                                    value: item.id
-                                };
-                            });
-                        }}
-                    />
+                <Form.Item label={t("authorised.label.asset_group")} name="assetGroupIds">
+                    <AssetGroupTreeSelect multiple />
                 </Form.Item>
 
-                <Form.Item label={t("authorised.label.strategy")} name="strategyId">
-                    <QuerySelect
-                        showSearch={true}
-                        request={async () => {
-                            const items = await strategyApi.getAll();
-                            return items.map(item => {
-                                return {
-                                    label: item.name,
-                                    value: item.id
-                                };
-                            });
-                        }}
-                    />
+                <Form.Item label={t("menus.resource.submenus.asset")} name="assetIds">
+                    <AssetTreeSelect multiple />
                 </Form.Item>
+
+                {hasPremiumFeatures && (
+                    <>
+                        <Form.Item label={t("menus.authorised.submenus.command_filter")} name="commandFilterId">
+                            <QuerySelect
+                                showSearch={true}
+                                request={async () => {
+                                    const items = await commandFilterApi.getAll();
+                                    return items.map(item => {
+                                        return {
+                                            label: item.name,
+                                            value: item.id
+                                        };
+                                    });
+                                }}
+                            />
+                        </Form.Item>
+
+                        <Form.Item label={t("authorised.label.strategy")} name="strategyId">
+                            <QuerySelect
+                                showSearch={true}
+                                request={async () => {
+                                    const items = await strategyApi.getAll();
+                                    return items.map(item => {
+                                        return {
+                                            label: item.name,
+                                            value: item.id
+                                        };
+                                    });
+                                }}
+                            />
+                        </Form.Item>
+                    </>
+                )}
 
                 <Form.Item label={t("assets.limit_time")} name="expiredAt">
                     <Space>
@@ -218,15 +172,8 @@ const AuthorisedAssetPost = () => {
                     </Space>
                 </Form.Item>
 
-                <Form.Item>
-                    <Space>
-                        <Button type="primary" htmlType="submit">
-                            {t("actions.save")}
-                        </Button>
-                    </Space>
-                </Form.Item>
             </Form>
-        </div>
+        </Modal>
     );
 };
 

@@ -1,28 +1,29 @@
-import React, {useEffect, useRef, useState} from 'react';
-import {baseWebSocketUrl} from "@/api/core/requests";
+import { baseWebSocketUrl } from "@/api/core/requests";
 import qs from "qs";
+import { useEffect,useRef,useState } from 'react';
 // @ts-ignore
-import Guacamole from '@dushixiang/guacamole-common-js';
-import {useTranslation} from "react-i18next";
-import {useWindowSize} from "react-use";
-import portalApi, {ExportSession} from "@/api/portal-api";
-import {useAccessContentSize} from "@/pages/access/hooks/use-access-size";
-import {useAccessTab} from "@/pages/access/hooks/use-access-tab";
+import portalApi,{ ExportSession } from "@/api/portal-api";
 import FileSystemPage from "@/pages/access/FileSystemPage";
-import SessionSharerModal from "@/pages/access/SessionSharerModal";
+import ControlButtons from "@/pages/access/guacamole/ControlButtons";
+import { GuacamoleStatus } from "@/pages/access/guacamole/ErrorAlert";
+import { duplicateKeys } from "@/pages/access/guacamole/keys";
+import RenderState,{ GuacamoleState } from "@/pages/access/guacamole/RenderState";
 import GuacClipboard from "@/pages/access/GuacClipboard";
 import GuacdRequiredParameters from "@/pages/access/GuacdRequiredParameters";
-import {useMutation} from "@tanstack/react-query";
-import {App, Watermark} from "antd";
-import copy from "copy-to-clipboard";
+import { useAccessContentSize } from "@/pages/access/hooks/use-access-size";
+import { useAccessTab } from "@/pages/access/hooks/use-access-tab";
 import useWindowFocus from "@/pages/access/hooks/use-window-focus";
-import {dropKeydown, isFullScreen, requestFullScreen} from "@/utils/utils";
+import SessionSharerModal from "@/pages/access/SessionSharerModal";
+import SessionWatermark from "@/pages/access/SessionWatermark";
 import MultiFactorAuthentication from "@/pages/account/MultiFactorAuthentication";
-import RenderState, {GuacamoleState} from "@/pages/access/guacamole/RenderState";
-import ControlButtons from "@/pages/access/guacamole/ControlButtons";
-import {GuacamoleStatus} from "@/pages/access/guacamole/ErrorAlert";
-import {debounce} from "@/utils/debounce";
-import {duplicateKeys} from "@/pages/access/guacamole/keys";
+import { debounce } from "@/utils/debounce";
+import { dropKeydown,isFullScreen,requestFullScreen } from "@/utils/utils";
+import Guacamole from '@dushixiang/guacamole-common-js';
+import { useMutation } from "@tanstack/react-query";
+import { App } from "antd";
+import copy from "copy-to-clipboard";
+import { useTranslation } from "react-i18next";
+import { useWindowSize } from "react-use";
 
 interface Props {
     assetId: string;
@@ -33,7 +34,7 @@ interface Props {
 const AccessGuacamole = ({assetId, tabKey, standalone = false}: Props) => {
 
     let [requiredOpen, setRequiredOpen] = useState<boolean>(false);
-    let [requiredParameters, setRequiredParameters] = useState<string[]>();
+    let [requiredParameters, setRequiredParameters] = useState<string[]>([]);
 
     let {t} = useTranslation();
     let {message} = App.useApp();
@@ -148,7 +149,7 @@ const AccessGuacamole = ({assetId, tabKey, standalone = false}: Props) => {
         if (/^text\//.test(mimetype)) {
             const reader = new Guacamole.StringReader(stream);
             let data = '';
-            reader.ontext = (text) => data += text;
+            reader.ontext = (text: string) => data += text;
             reader.onend = () => {
                 setClipboardText(data);
                 copy(data);
@@ -156,7 +157,7 @@ const AccessGuacamole = ({assetId, tabKey, standalone = false}: Props) => {
             };
         } else {
             const reader = new Guacamole.BlobReader(stream, mimetype);
-            reader.onend = () => reader.getBlob().text().then(text => {
+            reader.onend = () => reader.getBlob().text().then((text: string) => {
                 setClipboardText(text);
                 copy(text);
                 message.success(t('general.copy_success'));
@@ -192,7 +193,7 @@ const AccessGuacamole = ({assetId, tabKey, standalone = false}: Props) => {
         client.onstatechange = setState;
         client.onerror = setStatus;
 
-        client.onrequired = function (parameters) {
+        client.onrequired = function (parameters: string[]) {
             setRequiredParameters([...parameters]);
             setRequiredOpen(true);
         }
@@ -215,14 +216,14 @@ const AccessGuacamole = ({assetId, tabKey, standalone = false}: Props) => {
         displayEle?.appendChild(element);
 
         let display = client.getDisplay();
-        display.onresize = function (w: number, h: number) {
+        display.onresize = function (_w: number, _h: number) {
             debouncedResize();
         }
 
         const sink = new Guacamole.InputSink();
         let sinkElement = sink.getElement();
         // 修复粘贴问题
-        sinkElement.addEventListener("paste", function (e) {
+        sinkElement.addEventListener("paste", function (e: ClipboardEvent) {
             // 阻止浏览器默认的按键拆分
             e.preventDefault();
         })
@@ -247,8 +248,8 @@ const AccessGuacamole = ({assetId, tabKey, standalone = false}: Props) => {
             return true;
         }
 
-        keyboard.onkeydown = keysym => handleKeyEvent(true, keysym);
-        keyboard.onkeyup = keysym => handleKeyEvent(false, keysym);
+        keyboard.onkeydown = (keysym: number) => handleKeyEvent(true, keysym);
+        keyboard.onkeyup = (keysym: number) => handleKeyEvent(false, keysym);
 
         keyboardRef.current = keyboard;
 
@@ -353,7 +354,9 @@ const AccessGuacamole = ({assetId, tabKey, standalone = false}: Props) => {
     }
 
     const fullScreen = () => {
-        requestFullScreen(terminalRef.current);
+        if (terminalRef.current) {
+            requestFullScreen(terminalRef.current);
+        }
         sinkRef.current?.focus();
     }
 
@@ -367,7 +370,7 @@ const AccessGuacamole = ({assetId, tabKey, standalone = false}: Props) => {
             <RenderState
                 state={state}
                 status={status}
-                tunnelState={tunnelState}
+                tunnelState={tunnelState ?? Guacamole.Tunnel.State.CONNECTING}
                 onReconnect={() => {
                     setStatus({});
                     setState(GuacamoleState.IDLE);
@@ -376,18 +379,11 @@ const AccessGuacamole = ({assetId, tabKey, standalone = false}: Props) => {
                 }}
                 overlay={true}
             />
-            <div className={'flex items-center justify-center h-full w-full'}>
-                <Watermark content={session?.watermark?.content}
-                           font={{
-                               color: session?.watermark?.color,
-                               fontSize: session?.watermark?.size
-                           }}
-                           className={'w-full'}
-                >
-                    <div className={'w-full flex items-center justify-center'}
-                         ref={terminalRef}
-                    />
-                </Watermark>
+            <div className={'relative flex items-center justify-center h-full w-full'}>
+                <div className={'w-full flex items-center justify-center'}
+                     ref={terminalRef}
+                />
+                <SessionWatermark watermark={session?.watermark}/>
             </div>
 
             <ControlButtons
@@ -419,7 +415,7 @@ const AccessGuacamole = ({assetId, tabKey, standalone = false}: Props) => {
                 }}
             />
 
-            <FileSystemPage fsId={session?.id}
+            <FileSystemPage fsId={session?.id ?? ''}
                             strategy={session?.strategy}
                             open={modals.fs}
                             mask={false}
@@ -431,7 +427,7 @@ const AccessGuacamole = ({assetId, tabKey, standalone = false}: Props) => {
                                 })
                             }}/>
 
-            <SessionSharerModal sessionId={session?.id} open={modals.sharer}
+            <SessionSharerModal sessionId={session?.id ?? ''} open={modals.sharer}
                                 onClose={() => setModals({...modals, sharer: false})}/>
             <GuacClipboard clipboardText={clipboardText}
                            open={modals.clipboard}

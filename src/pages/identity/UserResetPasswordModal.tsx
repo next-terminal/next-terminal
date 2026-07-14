@@ -1,5 +1,4 @@
-import React, { useRef } from 'react';
-import { FormInstance, Modal, Form, Input } from "antd";
+import { Form, Input, Modal } from "antd";
 import { useTranslation } from "react-i18next";
 export interface Props {
   open: boolean;
@@ -13,21 +12,21 @@ const UserResetPasswordModal = ({
   handleCancel,
   confirmLoading
 }: Props) => {
-  const formRef = useRef<FormInstance>(null);
+  const [form] = Form.useForm();
   let {
     t
   } = useTranslation();
   return <Modal title={t('identity.user.reset_password.confirm_title')} open={open} mask={{
     closable: false
   }} destroyOnHidden={true} onOk={() => {
-    formRef.current?.validateFields().then(async values => {
+    form.validateFields().then(async values => {
       handleOk(values);
     });
   }} onCancel={() => {
     handleCancel();
   }} confirmLoading={confirmLoading}>
 
-            <Form ref={formRef} layout="vertical">
+            <Form form={form} layout="vertical">
                 <Form.Item name={'password'} label={t('assets.password')} rules={[{
         pattern: /^\S*$/,
         message: t('identity.user.no_spaces_allowed')

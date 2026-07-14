@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "NODE_OPTIONS=--max-old-space-size=6144 tsc && vite build",
+    "lint": "tsc -p tsconfig.app.json",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -36,10 +37,12 @@
     "js-base64": "^3.7.8",
     "lucide-react": "^1.14.0",
     "monaco-editor": "^0.55.1",
+    "plyr": "^3.8.4",
+    "plyr-react": "^6.0.0",
     "qs": "^6.15.0",
-    "react": "^18.3.1",
+    "react": "^19.2.7",
     "react-countup": "^6.5.3",
-    "react-dom": "^18.3.1",
+    "react-dom": "^19.2.7",
     "react-i18next": "^16.3.3",
     "react-resizable-panels": "^3.0.6",
     "react-router-dom": "^7.9.6",
@@ -47,7 +50,8 @@
     "react-use": "^17.6.0",
     "recharts": "2.15.4",
     "tailwind-merge": "^3.4.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "watermark-js-plus": "^1.6.4"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",

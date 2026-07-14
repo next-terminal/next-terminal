@@ -1,10 +1,10 @@
-import React, {useRef} from 'react';
-import {Popconfirm, Space, Tag} from "antd";
-import NTable, {type NTableActionType, type NColumn} from "@/components/NTable";
-import loginLockedApi, {LoginLocked} from "../../api/login-locked-api";
-import {useTranslation} from "react-i18next";
+import NTable,{ type NColumn,type NTableActionType } from "@/components/NTable";
+import { getSort } from "@/utils/sort";
+import { Popconfirm,Space,Tag } from "antd";
+import { useRef } from 'react';
+import { useTranslation } from "react-i18next";
+import loginLockedApi,{ LoginLocked } from "../../api/login-locked-api";
 import NButton from "../../components/NButton";
-import {getSort} from "@/utils/sort";
 
 const LoginLockedPage = () => {
 
@@ -33,7 +33,7 @@ const LoginLockedPage = () => {
             dataIndex: 'type',
             key: 'type',
             hideInSearch: true,
-            render: (text, record) => {
+            render: (_text, record) => {
                 switch (record.type) {
                     case 'username':
                         return <Tag variant="filled" color={'purple'}>{t('identity.user.locked_type_username')}</Tag>;
@@ -62,7 +62,7 @@ const LoginLockedPage = () => {
             title: t('actions.label'),
             valueType: 'option',
             key: 'option',
-            render: (text, record) => (
+            render: (_text, record) => (
                 <Space>
                     <Popconfirm
                         key={'delete-confirm'}
@@ -84,7 +84,7 @@ const LoginLockedPage = () => {
             <NTable
                 columns={columns}
                 actionRef={actionRef}
-                request={async (params = {}, sort, filter) => {
+                request={async (params = {}, sort, _filter) => {
                     let [sortOrder, sortField] = getSort(sort);
                     
                     let queryParams = {

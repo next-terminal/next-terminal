@@ -7,7 +7,7 @@ import {setThemeColor} from '@/utils/theme.ts';
  * 主题切换 Hook
  * 封装主题切换逻辑和 View Transition 动画效果
  */
-export function useThemeToggle(ref: RefObject<HTMLElement>) {
+export function useThemeToggle(ref: RefObject<HTMLElement | null>) {
     const [ntTheme, setNTTheme] = useNTTheme();
     const [isDarkMode, setIsDarkMode] = useState(ntTheme.isDark);
 

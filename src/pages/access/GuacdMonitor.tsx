@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {useSearchParams} from 'react-router-dom';
 // @ts-ignore
 import Guacamole from '@dushixiang/guacamole-common-js';
@@ -10,7 +10,7 @@ import RenderState from "@/pages/access/guacamole/RenderState";
 const GuacdMonitor = () => {
 
     const [searchParams, _] = useSearchParams();
-    const sessionId = searchParams.get('sessionId');
+    const sessionId = searchParams.get('sessionId') ?? '';
 
     let [state, setState] = useState<number>();
     let [status, setStatus] = useState<GuacamoleStatus>();
@@ -43,6 +43,9 @@ const GuacdMonitor = () => {
         client.onerror = setStatus
 
         const display = document.getElementById("display");
+        if (!display) {
+            return client;
+        }
         display.innerHTML = '';
 
         // Add client to display div
@@ -74,7 +77,7 @@ const GuacdMonitor = () => {
             <RenderState
                 state={state}
                 status={status}
-                tunnelState={tunnelState}
+                tunnelState={tunnelState ?? Guacamole.Tunnel.State.CONNECTING}
                 overlay={true}
             />
             <div id="display"/>

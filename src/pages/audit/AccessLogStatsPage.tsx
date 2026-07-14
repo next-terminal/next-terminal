@@ -1,7 +1,6 @@
-import React, {useState} from 'react';
-import {useTranslation} from "react-i18next";
-import {useQuery} from "@tanstack/react-query";
-import {Card, Select, Table} from "antd";
+import accessLogApi, {RealtimeMetrics, TopPages, TopReferers, WebsiteStats} from "@/api/access-log-api";
+import websiteApi from "@/api/website-api";
+import Disabled from "@/components/Disabled";
 import {
     ChartConfig,
     ChartContainer,
@@ -10,10 +9,11 @@ import {
     ChartTooltip,
     ChartTooltipContent
 } from "@/components/ui/chart";
-import {Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, XAxis, YAxis} from "recharts";
-import accessLogApi, {RealtimeMetrics, TopPages, TopReferers, WebsiteStats} from "@/api/access-log-api";
-import websiteApi from "@/api/website-api";
+import {useLicense} from "@/hook/LicenseContext";
 import {renderSize} from "@/utils/utils";
+import {useQuery} from "@tanstack/react-query";
+import {Card, Select, Table} from "antd";
+import dayjs from "dayjs";
 import {
     ActivityIcon,
     EyeIcon,
@@ -24,9 +24,9 @@ import {
     UsersIcon,
     ZapIcon
 } from "lucide-react";
-import dayjs from "dayjs";
-
-const {Option} = Select;
+import {useState} from 'react';
+import {useTranslation} from "react-i18next";
+import {Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, XAxis, YAxis} from "recharts";
 
 // 数字格式化函数
 const formatNumber = (num: number | undefined): string => {
@@ -36,6 +36,8 @@ const formatNumber = (num: number | undefined): string => {
 
 const AccessLogStatsPage = () => {
     const {t} = useTranslation();
+    const {license} = useLicense();
+    const hasPremiumFeatures = license.hasPremiumFeatures();
 
     // 时间周期选项
     const PERIOD_OPTIONS = [
@@ -51,55 +53,56 @@ const AccessLogStatsPage = () => {
     const websitesQuery = useQuery({
         queryKey: ['websites'],
         queryFn: () => websiteApi.getAll(),
+        enabled: hasPremiumFeatures,
     });
 
     // 获取网站统计数据
     const websiteStatsQuery = useQuery({
         queryKey: ['website-stats', selectedWebsiteId, period],
         queryFn: () => accessLogApi.getWebsiteStats(selectedWebsiteId, period),
-        // 移除 enabled 条件，允许空字符串的情况
+        enabled: hasPremiumFeatures,
     });
 
     // 获取流量趋势
     const trafficTrendQuery = useQuery({
         queryKey: ['website-traffic-trend', selectedWebsiteId, period],
         queryFn: () => accessLogApi.getWebsiteTrafficTrend(selectedWebsiteId, period),
-        // 移除 enabled 条件，允许空字符串的情况
+        enabled: hasPremiumFeatures,
     });
 
     // 获取小时统计
     const hourlyStatsQuery = useQuery({
         queryKey: ['website-hourly-stats', selectedWebsiteId, period],
         queryFn: () => accessLogApi.getWebsiteHourlyStats(selectedWebsiteId, period),
-        // 移除 enabled 条件，允许空字符串的情况
+        enabled: hasPremiumFeatures,
     });
 
     // 获取状态码统计
     const statusCodeStatsQuery = useQuery({
         queryKey: ['website-status-code-stats', selectedWebsiteId, period],
         queryFn: () => accessLogApi.getWebsiteStatusCodeStats(selectedWebsiteId, period),
-        // 移除 enabled 条件，允许空字符串的情况
+        enabled: hasPremiumFeatures,
     });
 
     // 获取热门页面
     const topPagesQuery = useQuery({
         queryKey: ['top-pages', selectedWebsiteId, period],
         queryFn: () => accessLogApi.getTopPages(selectedWebsiteId, period, 10),
-        // 移除 enabled 条件，允许空字符串的情况
+        enabled: hasPremiumFeatures,
     });
 
     // 获取热门来源
     const topReferersQuery = useQuery({
         queryKey: ['top-referers', selectedWebsiteId, period],
         queryFn: () => accessLogApi.getTopReferers(selectedWebsiteId, period, 10),
-        // 移除 enabled 条件，允许空字符串的情况
+        enabled: hasPremiumFeatures,
     });
 
     // 获取实时指标
     const realtimeMetricsQuery = useQuery({
         queryKey: ['realtime-metrics', selectedWebsiteId],
         queryFn: () => accessLogApi.getRealtimeMetrics(selectedWebsiteId),
-        // 移除 enabled 条件，允许空字符串的情况
+        enabled: hasPremiumFeatures,
         refetchInterval: 30000, // 30秒刷新
     });
 
@@ -111,6 +114,16 @@ const AccessLogStatsPage = () => {
     const topPages = topPagesQuery.data || [];
     const topReferers = topReferersQuery.data || [];
     const realtimeMetrics = realtimeMetricsQuery.data || {} as RealtimeMetrics;
+    const websiteOptions = [
+        {
+            value: '',
+            label: t('audit.accessLog.stats.allWebsites'),
+        },
+        ...websites.map(website => ({
+            value: website.id,
+            label: `${website.name} (${website.domain})`,
+        })),
+    ];
 
     // 移除自动选择第一个网站的逻辑，默认显示全部网站统计
 
@@ -300,233 +313,227 @@ const AccessLogStatsPage = () => {
     ];
 
     return (
-        <div className="p-4 space-y-4 max-w-full overflow-hidden">
-            {/* 页面标题和控制器 */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h1 className="text-xl font-bold">{t('audit.accessLog.stats.title')}</h1>
-                <div className="flex flex-col sm:flex-row gap-4">
-                    <Select
-                        placeholder={t('audit.accessLog.stats.selectWebsite')}
-                        value={selectedWebsiteId}
-                        onChange={setSelectedWebsiteId}
-                        style={{width: 200}}
-                        loading={websitesQuery.isLoading}
-                    >
-                        <Option key="all" value="">
-                            {t('audit.accessLog.stats.allWebsites')}
-                        </Option>
-                        {websites.map(website => (
-                            <Option key={website.id} value={website.id}>
-                                {website.name} ({website.domain})
-                            </Option>
-                        ))}
-                    </Select>
-                    <Select
-                        value={period}
-                        onChange={setPeriod}
-                        style={{width: 120}}
-                    >
-                        {PERIOD_OPTIONS.map(option => (
-                            <Option key={option.value} value={option.value}>
-                                {option.label}
-                            </Option>
-                        ))}
-                    </Select>
+        <Disabled disabled={!hasPremiumFeatures}>
+            <div className="space-y-4 max-w-full overflow-hidden">
+                {/* 页面标题和控制器 */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div className="font-medium">{t('audit.accessLog.stats.title')}</div>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <Select
+                            placeholder={t('audit.accessLog.stats.selectWebsite')}
+                            value={selectedWebsiteId}
+                            onChange={setSelectedWebsiteId}
+                            style={{width: 200}}
+                            loading={websitesQuery.isLoading}
+                            options={websiteOptions}
+                        />
+                        <Select
+                            value={period}
+                            onChange={setPeriod}
+                            style={{width: 120}}
+                            options={PERIOD_OPTIONS}
+                        />
+                    </div>
                 </div>
-            </div>
 
-            {/* 核心指标概览 */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                {coreMetrics.map((metric, index) => (
-                    <Card key={index} className="p-4 min-w-0">
-                        <div className="flex items-center justify-between">
-                            <div className="font-medium text-sm truncate pr-2">{metric.title}</div>
-                            {metric.icon}
-                        </div>
-                        <div className="mt-2 text-lg font-bold truncate">
-                            {metric.formatter(metric.value || 0)}
-                        </div>
-                    </Card>
-                ))}
-            </div>
-
-            {/* 实时指标 */}
-            <Card>
-                <div className="font-medium mb-4">{t('audit.accessLog.stats.realtime.title')}</div>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    {realtimeMetricsCards.map((metric, index) => (
-                        <div key={index} className="text-center min-w-0">
-                            <div className="flex items-center justify-center gap-2 text-sm text-gray-600 mb-1">
+                {/* 核心指标概览 */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    {coreMetrics.map((metric, index) => (
+                        <Card key={index} className="p-4 min-w-0">
+                            <div className="flex items-center justify-between">
+                                <div className="font-medium text-sm truncate pr-2">{metric.title}</div>
                                 {metric.icon}
-                                <span className="truncate">{metric.title}</span>
                             </div>
-                            <div className="text-lg font-bold truncate">
+                            <div className="mt-2 text-lg font-bold truncate">
                                 {metric.formatter(metric.value || 0)}
                             </div>
-                        </div>
+                        </Card>
                     ))}
                 </div>
-            </Card>
 
-            {/* 流量趋势图表 */}
-            <Card title={t('audit.accessLog.stats.charts.trafficTrend')} loading={trafficTrendQuery.isLoading}>
-                <div className="rounded-xl p-4 border-0 w-full overflow-hidden">
-                    <ChartContainer
-                        config={trafficTrendConfig}
-                        className="aspect-auto h-[300px] w-full min-w-0"
-                    >
-                        <AreaChart data={trafficTrend}>
-                            <defs>
-                                <linearGradient id="fillPv" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="var(--color-pv)" stopOpacity={0.8}/>
-                                    <stop offset="95%" stopColor="var(--color-pv)" stopOpacity={0.1}/>
-                                </linearGradient>
-                                <linearGradient id="fillUv" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="var(--color-uv)" stopOpacity={0.8}/>
-                                    <stop offset="95%" stopColor="var(--color-uv)" stopOpacity={0.1}/>
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false}/>
-                            <XAxis
-                                dataKey="time"
-                                tickLine={false}
-                                axisLine={false}
-                                tickMargin={8}
-                                tickFormatter={(value) => {
-                                    return dayjs(value).format('MM-DD HH:mm')
-                                }}
-                            />
-                            <YAxis tickLine={false} axisLine={false}/>
-                            <ChartTooltip
-                                cursor={false}
-                                content={
-                                    <ChartTooltipContent
-                                        labelFormatter={(value) => dayjs(value).format('YYYY-MM-DD HH:mm')}
-                                        indicator="dot"
-                                    />
-                                }
-                            />
-                            <Area
-                                dataKey="pv"
-                                type="natural"
-                                fill="url(#fillPv)"
-                                stroke="var(--color-pv)"
-                                stackId="a"
-                            />
-                            <Area
-                                dataKey="uv"
-                                type="natural"
-                                fill="url(#fillUv)"
-                                stroke="var(--color-uv)"
-                                stackId="b"
-                            />
-                            <ChartLegend content={<ChartLegendContent/>}/>
-                        </AreaChart>
-                    </ChartContainer>
+                {/* 实时指标 */}
+                <div>
+                    <Card>
+                        <div className="font-medium mb-4">{t('audit.accessLog.stats.realtime.title')}</div>
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            {realtimeMetricsCards.map((metric, index) => (
+                                <div key={index} className="text-center min-w-0">
+                                    <div className="flex items-center justify-center gap-2 text-sm text-gray-600 mb-1">
+                                        {metric.icon}
+                                        <span className="truncate">{metric.title}</span>
+                                    </div>
+                                    <div className="text-lg font-bold truncate">
+                                        {metric.formatter(metric.value || 0)}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </Card>
                 </div>
-            </Card>
 
-            {/* 小时分布和状态码分布 */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <Card title={t('audit.accessLog.stats.charts.hourlyDistribution')} loading={hourlyStatsQuery.isLoading}>
-                    <div className="rounded-xl p-4 border-0 w-full overflow-hidden">
-                        <ChartContainer
-                            config={hourlyChartConfig}
-                            className="aspect-auto h-[300px] w-full min-w-0"
-                        >
-                            <BarChart data={hourlyStats}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false}/>
-                                <XAxis
-                                    dataKey="hour"
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tickMargin={8}
-                                    tickFormatter={(value) => `${value}:00`}
-                                />
-                                <YAxis tickLine={false} axisLine={false}/>
-                                <ChartTooltip
-                                    cursor={false}
-                                    content={
-                                        <ChartTooltipContent
-                                            labelFormatter={(value) => `${t('audit.accessLog.stats.tooltip.time')}: ${value}:00`}
-                                            formatter={(value) => [value, t('audit.accessLog.stats.table.visitCount')]}
-                                            indicator="dot"
-                                        />
-                                    }
-                                />
-                                <Bar
-                                    dataKey="count"
-                                    fill="var(--color-count)"
-                                    radius={[4, 4, 0, 0]}
-                                />
-                            </BarChart>
-                        </ChartContainer>
-                    </div>
-                </Card>
-                <Card title={t('audit.accessLog.stats.charts.statusCodeDistribution')}
-                      loading={statusCodeStatsQuery.isLoading}>
-                    <div className="rounded-xl p-4 border-0 w-full overflow-hidden">
-                        <ChartContainer
-                            config={statusCodeChartConfig}
-                            className="mx-auto aspect-square max-h-[300px] min-w-0"
-                        >
-                            <PieChart>
-                                <ChartTooltip
-                                    cursor={false}
-                                    content={<ChartTooltipContent
-                                        labelFormatter={(value, payload) => `${t('audit.accessLog.statusCode')} ${payload[0]?.name}`}
-                                        formatter={(value, name) => [value]}
-                                    />}
-                                />
-                                <Pie
-                                    data={statusCodeChartData}
-                                    dataKey="value"
-                                    nameKey="name"
-                                    innerRadius={60}
-                                    outerRadius={100}
-                                >
-                                    {statusCodeChartData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.fill}/>
-                                    ))}
-                                </Pie>
-                                <ChartLegend
-                                    // content={<ChartLegendContent nameKey="name"/>}
-                                    // className="flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
-                                />
-                            </PieChart>
-                        </ChartContainer>
-                    </div>
-                </Card>
-            </div>
+                <div>
+                    {/* 流量趋势图表 */}
+                    <Card title={t('audit.accessLog.stats.charts.trafficTrend')} loading={trafficTrendQuery.isLoading}>
+                        <div className="rounded-xl p-4 border-0 w-full overflow-hidden">
+                            <ChartContainer
+                                config={trafficTrendConfig}
+                                className="aspect-auto h-[300px] w-full min-w-0"
+                            >
+                                <AreaChart data={trafficTrend}>
+                                    <defs>
+                                        <linearGradient id="fillPv" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="var(--color-pv)" stopOpacity={0.8}/>
+                                            <stop offset="95%" stopColor="var(--color-pv)" stopOpacity={0.1}/>
+                                        </linearGradient>
+                                        <linearGradient id="fillUv" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="var(--color-uv)" stopOpacity={0.8}/>
+                                            <stop offset="95%" stopColor="var(--color-uv)" stopOpacity={0.1}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false}/>
+                                    <XAxis
+                                        dataKey="time"
+                                        tickLine={false}
+                                        axisLine={false}
+                                        tickMargin={8}
+                                        tickFormatter={(value) => {
+                                            return dayjs(value).format('MM-DD HH:mm')
+                                        }}
+                                    />
+                                    <YAxis tickLine={false} axisLine={false}/>
+                                    <ChartTooltip
+                                        cursor={false}
+                                        content={
+                                            <ChartTooltipContent
+                                                labelFormatter={(value) => dayjs(value).format('YYYY-MM-DD HH:mm')}
+                                                indicator="dot"
+                                            />
+                                        }
+                                    />
+                                    <Area
+                                        dataKey="pv"
+                                        type="natural"
+                                        fill="url(#fillPv)"
+                                        stroke="var(--color-pv)"
+                                        stackId="a"
+                                    />
+                                    <Area
+                                        dataKey="uv"
+                                        type="natural"
+                                        fill="url(#fillUv)"
+                                        stroke="var(--color-uv)"
+                                        stackId="b"
+                                    />
+                                    <ChartLegend content={<ChartLegendContent/>}/>
+                                </AreaChart>
+                            </ChartContainer>
+                        </div>
+                    </Card>
+                </div>
 
-            {/* 热门页面和热门来源 */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <Card title={t('audit.accessLog.stats.charts.topPages')} loading={topPagesQuery.isLoading}>
-                    <div className="overflow-x-auto">
-                        <Table
-                            dataSource={topPages}
-                            columns={topPagesColumns}
-                            pagination={false}
-                            size="small"
-                            rowKey="uri"
-                            scroll={{x: 'max-content'}}
-                        />
-                    </div>
-                </Card>
-                <Card title={t('audit.accessLog.stats.charts.topReferers')} loading={topReferersQuery.isLoading}>
-                    <div className="overflow-x-auto">
-                        <Table
-                            dataSource={topReferers}
-                            columns={topReferersColumns}
-                            pagination={false}
-                            size="small"
-                            rowKey="referer"
-                            scroll={{x: 'max-content'}}
-                        />
-                    </div>
-                </Card>
+                {/* 小时分布和状态码分布 */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <Card title={t('audit.accessLog.stats.charts.hourlyDistribution')}
+                          loading={hourlyStatsQuery.isLoading}>
+                        <div className="rounded-xl p-4 border-0 w-full overflow-hidden">
+                            <ChartContainer
+                                config={hourlyChartConfig}
+                                className="aspect-auto h-[300px] w-full min-w-0"
+                            >
+                                <BarChart data={hourlyStats}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false}/>
+                                    <XAxis
+                                        dataKey="hour"
+                                        tickLine={false}
+                                        axisLine={false}
+                                        tickMargin={8}
+                                        tickFormatter={(value) => `${value}:00`}
+                                    />
+                                    <YAxis tickLine={false} axisLine={false}/>
+                                    <ChartTooltip
+                                        cursor={false}
+                                        content={
+                                            <ChartTooltipContent
+                                                labelFormatter={(value) => `${t('audit.accessLog.stats.tooltip.time')}: ${value}:00`}
+                                                formatter={(value) => [value, t('audit.accessLog.stats.table.visitCount')]}
+                                                indicator="dot"
+                                            />
+                                        }
+                                    />
+                                    <Bar
+                                        dataKey="count"
+                                        fill="var(--color-count)"
+                                        radius={[4, 4, 0, 0]}
+                                    />
+                                </BarChart>
+                            </ChartContainer>
+                        </div>
+                    </Card>
+                    <Card title={t('audit.accessLog.stats.charts.statusCodeDistribution')}
+                          loading={statusCodeStatsQuery.isLoading}>
+                        <div className="rounded-xl p-4 border-0 w-full overflow-hidden">
+                            <ChartContainer
+                                config={statusCodeChartConfig}
+                                className="mx-auto aspect-square max-h-[300px] min-w-0"
+                            >
+                                <PieChart>
+                                    <ChartTooltip
+                                        cursor={false}
+                                        content={<ChartTooltipContent
+                                            labelFormatter={(_value, payload) => `${t('audit.accessLog.statusCode')} ${payload[0]?.name}`}
+                                            formatter={(value, _name) => [value]}
+                                        />}
+                                    />
+                                    <Pie
+                                        data={statusCodeChartData}
+                                        dataKey="value"
+                                        nameKey="name"
+                                        innerRadius={60}
+                                        outerRadius={100}
+                                    >
+                                        {statusCodeChartData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.fill}/>
+                                        ))}
+                                    </Pie>
+                                    <ChartLegend
+                                        // content={<ChartLegendContent nameKey="name"/>}
+                                        // className="flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
+                                    />
+                                </PieChart>
+                            </ChartContainer>
+                        </div>
+                    </Card>
+                </div>
+
+                {/* 热门页面和热门来源 */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <Card title={t('audit.accessLog.stats.charts.topPages')} loading={topPagesQuery.isLoading}>
+                        <div className="overflow-x-auto">
+                            <Table
+                                dataSource={topPages}
+                                columns={topPagesColumns}
+                                pagination={false}
+                                size="small"
+                                rowKey="uri"
+                                scroll={{x: 'max-content'}}
+                            />
+                        </div>
+                    </Card>
+                    <Card title={t('audit.accessLog.stats.charts.topReferers')} loading={topReferersQuery.isLoading}>
+                        <div className="overflow-x-auto">
+                            <Table
+                                dataSource={topReferers}
+                                columns={topReferersColumns}
+                                pagination={false}
+                                size="small"
+                                rowKey="referer"
+                                scroll={{x: 'max-content'}}
+                            />
+                        </div>
+                    </Card>
+                </div>
             </div>
-        </div>
+        </Disabled>
     );
 };
 

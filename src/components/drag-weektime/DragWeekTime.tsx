@@ -1,7 +1,7 @@
-import React, {useEffect, useState} from 'react';
-import './DragWeekTime.css'
+import { useEffect,useState } from 'react';
+import { useTranslation } from "react-i18next";
 import strings from "../../utils/strings";
-import {useTranslation} from "react-i18next";
+import './DragWeekTime.css';
 
 export type WeekMapping = {
     [key: string]: string;
@@ -12,7 +12,7 @@ export interface TimePeriod {
     value: string
 }
 
-const theadArr = Array.from(Array(24)).map((ret, id) => id);
+const theadArr = Array.from(Array(24)).map((_ret, id) => id);
 const formatDate = (date: Date, format: string): string => {
     const options: Record<string, Intl.DateTimeFormatOptions> = {
         'hh:mm': {
@@ -27,7 +27,7 @@ const formatDate = (date: Date, format: string): string => {
 };
 
 const createArr = (len: number) => {
-    return Array.from(Array(len)).map((ret, id) => id)
+    return Array.from(Array(len)).map((_ret, id) => id)
 }
 
 const formatWeekTime = (col: number) => {
@@ -110,7 +110,7 @@ const DragWeekTime = ({onChange, value}: DragWeekTimeProps) => {
     const data = Object.keys(renderWeek()).map((day) => {
         let val = renderWeek()[day];
         const children = (ret: string, row: number, max: number) => {
-            return createArr(max).map((t, col) => {
+            return createArr(max).map((_t, col) => {
                 let wt = formatWeekTime(col);
                 return {
                     week: ret,
@@ -178,14 +178,14 @@ const DragWeekTime = ({onChange, value}: DragWeekTimeProps) => {
         })
     }
 
-    const handleMouseDown = (e: any, item: Item) => {
+    const handleMouseDown = (_e: any, item: Item) => {
         setChecked(item.checked);
         setMouseDown(true);
         setStartRow(item.row);
         setStartCol(item.col);
     }
 
-    const handleMouseUp = (e: any, item: Item) => {
+    const handleMouseUp = (_e: any, item: Item) => {
         if (item.col <= startCol && item.row <= startRow) {
             selectWeek([item.row, startRow], [item.col, startCol], !checked)
         } else if (item.col >= startCol && item.row >= startRow) {
@@ -264,14 +264,14 @@ const DragWeekTime = ({onChange, value}: DragWeekTimeProps) => {
 
     const renderWeekTime = (timePeriods?: TimePeriod[]) => {
         handleClearWeekTime();
-        for (let i in timePeriods) {
-            let v = timePeriods[i].value;
+        for (const timePeriod of timePeriods ?? []) {
+            let v = timePeriod.value;
             if (!strings.hasText(v)) {
                 continue;
             }
             let cv = v.split('、');
-            for (const cvKey in cv) {
-                renderTimePeriod(timePeriods[i].key, cv[cvKey]);
+            for (const value of cv) {
+                renderTimePeriod(timePeriod.key, value);
             }
         }
         dealTimePeriod();

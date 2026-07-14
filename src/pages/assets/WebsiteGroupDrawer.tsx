@@ -18,8 +18,8 @@ const WebsiteGroupDrawer: React.FC<WebsiteGroupDrawerProps> = ({
                                                                    onSuccess,
                                                                }) => {
     const {t} = useTranslation();
-    const [treeData, setTreeData] = useState([]);
-    let [expandedKeys, setExpandedKeys] = useState([]);
+    const [treeData, setTreeData] = useState<TreeDataNode[]>([]);
+    let [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
     let [selectedKey, setSelectedKey] = useState('');
 
     let query = useQuery({
@@ -44,7 +44,7 @@ const WebsiteGroupDrawer: React.FC<WebsiteGroupDrawerProps> = ({
     }, [query.data]);
 
     const getAllKeys = (data: TreeDataNode[]) => {
-        let keys = [];
+        let keys: React.Key[] = [];
         data.forEach((item) => {
             keys.push(item.key);
             if (item.children) {

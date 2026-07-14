@@ -1,6 +1,6 @@
-import {Api} from "./core/api";
-import requests, {baseUrl} from "./core/requests";
-import {browserDownload} from "@/utils/utils";
+import { browserDownload } from "@/utils/utils";
+import { Api } from "./core/api";
+import requests,{ baseUrl } from "./core/requests";
 
 export interface Certificate {
     id: string;
@@ -29,7 +29,7 @@ class CertificateApi extends Api<Certificate> {
         await requests.patch(`/${this.group}/${id}/default`)
     }
 
-    download = async (id: string, commonName: string) => {
+    download = async (id: string, _commonName: string) => {
         let u = `${baseUrl()}/${this.group}/${id}/download`
         browserDownload(u)
     }

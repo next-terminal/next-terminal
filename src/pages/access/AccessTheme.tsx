@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import "@xterm/xterm/css/xterm.css";
 import XtermThemes from "@/color-theme/XtermThemes";
 import {ScrollArea} from "@/components/ui/scroll-area";
@@ -9,6 +9,7 @@ import {useLicense} from "@/hook/LicenseContext";
 import Disabled from "@/components/Disabled";
 import {Card, Radio} from "antd";
 import {cn} from "@/lib/utils";
+import type {ITheme} from "@xterm/xterm";
 
 const themes = XtermThemes;
 
@@ -20,10 +21,15 @@ const text = `
 \u001b[1;34mdrwxr-xr-x\u001b[0m 1 root  \u001b[1;34metc\u001b[0m
 `;
 
-const ThemeRendererV2 = ({theme, text}) => {
+interface ThemeRendererProps {
+    theme: ITheme;
+    text: string;
+}
+
+const ThemeRendererV2 = ({theme, text}: ThemeRendererProps) => {
     const [renderedText, setRenderedText] = useState('');
 
-    const ansiColorMap = {
+    const ansiColorMap: Record<string, keyof ITheme> = {
         '1;32': 'brightGreen',
         '1;34': 'brightBlue'
     };
@@ -64,7 +70,7 @@ const ThemeRendererV2 = ({theme, text}) => {
     }, []);
 
     return (
-        <div style={{backgroundColor: theme['background'], color: theme['foreground']}}>
+        <div style={{backgroundColor: theme.background, color: theme.foreground}}>
             <pre>
                 <div dangerouslySetInnerHTML={{__html: renderedText}}/>
             </pre>
@@ -85,12 +91,12 @@ const AccessTheme = () => {
         }}>
             <div className={'flex items-center justify-center'}>
                 <div className={'m-8'}>
-                    <Disabled disabled={license.isFree()}>
+                    <Disabled disabled={!license.hasPremiumFeatures()}>
                         <div className={'text-lg font-bold'}>{t('access.settings.theme')}</div>
                     </Disabled>
                     <Radio.Group
                         className="w-full"
-                        disabled={license.isFree()}
+                        disabled={!license.hasPremiumFeatures()}
                         onChange={(value) => {
                             let name = value.target.value as string;
                             let v = XtermThemes.find(item => item.name == name);
@@ -109,13 +115,13 @@ const AccessTheme = () => {
                                 return <Card
                                     key={item.name}
                                     size="small"
-                                    hoverable={!license.isFree()}
+                                    hoverable={license.hasPremiumFeatures()}
                                     className={cn(
                                         'cursor-pointer transition-colors',
                                         checked && 'border-blue-500 shadow-sm'
                                     )}
                                     onClick={() => {
-                                        if (license.isFree()) {
+                                        if (!license.hasPremiumFeatures()) {
                                             return;
                                         }
                                         let v = XtermThemes.find(theme => theme.name == item.name);
@@ -126,12 +132,12 @@ const AccessTheme = () => {
                                         });
                                     }}
                                 >
-                                    <Radio value={item.name} disabled={license.isFree()}>
+                                    <Radio value={item.name} disabled={!license.hasPremiumFeatures()}>
                                         {item.name}
                                     </Radio>
                                     <div>
                                         <div className={'p-4 rounded-lg mt-4 overflow-hidden'} style={{
-                                            backgroundColor: item.value['background']
+                                            backgroundColor: item.value.background
                                         }}>
                                             {/*<ThemeRender theme={item.value}/>*/}
                                             <ThemeRendererV2 theme={item.value} text={text}/>

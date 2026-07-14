@@ -1,6 +1,5 @@
-import '@/beautiful-scrollbar.css';
 import '@/App.css';
-import React, {lazy, useEffect} from "react";
+import {lazy, useEffect} from "react";
 import {createBrowserRouter, RouterProvider} from "react-router-dom";
 import '@/react-i18next/i18n'
 import ManagerLayout from '@/layout/ManagerLayout';
@@ -37,7 +36,6 @@ const LoginPolicyPostPage = lazy(() => import("@/pages/identity/LoginPolicyPostP
 const LoginPolicyDetailPage = lazy(() => import("@/pages/identity/LoginPolicyDetailPage"));
 const OidcClientPage = lazy(() => import("@/pages/identity/OidcClientPage"));
 const AssetsPage = lazy(() => import("@/pages/assets/AssetPage"));
-const AssetInfo = lazy(() => import("@/pages/assets/AssetInfo"));
 const DatabaseAssetPage = lazy(() => import("@/pages/assets/DatabaseAssetPage"));
 const CredentialPage = lazy(() => import("@/pages/assets/CredentialPage"));
 const CertificatePage = lazy(() => import("@/pages/assets/CertificatePage"));
@@ -52,11 +50,13 @@ const ToolsPage = lazy(() => import("@/pages/sysops/ToolsPage"));
 const LoginLogPage = lazy(() => import("@/pages/audit/LoginLogPage"));
 const OperationLogPage = lazy(() => import("@/pages/audit/OperationLogPage"));
 const OfflineSessionPage = lazy(() => import("@/pages/audit/OfflineSessionPage"));
+const ExecCommandLogPage = lazy(() => import("@/pages/audit/ExecCommandLogPage"));
 const OnlineSessionPage = lazy(() => import("@/pages/audit/OnlineSessionPage"));
 const TerminalPlayback = lazy(() => import("@/pages/access/TerminalPlayback"));
 const TerminalMonitor = lazy(() => import("@/pages/access/TerminalMonitor"));
 const GuacdPlayback = lazy(() => import("@/pages/access/GuacdPlayback"));
 const GuacdMonitor = lazy(() => import("@/pages/access/GuacdMonitor"));
+const VideoPlayback = lazy(() => import("@/pages/access/VideoPlayback"));
 const FileSystemLogPage = lazy(() => import("@/pages/audit/FileSystemLogPage"));
 const AccessLogPage = lazy(() => import("@/pages/audit/AccessLogPage"));
 const AccessLogStatsPage = lazy(() => import("@/pages/audit/AccessLogStatsPage"));
@@ -67,7 +67,6 @@ const GatewayGroupPage = lazy(() => import("@/pages/gateway/GatewayGroupPage"));
 const ErrorPage = lazy(() => import("@/components/ErrorPage"));
 const StoragePage = lazy(() => import("@/pages/assets/StoragePage"));
 const WebsitePage = lazy(() => import("@/pages/assets/WebsitePage"));
-const WebsiteInfo = lazy(() => import("@/pages/assets/WebsiteInfo"));
 const BrowserPage = lazy(() => import("@/pages/access/BrowserPage"));
 const FacadePage = lazy(() => import("@/pages/facade/AssetFacadePage.tsx"));
 const WebsiteFacadePage = lazy(() => import("@/pages/facade/WebsiteFacadePage"));
@@ -78,9 +77,13 @@ const UserInfoPage = lazy(() => import("@/pages/facade/UserInfoPage"));
 const SnippetUserPage = lazy(() => import("@/pages/facade/SnippetUserPage"));
 const DatabaseAssetFacadePage = lazy(() => import("@/pages/facade/DatabaseAssetFacadePage"));
 const SystemMonitorPage = lazy(() => import("@/pages/sysops/SystemMonitorPage"));
+const SystemEventPage = lazy(() => import("@/pages/sysops/SystemEventPage"));
 const SetupPage = lazy(() => import("@/pages/identity/SetupPage"));
 const DatabaseWorkOrderPage = lazy(() => import("@/pages/dbproxy/DatabaseWorkOrderPage"));
 const DatabaseWorkOrderUserPage = lazy(() => import("@/pages/facade/DatabaseWorkOrderUserPage"));
+const AccessRequestPage = lazy(() => import("@/pages/accessrequest/AccessRequestPage"));
+const AccessRequestUserPage = lazy(() => import("@/pages/facade/AccessRequestUserPage"));
+const GlobalAIPage = lazy(() => import("@/pages/ai/GlobalAIPage"));
 
 const router = createBrowserRouter([
     {path: "/setup", element: <SetupPage/>},
@@ -94,6 +97,7 @@ const router = createBrowserRouter([
     {path: "/terminal-monitor", element: <TerminalMonitor/>},
     {path: "/graphics-playback", element: <GuacdPlayback/>},
     {path: "/graphics-monitor", element: <GuacdMonitor/>},
+    {path: "/video-playback", element: <VideoPlayback/>},
     {path: "/terminal", element: <TerminalPage/>,},
     {path: "/standalone-access", element: <StandaloneAssetAccessPage/>,},
     {path: "/graphics", element: <GuacamolePage/>,},
@@ -108,12 +112,14 @@ const router = createBrowserRouter([
             {path: "/x-snippet", element: <SnippetUserPage/>,},
             {path: "/x-info", element: <UserInfoPage/>,},
             {path: "/x-db-work-order", element: <DatabaseWorkOrderUserPage/>},
+            {path: "/x-access-request", element: <AccessRequestUserPage/>},
         ]
     },
     {
         element: <ManagerLayout/>,
         children: [
             {path: "/dashboard", element: <DashboardPage/>},
+            {path: "/ai", element: <GlobalAIPage/>},
             {path: "/user", element: <UserPage/>},
             {path: "/user/:userId", element: <UserDetailPage/>},
             {path: "/department", element: <DepartmentPage/>},
@@ -129,15 +135,14 @@ const router = createBrowserRouter([
             {path: "/operation-log", element: <OperationLogPage/>},
 
             {path: "/asset", element: <AssetsPage/>},
-            {path: "/asset/:assetId", element: <AssetInfo/>},
             {path: "/database-asset", element: <DatabaseAssetPage/>},
             {path: "/credential", element: <CredentialPage/>},
             {path: "/snippet", element: <SnippetPage/>},
             {path: "/storage", element: <StoragePage/>},
             {path: "/website", element: <WebsitePage/>},
-            {path: "/website/:websiteId", element: <WebsiteInfo/>},
             {path: "/certificate", element: <CertificatePage/>},
             {path: "/db-work-order", element: <DatabaseWorkOrderPage/>},
+            {path: "/access-request", element: <AccessRequestPage/>},
 
             {path: "/strategy", element: <StrategyPage/>},
             {path: "/command-filter", element: <CommandFilterPage/>},
@@ -152,8 +157,10 @@ const router = createBrowserRouter([
             {path: "/scheduled-task", element: <ScheduledTaskPage/>},
             {path: "/tools", element: <ToolsPage/>},
             {path: "/monitoring", element: <SystemMonitorPage/>},
+            {path: "/system-event", element: <SystemEventPage/>},
 
             {path: "/offline-session", element: <OfflineSessionPage/>},
+            {path: "/exec-command-log", element: <ExecCommandLogPage/>},
             {path: "/online-session", element: <OnlineSessionPage/>},
             {path: "/filesystem-log", element: <FileSystemLogPage/>},
             {path: "/access-log", element: <AccessLogPage/>},

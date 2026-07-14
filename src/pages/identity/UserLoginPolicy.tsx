@@ -1,16 +1,16 @@
-import React, {useEffect, useState} from "react";
-import {useQuery} from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { Transfer } from "antd";
+import { TransferDirection } from "antd/es/transfer";
+import { type Key,useEffect,useState } from "react";
+import { useTranslation } from "react-i18next";
 import loginPolicyApi from "../../api/login-policy-api";
-import {TransferDirection} from "antd/es/transfer";
-import {Transfer} from "antd";
-import {useTranslation} from "react-i18next";
 
 interface UserInfoProps {
     active: boolean
     userId: string
 }
 
-const UserLoginPolicy = ({active, userId}: UserInfoProps) => {
+const UserLoginPolicy = ({active: _active, userId}: UserInfoProps) => {
     let {t} = useTranslation();
     const [targetKeys, setTargetKeys] = useState<string[]>([]);
 
@@ -42,16 +42,18 @@ const UserLoginPolicy = ({active, userId}: UserInfoProps) => {
         }
     });
 
-    const onChange = async (nextTargetKeys: string[], direction: TransferDirection, moveKeys: string[]) => {
+    const onChange = async (nextTargetKeys: Key[], direction: TransferDirection, moveKeys: Key[]) => {
+        const nextKeys = nextTargetKeys.map(String);
+        const movedKeys = moveKeys.map(String);
         switch (direction) {
             case 'left':
-                await loginPolicyApi.unbindLoginPolicy(userId, moveKeys);
+                await loginPolicyApi.unbindLoginPolicy(userId, movedKeys);
                 break;
             case 'right':
-                await loginPolicyApi.bindLoginPolicy(userId, moveKeys);
+                await loginPolicyApi.bindLoginPolicy(userId, movedKeys);
                 break;
         }
-        setTargetKeys(nextTargetKeys);
+        setTargetKeys(nextKeys);
     };
 
     return (

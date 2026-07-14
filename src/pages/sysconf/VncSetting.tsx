@@ -1,11 +1,7 @@
-import React from 'react';
-import { Button, Form, Select, Space, Switch, Typography } from "antd";
+import { Button, Form, Select, Space, Switch } from "antd";
 import { SettingProps } from "./SettingPage";
 import { useTranslation } from "react-i18next";
 import { useFormRequest } from "@/hook/use-antd-form-query";
-const {
-  Title
-} = Typography;
 const VncSetting = ({
   get,
   set
@@ -24,9 +20,6 @@ const VncSetting = ({
   };
   useFormRequest(form, ['settings', 'vnc'], wrapGet);
   return <div>
-            <Title level={5} style={{
-      marginTop: 0
-    }}>{t('settings.vnc.setting')}</Title>
             <Form form={form} layout="vertical" onFinish={set}>
                 <Form.Item name="color-depth" label={t("assets.color_depth")}>
                     <Select options={[{

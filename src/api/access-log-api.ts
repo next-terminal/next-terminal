@@ -1,5 +1,6 @@
 import {Api} from "@/api/core/api";
 import requests from "@/api/core/requests";
+import type {RegionInfo} from "@/api/region-info";
 
 export interface AccessLog {
     id: string;
@@ -11,7 +12,7 @@ export interface AccessLog {
     statusCode: number;
     responseSize: number;
     clientIp: string;
-    region: string;
+    regionInfo?: RegionInfo;
     userAgent: string;
     referer: string;
     requestTime: number;

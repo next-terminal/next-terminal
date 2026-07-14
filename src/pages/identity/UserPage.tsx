@@ -1,29 +1,32 @@
-import React, {useEffect, useRef, useState} from 'react';
+import { useEffect,useRef,useState } from 'react';
 
-import {
-    App,
-    Button,
-    Dropdown,
-    Popconfirm,
-    Popover,
-    Space,
-    Switch,
-    Table,
-    Tag,
-    Upload} from "antd";
-import {useNavigate,
-    useSearchParams} from "react-router-dom";
-import NTable, {type NTableActionType, type NColumn} from "@/components/NTable";
-import userApi, {CreateUserResult, User} from "@/api/user-api";
-import {useTranslation} from "react-i18next";
-import {getSort} from "@/utils/sort";
-import UserModal from "./UserModal";
-import {useMutation} from "@tanstack/react-query";
+import userApi,{ CreateUserResult,User } from "@/api/user-api";
 import NButton from "@/components/NButton";
 import NLink from "@/components/NLink";
-import copy from 'copy-to-clipboard';
-import {maybe} from "@/utils/maybe";
+import NTable,{ type NColumn,type NTableActionType } from "@/components/NTable";
 import UserResetPasswordModal from "@/pages/identity/UserResetPasswordModal";
+import { maybe } from "@/utils/maybe";
+import { getSort } from "@/utils/sort";
+import { useMutation } from "@tanstack/react-query";
+import {
+App,
+Button,
+Dropdown,
+Popconfirm,
+Popover,
+Space,
+Switch,
+Table,
+Tag,
+Upload
+} from "antd";
+import copy from 'copy-to-clipboard';
+import { useTranslation } from "react-i18next";
+import {
+useNavigate,
+useSearchParams
+} from "react-router-dom";
+import UserModal from "./UserModal";
 
 const api = userApi;
 
@@ -91,8 +94,8 @@ ${t('assets.password')}: ${result.password}`)
     });
 
     let resetPasswordMutation = useMutation({
-        mutationFn: (values) => {
-            return userApi.resetPassword(selectedRowKeys, values['password']);
+        mutationFn: (values: { password: string }) => {
+            return userApi.resetPassword(selectedRowKeys ?? [], values.password);
         },
         onSuccess: (newPassword) => {
             setResetPasswordOpen(false);
@@ -117,10 +120,7 @@ ${t('assets.password')}: ${result.password}`)
             key: 'nickname',
             sorter: true,
             render: (text, record) => {
-                return <a onClick={() => {
-                    setOpen(true);
-                    setSelectedRowKey(record.id);
-                }}>{text}</a>;
+                return <NLink to={`/user/${record.id}?activeKey=info`}>{text}</NLink>;
             },
         },
         {
@@ -156,25 +156,6 @@ ${t('assets.password')}: ${result.password}`)
             }
         },
         {
-            title: t('audit.accessLog.stats.table.referer'),
-            dataIndex: 'source',
-            key: 'source',
-            hideInSearch: true,
-            render: (source: string) => {
-                const sourceMap: Record<string, string> = {
-                    'local': t('identity.user.sources.local'),
-                    'ldap': t('identity.user.sources.ldap'),
-                    'wechat': t('identity.user.sources.wechat'),
-                    'oidc': t('identity.user.sources.oidc'),
-                    // 兼容旧值
-                    'self': t('identity.user.sources.local'),
-                    'wechat-work': t('identity.user.sources.wechat'),
-                };
-                return sourceMap[source] || source;
-            },
-            width: 80,
-        },
-        {
             title: t('general.remark'),
             dataIndex: 'remark',
             key: 'remark',
@@ -186,7 +167,7 @@ ${t('assets.password')}: ${result.password}`)
             dataIndex: 'status',
             key: 'status',
             hideInSearch: true,
-            render: (status, record, index) => {
+            render: (status, record, _index) => {
                 return <Switch checkedChildren={t('general.enabled')} unCheckedChildren={t('general.disabled')}
                                checked={status !== 'disabled'}
                                onChange={checked => {
@@ -232,7 +213,7 @@ ${t('assets.password')}: ${result.password}`)
             key: 'option',
             width: 160,
             fixed: 'right',
-            render: (text, record) => (
+            render: (_text, record) => (
                 <Space>
                     <NButton
                         key="edit"
@@ -360,7 +341,7 @@ ${t('assets.password')}: ${result.password}`)
                     </Space>
                 );
             }}
-                request={async (params = {}, sort, filter) => {
+                request={async (params = {}, sort, _filter) => {
                     let [sortOrder, sortField] = getSort(sort);
                     
                     let queryParams = {

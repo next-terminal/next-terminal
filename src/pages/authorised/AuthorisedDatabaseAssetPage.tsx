@@ -1,35 +1,33 @@
-import React, {useEffect, useRef} from 'react';
-import {useTranslation} from "react-i18next";
-import NTable, {type NTableActionType, type NColumn} from "@/components/NTable";
-import { FormInstance, Button, Popconfirm, Space, Table } from 'antd';
-import authorisedDatabaseAssetApi, {AuthorisedDatabaseAsset} from "@/api/authorised-database-asset-api";
-import {DepartmentSelect, UserSelect, DatabaseAssetSelect} from "@/components/shared/QuerySelects";
+import authorisedDatabaseAssetApi,{ AuthorisedDatabaseAsset } from "@/api/authorised-database-asset-api";
 import NButton from "@/components/NButton";
 import NLink from "@/components/NLink";
+import NTable,{ type NColumn,type NTableActionType } from "@/components/NTable";
+import { DatabaseAssetSelect,DepartmentTreeSelect,UserSelect } from "@/components/shared/QuerySelects";
+import AuthorisedDatabaseAssetPost from "@/pages/authorised/AuthorisedDatabaseAssetPost";
+import { Button,Popconfirm,Space,Table } from 'antd';
 import dayjs from "dayjs";
-import {useNavigate, useSearchParams} from "react-router-dom";
+import { useRef,useState } from 'react';
+import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
+
+const isExpired = (record: AuthorisedDatabaseAsset) => record.expiredAt > 0 && dayjs(record.expiredAt).isBefore(dayjs());
 
 const AuthorisedDatabaseAssetPage = () => {
 
     const {t} = useTranslation();
     const actionRef = useRef<NTableActionType>(null);
-    const formRef = useRef<FormInstance>(null);
-    const navigate = useNavigate();
+    const [postOpen, setPostOpen] = useState(false);
     const [searchParams, setSearchParams] = useSearchParams();
 
     const urlState = {
-        userId: searchParams.get('userId') || undefined,
         departmentId: searchParams.get('departmentId') || undefined,
+        userId: searchParams.get('userId') || undefined,
         assetId: searchParams.get('assetId') || undefined,
     };
 
     const tableParams = Object.fromEntries(
         Object.entries(urlState).filter(([, value]) => value)
     );
-
-    useEffect(() => {
-        formRef.current?.setFieldsValue(urlState);
-    }, [urlState.userId, urlState.departmentId, urlState.assetId]);
 
     const syncUrl = (values: Record<string, any>) => {
         const next: Record<string, string> = {};
@@ -53,6 +51,25 @@ const AuthorisedDatabaseAssetPage = () => {
             width: 48,
         },
         {
+            title: t('menus.identity.submenus.department'),
+            dataIndex: 'departmentName',
+            formItemProps: {
+                name: 'departmentId',
+            },
+            renderFormItem: (_, {type, ...rest}) => {
+                if (type === 'form') {
+                    return null;
+                }
+                return <DepartmentTreeSelect {...rest} />;
+            },
+            render: ((text: any, record: any) => {
+                if (text === '-') {
+                    return '-';
+                }
+                return <NLink to={`/department/${record.departmentId}`}>{text}</NLink>
+            })
+        },
+        {
             title: t('menus.identity.submenus.user'),
             dataIndex: 'userName',
             formItemProps: {
@@ -72,25 +89,6 @@ const AuthorisedDatabaseAssetPage = () => {
             })
         },
         {
-            title: t('menus.identity.submenus.department'),
-            dataIndex: 'departmentName',
-            formItemProps: {
-                name: 'departmentId',
-            },
-            renderFormItem: (_, {type, ...rest}) => {
-                if (type === 'form') {
-                    return null;
-                }
-                return <DepartmentSelect {...rest} />;
-            },
-            render: ((text: any, record: any) => {
-                if (text === '-') {
-                    return '-';
-                }
-                return <NLink to={`/department/${record.departmentId}`}>{text}</NLink>
-            })
-        },
-        {
             title: t('menus.resource.submenus.database_asset'),
             dataIndex: 'assetName',
             formItemProps: {
@@ -102,7 +100,7 @@ const AuthorisedDatabaseAssetPage = () => {
                 }
                 return <DatabaseAssetSelect {...rest} />;
             },
-            render: ((text, record) => {
+            render: ((text, _record) => {
                 if (text === '-') {
                     return '-';
                 }
@@ -114,7 +112,7 @@ const AuthorisedDatabaseAssetPage = () => {
             key: 'expiredAt',
             dataIndex: 'expiredAt',
             hideInSearch: true,
-            render: (text, record) => {
+            render: (_text, record) => {
                 if (record.expiredAt === 0) {
                     return '-';
                 }
@@ -149,7 +147,7 @@ const AuthorisedDatabaseAssetPage = () => {
             valueType: 'option',
             key: 'option',
             width: 50,
-            render: (text, record) => (
+            render: (_text, record) => (
                 <Space>
                     <Popconfirm
                         key="unbind-confirm"
@@ -160,7 +158,7 @@ const AuthorisedDatabaseAssetPage = () => {
                         }}
                     >
                         <NButton key="unbind" danger>
-                            {t('actions.unbind')}
+                            {t('actions.delete')}
                         </NButton>
                     </Popconfirm>
                 </Space>
@@ -173,7 +171,6 @@ const AuthorisedDatabaseAssetPage = () => {
             <NTable
                 columns={columns}
                 actionRef={actionRef}
-                formRef={formRef}
                 params={tableParams}
                 form={{
                     initialValues: urlState,
@@ -202,6 +199,7 @@ const AuthorisedDatabaseAssetPage = () => {
                 rowSelection={{
                     selections: [Table.SELECTION_ALL, Table.SELECTION_INVERT],
                 }}
+                rowClassName={(record) => isExpired(record) ? 'authorised-row-expired' : ''}
                 tableAlertOptionRender={({selectedRowKeys}) => (
                     <Popconfirm
                         title={t('general.confirm_delete')}
@@ -211,7 +209,7 @@ const AuthorisedDatabaseAssetPage = () => {
                         }}
                     >
                         <NButton danger>
-                            {t('actions.unbind')}
+                            {t('actions.delete')}
                         </NButton>
                     </Popconfirm>
                 )}
@@ -222,12 +220,18 @@ const AuthorisedDatabaseAssetPage = () => {
                 dateFormatter="string"
                 headerTitle={t('actions.authorized')}
                 toolBarRender={() => [
-                    <Button key="button" type="primary" onClick={() => {
-                        navigate('/authorised-database-asset/post')
-                    }}>
+                    <Button key="button" type="primary" onClick={() => setPostOpen(true)}>
                         {t('actions.authorized')}
                     </Button>
                 ]}
+            />
+            <AuthorisedDatabaseAssetPost
+                open={postOpen}
+                onCancel={() => setPostOpen(false)}
+                onSuccess={() => {
+                    setPostOpen(false);
+                    actionRef.current?.reload();
+                }}
             />
         </div>
     );

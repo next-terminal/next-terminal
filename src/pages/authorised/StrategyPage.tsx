@@ -1,24 +1,29 @@
-import React, {useRef, useState} from 'react';
+import { useRef,useState } from 'react';
 
-import {
-    App,
-    Button,
-    Popconfirm,
-    Space,
-    Tag} from "antd";
-import NTable, {type NTableActionType, type NColumn} from "@/components/NTable";
-import strategyApi, {Strategy} from '@/api/strategy-api';
-import {useTranslation} from "react-i18next";
-import {getSort} from "@/utils/sort";
-import StrategyModal from "@/pages/authorised/StrategyModal";
-import {useMutation} from "@tanstack/react-query";
+import strategyApi,{ Strategy } from '@/api/strategy-api';
+import Disabled from "@/components/Disabled";
 import NButton from "@/components/NButton";
+import NTable,{ type NColumn,type NTableActionType } from "@/components/NTable";
+import { useLicense } from "@/hook/LicenseContext";
+import StrategyModal from "@/pages/authorised/StrategyModal";
+import { getSort } from "@/utils/sort";
+import { useMutation } from "@tanstack/react-query";
+import {
+App,
+Button,
+Popconfirm,
+Space,
+Tag
+} from "antd";
+import { useTranslation } from "react-i18next";
 
 const api = strategyApi;
 
 const StrategyPage = () => {
 
     const {t} = useTranslation();
+    const {license} = useLicense();
+    const hasPremiumFeatures = license.hasPremiumFeatures();
     const actionRef = useRef<NTableActionType>(null);
 
     let [open, setOpen] = useState<boolean>(false);
@@ -129,7 +134,7 @@ const StrategyPage = () => {
             title: t('actions.label'),
             valueType: 'option',
             key: 'option',
-            render: (text, record) => (
+            render: (_text, record) => (
                 <Space>
                     <NButton
                         key="edit"
@@ -157,56 +162,66 @@ const StrategyPage = () => {
 
     return (
         <div>
-            <NTable
-                columns={columns}
-                actionRef={actionRef}
-                request={async (params = {}, sort, filter) => {
-                    let [sortOrder, sortField] = getSort(sort);
-                    
-                    let queryParams = {
-                        pageIndex: params.current,
-                        pageSize: params.pageSize,
-                        sortOrder: sortOrder,
-                        sortField: sortField,
-                        name: params.name,
-                    }
-                    let result = await api.getPaging(queryParams);
-                    return {
-                        data: result['items'],
-                        success: true,
-                        total: result['total']
-                    };
-                }}
-                rowKey="id"
-                search={{
-                    labelWidth: 'auto',
-                }}
-                pagination={{
-                    defaultPageSize: 10,
-                    showSizeChanger: true
-                }}
-                dateFormatter="string"
-                headerTitle={t('menus.authorised.submenus.strategy')}
-                toolBarRender={() => [
-                    <Button key="button" type="primary" onClick={() => {
-                        setOpen(true)
-                    }}>
-                        {t('actions.new')}
-                    </Button>
-                    ,
-                ]}
-            />
+            <Disabled disabled={!hasPremiumFeatures}>
+                <NTable
+                    columns={columns}
+                    actionRef={actionRef}
+                    request={async (params = {}, sort, _filter) => {
+                        if (!hasPremiumFeatures) {
+                            return {
+                                data: [],
+                                success: true,
+                                total: 0
+                            };
+                        }
 
-            <StrategyModal
-                id={selectedRowKey}
-                open={open}
-                confirmLoading={mutation.isPending}
-                handleCancel={() => {
-                    setOpen(false);
-                    setSelectedRowKey(undefined);
-                }}
-                handleOk={mutation.mutate}
-            />
+                        let [sortOrder, sortField] = getSort(sort);
+
+                        let queryParams = {
+                            pageIndex: params.current,
+                            pageSize: params.pageSize,
+                            sortOrder: sortOrder,
+                            sortField: sortField,
+                            name: params.name,
+                        }
+                        let result = await api.getPaging(queryParams);
+                        return {
+                            data: result['items'],
+                            success: true,
+                            total: result['total']
+                        };
+                    }}
+                    rowKey="id"
+                    search={{
+                        labelWidth: 'auto',
+                    }}
+                    pagination={{
+                        defaultPageSize: 10,
+                        showSizeChanger: true
+                    }}
+                    dateFormatter="string"
+                    headerTitle={t('menus.authorised.submenus.strategy')}
+                    toolBarRender={() => [
+                        <Button key="button" type="primary" onClick={() => {
+                            setOpen(true)
+                        }}>
+                            {t('actions.new')}
+                        </Button>
+                        ,
+                    ]}
+                />
+
+                <StrategyModal
+                    id={selectedRowKey}
+                    open={open}
+                    confirmLoading={mutation.isPending}
+                    handleCancel={() => {
+                        setOpen(false);
+                        setSelectedRowKey(undefined);
+                    }}
+                    handleOk={mutation.mutate}
+                />
+            </Disabled>
 
         </div>
     );

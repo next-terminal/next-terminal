@@ -1,5 +1,5 @@
+import { Dropdown } from 'antd';
 import React from 'react';
-import {Dropdown} from 'antd';
 import { useTranslation } from 'react-i18next';
 
 interface TabContextMenuProps {
@@ -19,7 +19,7 @@ interface TabContextMenuProps {
 const TabContextMenu: React.FC<TabContextMenuProps> = ({
   children,
   tabKey,
-  currentActiveKey,
+  currentActiveKey: _currentActiveKey,
   allTabs,
   onCloseLeft,
   onCloseRight,

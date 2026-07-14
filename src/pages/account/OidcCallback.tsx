@@ -1,18 +1,25 @@
-import React, {useEffect} from 'react';
-import {Result, Spin} from 'antd';
-import {useNavigate, useSearchParams} from 'react-router-dom';
-import {useMutation} from '@tanstack/react-query';
 import oidcApi from '@/api/oidc-api';
-import {useTranslation} from 'react-i18next';
+import type {ExternalLoginResult} from '@/api/account-api';
+import { useMutation } from '@tanstack/react-query';
+import { Result,Spin } from 'antd';
+import { useEffect,useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useNavigate,useSearchParams } from 'react-router-dom';
+import ExternalAccountBinding from './ExternalAccountBinding';
 
 const OidcCallback = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const {t} = useTranslation();
+    const [bindingResult, setBindingResult] = useState<ExternalLoginResult>();
 
     const mutation = useMutation({
         mutationFn: ({code, state}: {code: string, state?: string}) => oidcApi.login(code, state),
         onSuccess: (data) => {
+            if (data.bindRequired) {
+                setBindingResult(data);
+                return;
+            }
             // 清除会话存储
             sessionStorage.removeItem('current');
             sessionStorage.removeItem('openKeys');
@@ -59,6 +66,10 @@ const OidcCallback = () => {
         // 使用授权码进行登录
         mutation.mutate({code, state});
     }, []);
+
+    if (bindingResult) {
+        return <ExternalAccountBinding result={bindingResult} onSuccess={() => navigate('/')}/>;
+    }
 
     if (mutation.isPending) {
         return (

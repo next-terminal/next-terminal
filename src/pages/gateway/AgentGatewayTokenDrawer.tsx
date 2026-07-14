@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {App, Button, Drawer, Form, Input, Modal, Popconfirm, Table, TableProps, Typography} from "antd";
 import {useTranslation} from "react-i18next";
 import {useQuery} from "@tanstack/react-query";

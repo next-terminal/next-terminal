@@ -1,8 +1,8 @@
-import React, {useEffect, useRef, useState} from 'react';
-import {Button, Drawer, Space, Tooltip, Typography} from "antd";
-import {DownloadOutlined, PauseOutlined, PlayCircleOutlined} from "@ant-design/icons";
-import {baseUrl} from "@/api/core/requests";
-import {useTranslation} from "react-i18next";
+import { baseUrl } from "@/api/core/requests";
+import { DownloadOutlined,PauseOutlined,PlayCircleOutlined } from "@ant-design/icons";
+import { Button,Drawer,Space,Tooltip,Typography } from "antd";
+import { useEffect,useRef,useState } from 'react';
+import { useTranslation } from "react-i18next";
 
 const {Text} = Typography;
 
@@ -153,11 +153,6 @@ const CertificateIssuedLog = ({open, onClose}: Props) => {
             const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10;
             setAutoScroll(isAtBottom);
         }
-    };
-
-    // 清空日志（仅清空前端显示）
-    const clearLogs = () => {
-        setLogs([]);
     };
 
     // 下载日志

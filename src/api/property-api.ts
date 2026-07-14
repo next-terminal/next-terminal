@@ -16,17 +16,15 @@ const booleanKeys = [
     'login-session-count-custom',
     'ssh-server-port-forwarding-enabled',
     'access-require-mfa',
+    'access-request-enabled',
     'ssh-server-disable-password-auth',
     'db-proxy-block-dml',
     'mail-use-ssl',
     'mail-insecure-skip-verify',
+    'recording-s3-use-ssl',
+    'recording-s3-path-style',
     'swap-red-blue',
 ]
-
-export interface UpgradeStatus {
-    message: string;
-    status: string;
-}
 
 export interface ClientIPs {
     direct: string;
@@ -73,30 +71,9 @@ class PropertyApi {
         await requests.post(`/${this.group}/send-mail`, values);
     }
 
-    testLLM = async (values: {
-        apiKey: string;
-        baseUrl: string;
-        proxyUrl?: string;
-        model: string;
-        temperature?: number;
-        maxTokens?: number;
-    }) => {
-        let data = await requests.post(`/${this.group}/test-llm`, values);
-        return data as { content: string };
-    }
-
     getLatestVersion = async () => {
         let data = await requests.get(`/${this.group}/latest-version?noerror`);
         return data as LatestVersion;
-    }
-
-    upgrade = async () => {
-        await requests.post(`/${this.group}/upgrade`);
-    }
-
-    upgradeStatus = async () => {
-        let data = await requests.get(`/${this.group}/upgrade-status`);
-        return data as UpgradeStatus;
     }
 
     getClientIPs = async () => {

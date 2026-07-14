@@ -1,13 +1,12 @@
 import {useFormRequest} from "@/hook/use-antd-form-query";
-import React, {useRef, useState} from 'react';
-import {Alert, Button, Form, FormInstance, Input, Modal, Switch, Typography} from "antd";
+import {useState} from 'react';
+import {Alert, Button, Form, Input, Modal, Switch, Typography} from "antd";
 import {SettingProps} from "./SettingPage";
 import {useMutation} from "@tanstack/react-query";
 import propertyApi from "../../api/property-api";
 import {useTranslation} from "react-i18next";
 
 const {
-    Title,
     Paragraph,
     Text
 } = Typography;
@@ -16,8 +15,8 @@ const SshdSetting = ({
                          set
                      }: SettingProps) => {
     let {t} = useTranslation();
-    const vscodeDirectExample = ['Host nt-prod', '  HostName host', '  Port port', '  User username', '  SetEnv NEXT_TERMINAL_ASSET=asset-alias'].join('\n');
-    const formRef = useRef<FormInstance>(null);
+    const vscodeDirectExample = ['Host access-prod', '  HostName host', '  Port port', '  User username', '  SetEnv ACCESS_ASSET=asset-alias'].join('\n');
+    const [form] = Form.useForm();
     let [enabled, setEnabled] = useState(false);
     let [portForwardEnabled, setPortForwardEnabled] = useState(false);
     let [privateKeyExists, setPrivateKeyExists] = useState(false);
@@ -26,7 +25,7 @@ const SshdSetting = ({
     let [privateKeyError, setPrivateKeyError] = useState<string>();
     const [privateKeyForm] = Form.useForm();
     const wrapSet = async (values: any) => {
-        await formRef.current?.validateFields();
+        await form.validateFields();
         if (values['ssh-server-enabled'] && !privateKeyExists) {
             setPrivateKeyError(t('settings.sshd.private_key_required_to_enable'));
             return false;
@@ -75,19 +74,15 @@ const SshdSetting = ({
             setPrivateKeySaving(false);
         }
     };
-    useFormRequest(formRef, ["form-request", "web/src/pages/sysconf/SshdSetting.tsx"], wrapGet);
+    useFormRequest(form, ["form-request", "web/src/pages/sysconf/SshdSetting.tsx"], wrapGet);
     return <div>
-        <Title level={5} style={{
-            marginTop: 0
-        }}>{t('settings.sshd.setting')}</Title>
-
         <div className={'grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_420px] gap-6 items-start'}>
             <div>
                 <Alert title={t('settings.sshd.tip')} type="info" style={{
                     marginBottom: 10
                 }}/>
 
-                <Form onFinish={wrapSet} ref={formRef} layout="vertical">
+                <Form onFinish={wrapSet} form={form} layout="vertical">
                     <Form.Item name="ssh-server-enabled" label={t("settings.sshd.enabled")} required={true}
                                valuePropName="checked">
                         <Switch checkedChildren={t('general.enabled')} unCheckedChildren={t('general.disabled')}

@@ -1,20 +1,21 @@
-import React, {useEffect, useState} from 'react';
-import {useSearchParams} from 'react-router-dom';
+import { useEffect,useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 // @ts-ignore
+import { baseUrl } from "@/api/core/requests";
+import sessionApi,{ Session,SessionCommand } from "@/api/session-api";
+import IPRegion from "@/components/IPRegion";
+import sessionCommandApi from "@/api/session-command-api";
+import times from "@/components/time/times";
+import { maybe } from "@/utils/maybe";
+import { renderSize } from "@/utils/utils";
+import { StyleProvider } from '@ant-design/cssinjs';
+import { useQuery } from "@tanstack/react-query";
+import { Button,ConfigProvider,Descriptions,Drawer,Table,Tabs,TabsProps,theme } from "antd";
+import { ColumnsType } from "antd/es/table";
 import * as AsciinemaPlayer from 'asciinema-player';
 import 'asciinema-player/dist/bundle/asciinema-player.css';
-import {baseUrl} from "@/api/core/requests";
-import {Button, ConfigProvider, Descriptions, Drawer, Table, Tabs, TabsProps, theme} from "antd";
-import {TerminalSquare} from "lucide-react";
-import {maybe} from "@/utils/maybe";
-import {useQuery} from "@tanstack/react-query";
-import sessionCommandApi from "@/api/session-command-api";
-import {ColumnsType} from "antd/es/table";
-import sessionApi, {Session, SessionCommand} from "@/api/session-api";
-import {StyleProvider} from '@ant-design/cssinjs';
-import {renderSize} from "@/utils/utils";
-import times from "@/components/time/times";
-import {useTranslation} from "react-i18next";
+import { TerminalSquare } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import './TerminalPlayback.css';
 
 const TerminalPlayback = () => {
@@ -28,7 +29,7 @@ const TerminalPlayback = () => {
     let [cmds, setCmds] = useState<SessionCommand[]>([]);
     let [session, setSession] = useState<Session>();
 
-    let [player, setPlayer] = useState();
+    let [player, setPlayer] = useState<ReturnType<typeof AsciinemaPlayer.create>>();
 
     useEffect(() => {
         let url = `${baseUrl()}/admin/sessions/${sessionId}/recording`;
@@ -42,7 +43,7 @@ const TerminalPlayback = () => {
         return () => {
             player.dispose();
         }
-    }, []);
+    }, [sessionId]);
 
     let sessionQuery = useQuery({
         queryKey: ['session'],
@@ -104,7 +105,7 @@ const TerminalPlayback = () => {
                 size={'small'}
                 pagination={false}
                 loading={cmdQuery.isFetching}
-                onRow={(cmd, index) => {
+                onRow={(cmd, _index) => {
                     return {
                         onClick: () => {
                             let connected = session?.connectedAt ? session?.connectedAt : 0;
@@ -125,7 +126,7 @@ const TerminalPlayback = () => {
                     {
                         key: 'clientIp',
                         label: t('audit.client_ip'),
-                        children: session?.clientIp,
+                        children: <IPRegion ip={session?.clientIp} regionInfo={session?.regionInfo}/>,
                     },
                     {
                         key: 'userAccount',

@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import {useState} from 'react';
 import {Tabs} from "antd";
 import {useParams, useSearchParams} from "react-router-dom";
 import LoginPolicyInfo from "./LoginPolicyInfo";

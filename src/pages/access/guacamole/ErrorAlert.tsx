@@ -38,21 +38,21 @@ export const ErrorAlert: React.FC<ErrorAlertProps> = ({status, onReconnect}) => 
             <div className="flex items-center gap-2">
                 <XCircle className="text-red-500 w-7 h-7 animate-pulse"/>
                 <h2 className="text-red-400 text-2xl font-bold leading-snug">
-                    {t('access.guacamole.error_title', 'Connection Error')}
+                    {t('access.guacamole.error_title')}
                 </h2>
             </div>
 
             {/* 错误详情 */}
             {hasCode && (
                 <ErrorDetail
-                    label={t('access.guacamole.code', 'Code')}
+                    label={t('access.guacamole.code')}
                     value={status.code!}
                 />
             )}
 
             {hasMessage && (
                 <div className="text-sm text-gray-300 break-words">
-                    <span className="font-semibold">{t('access.guacamole.message', 'Message')}:</span>
+                    <span className="font-semibold">{t('access.guacamole.message')}:</span>
                     <span className="ml-1">{status.message!}</span>
                 </div>
             )}
@@ -63,7 +63,7 @@ export const ErrorAlert: React.FC<ErrorAlertProps> = ({status, onReconnect}) => 
                     onClick={onReconnect}
                     className="mt-4 self-end bg-gradient-to-tr from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-medium px-6 py-2 rounded-xl shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
                 >
-                    {t('assets.resize_methods.reconnect', 'Reconnect')}
+                    {t('assets.resize_methods.reconnect')}
                 </button>
             )}
         </div>

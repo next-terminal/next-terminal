@@ -1,25 +1,27 @@
-import React, {useEffect, useRef} from 'react';
-import {useTranslation} from "react-i18next";
-import NTable, {type NTableActionType, type NColumn} from "@/components/NTable";
-import { FormInstance, Button, Popconfirm, Space, Table } from 'antd';
-import authorisedAssetApi, {Authorised} from "@/api/authorised-asset-api";
-import {UserSelect, DepartmentSelect, AssetGroupSelect, AssetSelect} from "@/components/shared/QuerySelects";
+import authorisedAssetApi,{ Authorised } from "@/api/authorised-asset-api";
 import NButton from "@/components/NButton";
 import NLink from "@/components/NLink";
+import NTable,{ type NColumn,type NTableActionType } from "@/components/NTable";
+import { AssetGroupTreeSelect,AssetTreeSelect,DepartmentTreeSelect,UserSelect } from "@/components/shared/QuerySelects";
+import AuthorisedAssetPost from "@/pages/authorised/AuthorisedAssetPost";
+import { Button,Popconfirm,Space,Table } from 'antd';
 import dayjs from "dayjs";
-import {useNavigate, useSearchParams} from "react-router-dom";
+import { useRef,useState } from 'react';
+import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
+
+const isExpired = (record: Authorised) => record.expiredAt > 0 && dayjs(record.expiredAt).isBefore(dayjs());
 
 const AuthorisedAssetPage = () => {
 
     const {t} = useTranslation();
     const actionRef = useRef<NTableActionType>(null);
-    const formRef = useRef<FormInstance>(null);
-    let navigate = useNavigate();
+    const [postOpen, setPostOpen] = useState(false);
     const [searchParams, setSearchParams] = useSearchParams();
 
     const urlState = {
-        userId: searchParams.get('userId') || undefined,
         departmentId: searchParams.get('departmentId') || undefined,
+        userId: searchParams.get('userId') || undefined,
         assetGroupId: searchParams.get('assetGroupId') || undefined,
         assetId: searchParams.get('assetId') || undefined,
     };
@@ -27,10 +29,6 @@ const AuthorisedAssetPage = () => {
     const tableParams = Object.fromEntries(
         Object.entries(urlState).filter(([, value]) => value)
     );
-
-    useEffect(() => {
-        formRef.current?.setFieldsValue(urlState);
-    }, [urlState.userId, urlState.departmentId, urlState.assetGroupId, urlState.assetId]);
 
     const syncUrl = (values: Record<string, any>) => {
         const next: Record<string, string> = {};
@@ -54,12 +52,31 @@ const AuthorisedAssetPage = () => {
             width: 48,
         },
         {
+            title: t('menus.identity.submenus.department'),
+            dataIndex: 'departmentName',
+            formItemProps: {
+                name: 'departmentId',
+            },
+            renderFormItem: (_, {type, defaultRender, ...rest}, _form) => {
+                if (type === 'form') {
+                    return null;
+                }
+                return <DepartmentTreeSelect {...rest} />;
+            },
+            render: ((text: any, record: any) => {
+                if (text === '-') {
+                    return '-';
+                }
+                return <NLink to={`/department/${record.departmentId}`}>{text}</NLink>
+            })
+        },
+        {
             title: t('menus.identity.submenus.user'),
             dataIndex: 'userName',
             formItemProps: {
                 name: 'userId',
             },
-            renderFormItem: (_, {type, defaultRender, ...rest}, form) => {
+            renderFormItem: (_, {type, defaultRender, ...rest}, _form) => {
                 if (type === 'form') {
                     return null;
                 }
@@ -73,54 +90,16 @@ const AuthorisedAssetPage = () => {
             })
         },
         {
-            title: t('menus.identity.submenus.department'),
-            dataIndex: 'departmentName',
-            formItemProps: {
-                name: 'departmentId',
-            },
-            renderFormItem: (_, {type, defaultRender, ...rest}, form) => {
-                if (type === 'form') {
-                    return null;
-                }
-                return <DepartmentSelect {...rest} />;
-            },
-            render: ((text: any, record: any) => {
-                if (text === '-') {
-                    return '-';
-                }
-                return <NLink to={`/department/${record.departmentId}`}>{text}</NLink>
-            })
-        },
-        {
-            title: t('menus.resource.submenus.asset'),
-            dataIndex: 'assetName',
-            formItemProps: {
-                name: 'assetId',
-            },
-            renderFormItem: (_, {type, defaultRender, ...rest}, form) => {
-                if (type === 'form') {
-                    return null;
-                }
-                return <AssetSelect {...rest} />;
-            },
-            render: ((text, record) => {
-                if (text === '-') {
-                    return '-';
-                }
-                return <NLink to={`/asset?assetId=${record['assetId']}`}>{text}</NLink>
-            })
-        },
-        {
             title: t('authorised.label.asset_group'),
             dataIndex: 'assetGroupName',
             formItemProps: {
                 name: 'assetGroupId',
             },
-            renderFormItem: (_, {type, defaultRender, ...rest}, form) => {
+            renderFormItem: (_, {type, defaultRender, ...rest}, _form) => {
                 if (type === 'form') {
                     return null;
                 }
-                return <AssetGroupSelect {...rest} />;
+                return <AssetGroupTreeSelect {...rest} />;
             },
             render: ((text: any, record: any) => {
                 if (text === '-') {
@@ -130,11 +109,30 @@ const AuthorisedAssetPage = () => {
             })
         },
         {
+            title: t('menus.resource.submenus.asset'),
+            dataIndex: 'assetName',
+            formItemProps: {
+                name: 'assetId',
+            },
+            renderFormItem: (_, {type, defaultRender, ...rest}, _form) => {
+                if (type === 'form') {
+                    return null;
+                }
+                return <AssetTreeSelect {...rest} />;
+            },
+            render: ((text, record) => {
+                if (text === '-') {
+                    return '-';
+                }
+                return <NLink to={`/asset?assetId=${record['assetId']}`}>{text}</NLink>
+            })
+        },
+        {
             title: t('assets.limit_time'),
             key: 'expiredAt',
             dataIndex: 'expiredAt',
             hideInSearch: true,
-            render: (text, record) => {
+            render: (_text, record) => {
                 if (record.expiredAt === 0) {
                     return '-';
                 }
@@ -170,7 +168,7 @@ const AuthorisedAssetPage = () => {
             valueType: 'option',
             key: 'option',
             width: 50,
-            render: (text, record) => (
+            render: (_text, record) => (
                 <Space>
                     <Popconfirm
                         key="unbind-confirm"
@@ -181,7 +179,7 @@ const AuthorisedAssetPage = () => {
                         }}
                     >
                         <NButton key="unbind" danger>
-                            {t('actions.unbind')}
+                            {t('actions.delete')}
                         </NButton>
                     </Popconfirm>
                 </Space>
@@ -194,14 +192,13 @@ const AuthorisedAssetPage = () => {
             <NTable
                 columns={columns}
                 actionRef={actionRef}
-                formRef={formRef}
                 params={tableParams}
                 form={{
                     initialValues: urlState,
                 }}
                 onSubmit={(values) => syncUrl(values)}
                 onReset={() => syncUrl({})}
-                request={async (params = {}, sort, filter) => {
+                request={async (params = {}, _sort, _filter) => {
 
                     let queryParams = {
                         pageIndex: params.current,
@@ -225,6 +222,7 @@ const AuthorisedAssetPage = () => {
                 rowSelection={{
                     selections: [Table.SELECTION_ALL, Table.SELECTION_INVERT],
                 }}
+                rowClassName={(record) => isExpired(record) ? 'authorised-row-expired' : ''}
                 tableAlertOptionRender={({selectedRowKeys}) => (
                     <Popconfirm
                         title={t('general.confirm_delete')}
@@ -234,7 +232,7 @@ const AuthorisedAssetPage = () => {
                         }}
                     >
                         <NButton danger>
-                            {t('actions.unbind')}
+                            {t('actions.delete')}
                         </NButton>
                     </Popconfirm>
                 )}
@@ -245,12 +243,18 @@ const AuthorisedAssetPage = () => {
                 dateFormatter="string"
                 headerTitle={t('actions.authorized')}
                 toolBarRender={() => [
-                    <Button key="button" type="primary" onClick={() => {
-                        navigate('/authorised-asset/post')
-                    }}>
+                    <Button key="button" type="primary" onClick={() => setPostOpen(true)}>
                         {t('actions.authorized')}
                     </Button>
                 ]}
+            />
+            <AuthorisedAssetPost
+                open={postOpen}
+                onCancel={() => setPostOpen(false)}
+                onSuccess={() => {
+                    setPostOpen(false);
+                    actionRef.current?.reload();
+                }}
             />
         </div>
     );

@@ -1,4 +1,5 @@
-import { Dayjs } from "dayjs";
+import type {Dayjs} from "dayjs";
+import type {GatewayHop} from "@/api/gateway-chain";
 
 export type WebsiteOriginHostMode = 'origin' | 'service' | 'custom';
 
@@ -20,10 +21,10 @@ export interface WebsiteFormData {
     targetUrl: string;
     logo?: string;
     groupId?: string;
-    gatewayType?: string;
-    gatewayId?: string;
+    gatewayChain?: GatewayHop[];
     originHostMode?: WebsiteOriginHostMode;
     originHostCustom?: string;
+    originTimeout?: number;
     disableAccessLog?: boolean;
     headers?: Array<{ name: string; value: string }>;
     basicAuth?: {
@@ -37,7 +38,7 @@ export interface WebsiteFormData {
     };
     public?: {
         enabled: boolean;
-        expiredAt?: number;
+        expiredAt?: number | Dayjs;
         ip?: string;
         password?: string;
         timeLimit?: boolean;
@@ -58,11 +59,4 @@ export interface WebsiteFormData {
 export interface LogoItem {
     name: string;
     data: string;
-}
-
-export interface PublicViewProps {
-    timeLimit: boolean;
-    onTimeLimitChange: (checked: boolean) => void;
-    expiredAt?: Dayjs;
-    onExpiredAtChange: (date: Dayjs | null) => void;
 }

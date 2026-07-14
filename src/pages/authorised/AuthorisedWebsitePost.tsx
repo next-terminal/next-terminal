@@ -1,29 +1,52 @@
-import QuerySelect from "@/components/QuerySelect";
-import React, {useEffect, useRef, useState} from "react";
-import {Button, Checkbox, DatePicker, Form, FormInstance, message, Space} from "antd";
+import {useEffect, useState} from "react";
+import {Checkbox, DatePicker, Form, message, Modal, Space} from "antd";
+import {CheckboxChangeEvent} from "antd/es/checkbox";
 import dayjs from "dayjs";
 import {useTranslation} from "react-i18next";
-import userApi from "@/api/user-api";
-import departmentApi from "@/api/department-api";
 import {RangePickerProps} from "antd/es/date-picker";
-import websiteApi from "@/api/website-api";
 import authorisedWebsiteApi from "@/api/authorised-website-api";
 import {useNavigate} from "react-router-dom";
-import ProFormTreeSelect from "@/components/ProFormTreeSelect";
+import {useMutation} from "@tanstack/react-query";
+import {DepartmentTreeSelect, UserSelect, WebsiteGroupTreeSelect, WebsiteTreeSelect} from "@/components/shared/QuerySelects";
 
-const AuthorisedWebsitePost = () => {
-    const formRef = useRef<FormInstance>(null);
+interface AuthorisedWebsitePostProps {
+    open?: boolean;
+    onCancel?: () => void;
+    onSuccess?: () => void;
+}
+
+const AuthorisedWebsitePost = ({open, onCancel, onSuccess}: AuthorisedWebsitePostProps) => {
+    const [form] = Form.useForm();
     const {t} = useTranslation();
-    const [expiredAtDayjs, setExpiredAtDayjs] = useState<dayjs.Dayjs>();
+    const [expiredAtDayjs, setExpiredAtDayjs] = useState<dayjs.Dayjs | null>();
     const [expiredAtNoLimit, setExpiredAtNoLimit] = useState<boolean>(true);
     const navigate = useNavigate();
+    const modalOpen = open ?? true;
 
     useEffect(() => {
-        setExpiredAtDayjs(undefined);
-        setExpiredAtNoLimit(true);
-    }, []);
+        if (modalOpen) {
+            setExpiredAtDayjs(undefined);
+            setExpiredAtNoLimit(true);
+        }
+    }, [modalOpen]);
 
-    const handleNoTimeLimit = e => {
+    const postMutation = useMutation({
+        mutationFn: (values: any) => authorisedWebsiteApi.authorise(values),
+        onSuccess: () => {
+            message.success(t("general.success"));
+            form.resetFields();
+            if (onSuccess) {
+                onSuccess();
+                return;
+            }
+            navigate("/authorised-website");
+        },
+        onError: () => {
+            message.error(t("authorised.authorise_failed"));
+        }
+    });
+
+    const handleNoTimeLimit = (e: CheckboxChangeEvent) => {
         setExpiredAtNoLimit(e.target.checked);
         if (e.target.checked === true) {
             setExpiredAtDayjs(undefined);
@@ -32,7 +55,7 @@ const AuthorisedWebsitePost = () => {
         }
     };
 
-    const handleTimeLimitChange = (date, dateString) => {
+    const handleTimeLimitChange = (date: dayjs.Dayjs | null, dateString: string | null) => {
         console.log(date, dateString);
         setExpiredAtDayjs(date);
     };
@@ -42,111 +65,57 @@ const AuthorisedWebsitePost = () => {
         return current && current < dayjs().endOf("day");
     };
 
+    const handleCancel = () => {
+        form.resetFields();
+        if (onCancel) {
+            onCancel();
+            return;
+        }
+        navigate("/authorised-website");
+    };
+
+    const handleSubmit = async (values: any) => {
+        // 处理过期时间
+        if (expiredAtNoLimit || !expiredAtDayjs) {
+            values["expiredAt"] = 0; // 永不过期
+        } else {
+            values["expiredAt"] = expiredAtDayjs.valueOf();
+        }
+        postMutation.mutate(values);
+    };
+
     return (
-        <div>
-            <div className="mb-4 font-bold text-lg">{t("authorised.website_title")}</div>
+        <Modal
+            title={t("authorised.website_title")}
+            open={modalOpen}
+            destroyOnHidden={true}
+            onCancel={handleCancel}
+            onOk={() => form.submit()}
+            okText={t("actions.save")}
+            cancelText={t("actions.cancel")}
+            confirmLoading={postMutation.isPending}
+        >
             <Form
-                ref={formRef}
+                form={form}
                 layout="vertical"
-                onFinish={async values => {
-                    // 处理过期时间
-                    if (expiredAtNoLimit || !expiredAtDayjs) {
-                        values["expiredAt"] = 0; // 永不过期
-                    } else {
-                        values["expiredAt"] = expiredAtDayjs.valueOf();
-                    }
-                    try {
-                        await authorisedWebsiteApi.authorise(values);
-                        message.success(t("general.success"));
-                        formRef.current?.resetFields();
-                        navigate("/authorised-website");
-                    } catch (error) {
-                        message.error(t("authorised.authorise_failed"));
-                    }
-                }}
+                clearOnDestroy={true}
+                onFinish={handleSubmit}
             >
-                <Form.Item label={t("menus.identity.submenus.user")} name="userIds">
-                    <QuerySelect
-                        mode="multiple"
-                        showSearch={true}
-                        request={async () => {
-                            const items = await userApi.getAll();
-                            return items.map(item => {
-                                return {
-                                    label: item.nickname,
-                                    value: item.id
-                                };
-                            });
-                        }}
-                    />
+                <Form.Item label={t("menus.identity.submenus.department")} name="departmentIds">
+                    <DepartmentTreeSelect multiple />
                 </Form.Item>
 
-                <ProFormTreeSelect
-                    label={t("menus.identity.submenus.department")}
-                    name="departmentIds"
-                    fieldProps={{
-                        showSearch: true,
-                        multiple: true,
-                        treeDefaultExpandAll: true
-                    }}
-                    request={async () => {
-                        const items = await departmentApi.getTree();
-                        return items;
-                    }}
-                />
+                <Form.Item label={t("menus.identity.submenus.user")} name="userIds">
+                    <UserSelect mode="multiple" />
+                </Form.Item>
 
-                <ProFormTreeSelect
-                    label={t("authorised.label.website_group")}
-                    name="websiteGroupIds"
-                    fieldProps={{
-                        multiple: true,
-                        showSearch: true,
-                        treeDefaultExpandAll: true,
-                        treeNodeFilterProp: "title"
-                    }}
-                    request={async () => {
-                        const items = await websiteApi.getGroups();
+                <Form.Item label={t("authorised.label.website_group")} name="websiteGroupIds">
+                    <WebsiteGroupTreeSelect multiple />
+                </Form.Item>
 
-                        // 递归把 key 字段设置为 value，并且非叶子节点全部 disabled
-                        function setKeyAndDisabled(item: any) {
-                            item.value = item.key;
-                            if (!item.isLeaf) {
-                                // 递归处理子节点
-                                if (item.children) {
-                                    item.children.forEach(setKeyAndDisabled);
-                                }
-                            }
-                        }
-
-                        // 对获取到的所有节点进行处理
-                        items.forEach((item: any) => {
-                            setKeyAndDisabled(item);
-                        });
-                        return items;
-                    }}
-                />
-
-                <ProFormTreeSelect
-                    label={t("menus.resource.submenus.website")}
-                    name="websiteIds"
-                    fieldProps={{
-                        multiple: true,
-                        showSearch: true,
-                        treeDefaultExpandAll: true,
-                        treeNodeFilterProp: "title"
-                    }}
-                    request={async () => {
-                        const items = await websiteApi.getAll();
-
-                        // 转换为树形结构
-                        return items.map((item: any) => ({
-                            title: item.name + " (" + item.targetUrl + ")",
-                            key: item.id,
-                            value: item.id,
-                            isLeaf: true
-                        }));
-                    }}
-                />
+                <Form.Item label={t("menus.resource.submenus.website")} name="websiteIds">
+                    <WebsiteTreeSelect multiple />
+                </Form.Item>
 
                 <Form.Item label={t("assets.limit_time")} name="expiredAt">
                     <Space>
@@ -167,15 +136,8 @@ const AuthorisedWebsitePost = () => {
                     </Space>
                 </Form.Item>
 
-                <Form.Item>
-                    <Space>
-                        <Button type="primary" htmlType="submit">
-                            {t("actions.save")}
-                        </Button>
-                    </Space>
-                </Form.Item>
             </Form>
-        </div>
+        </Modal>
     );
 };
 

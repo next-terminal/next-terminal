@@ -3,6 +3,7 @@ import {useTranslation} from "react-i18next";
 import {useQuery} from "@tanstack/react-query";
 import dashboardApi from "@/api/dashboard-api";
 import sessionApi from "@/api/session-api";
+import IPRegion from "@/components/IPRegion";
 import CountUpModule from "react-countup";
 import {GlobeIcon, RouteIcon, ServerIcon, ShieldBanIcon, TerminalIcon, UsersIcon} from "lucide-react";
 import {
@@ -50,7 +51,7 @@ const DashboardPage = () => {
     let {t} = useTranslation();
     const { isMobile } = useMobile();
 
-    let [pieData, setPidData] = useState([]);
+    let [pieData, setPidData] = useState<Array<{ name: string; value: number; fill: string }>>([]);
 
     let timeCounterQuery = useQuery({
         queryKey: ['timeCounter'],
@@ -294,7 +295,7 @@ const DashboardPage = () => {
                                 <TableBody>
                                     {sessionQuery.data?.items.map((session) => (
                                         <TableRow key={session.id}>
-                                            {!isMobile && <TableCell className={'text-center p-2.5'}>{session.clientIp}</TableCell>}
+                                            {!isMobile && <TableCell className={'p-2.5'}><IPRegion ip={session.clientIp} regionInfo={session.regionInfo}/></TableCell>}
                                             <TableCell className={cn('text-center', isMobile ? 'p-1.5 text-xs' : 'p-2.5')}>{session.userAccount}</TableCell>
                                             <TableCell className={cn('text-center', isMobile ? 'p-1.5 text-xs' : 'p-2.5')}>{session.protocol}</TableCell>
                                             <TableCell className={cn('text-center', isMobile ? 'p-1.5 text-xs' : 'p-2.5')}>

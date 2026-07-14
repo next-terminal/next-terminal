@@ -1,4 +1,5 @@
 import {Api} from "@/api/core/api";
+import type {RegionInfo} from "@/api/region-info";
 import requests from "@/api/core/requests";
 
 export interface FileSystemLog {
@@ -6,6 +7,8 @@ export interface FileSystemLog {
     assetId: string;
     sessionId: string;
     userId: string;
+    clientIp: string;
+    regionInfo?: RegionInfo;
     action: string;
     fileName: string;
     createdAt: number;

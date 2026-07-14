@@ -1,25 +1,27 @@
-import React, {useEffect, useRef} from 'react';
-import {useTranslation} from "react-i18next";
-import NTable, {type NTableActionType, type NColumn} from "@/components/NTable";
-import { FormInstance, Button, Popconfirm, Space, Table } from 'antd';
-import authorisedWebsiteApi, {AuthorisedWebsite} from "@/api/authorised-website-api";
-import {UserSelect, DepartmentSelect, WebsiteSelect, WebsiteGroupSelect} from "@/components/shared/QuerySelects";
+import authorisedWebsiteApi,{ AuthorisedWebsite } from "@/api/authorised-website-api";
 import NButton from "@/components/NButton";
 import NLink from "@/components/NLink";
+import NTable,{ type NColumn,type NTableActionType } from "@/components/NTable";
+import { DepartmentTreeSelect,UserSelect,WebsiteGroupTreeSelect,WebsiteTreeSelect } from "@/components/shared/QuerySelects";
+import AuthorisedWebsitePost from "@/pages/authorised/AuthorisedWebsitePost";
+import { Button,Popconfirm,Space,Table } from 'antd';
 import dayjs from "dayjs";
-import {useNavigate, useSearchParams} from "react-router-dom";
+import { useRef,useState } from 'react';
+import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
+
+const isExpired = (record: AuthorisedWebsite) => record.expiredAt > 0 && dayjs(record.expiredAt).isBefore(dayjs());
 
 const AuthorisedWebsitePage = () => {
 
     const {t} = useTranslation();
     const actionRef = useRef<NTableActionType>(null);
-    const formRef = useRef<FormInstance>(null);
-    let navigate = useNavigate();
+    const [postOpen, setPostOpen] = useState(false);
     const [searchParams, setSearchParams] = useSearchParams();
 
     const urlState = {
-        userId: searchParams.get('userId') || undefined,
         departmentId: searchParams.get('departmentId') || undefined,
+        userId: searchParams.get('userId') || undefined,
         websiteGroupId: searchParams.get('websiteGroupId') || undefined,
         websiteId: searchParams.get('websiteId') || undefined,
     };
@@ -27,10 +29,6 @@ const AuthorisedWebsitePage = () => {
     const tableParams = Object.fromEntries(
         Object.entries(urlState).filter(([, value]) => value)
     );
-
-    useEffect(() => {
-        formRef.current?.setFieldsValue(urlState);
-    }, [urlState.userId, urlState.departmentId, urlState.websiteGroupId, urlState.websiteId]);
 
     const syncUrl = (values: Record<string, any>) => {
         const next: Record<string, string> = {};
@@ -54,12 +52,31 @@ const AuthorisedWebsitePage = () => {
             width: 48,
         },
         {
+            title: t('menus.identity.submenus.department'),
+            dataIndex: 'departmentName',
+            formItemProps: {
+                name: 'departmentId',
+            },
+            renderFormItem: (_, {type, defaultRender, ...rest}, _form) => {
+                if (type === 'form') {
+                    return null;
+                }
+                return <DepartmentTreeSelect {...rest} />;
+            },
+            render: ((text: any, record: any) => {
+                if (text === '-') {
+                    return '-';
+                }
+                return <NLink to={`/department/${record.departmentId}`}>{text}</NLink>
+            })
+        },
+        {
             title: t('menus.identity.submenus.user'),
             dataIndex: 'userName',
             formItemProps: {
                 name: 'userId',
             },
-            renderFormItem: (_, {type, defaultRender, ...rest}, form) => {
+            renderFormItem: (_, {type, defaultRender, ...rest}, _form) => {
                 if (type === 'form') {
                     return null;
                 }
@@ -73,54 +90,16 @@ const AuthorisedWebsitePage = () => {
             })
         },
         {
-            title: t('menus.identity.submenus.department'),
-            dataIndex: 'departmentName',
-            formItemProps: {
-                name: 'departmentId',
-            },
-            renderFormItem: (_, {type, defaultRender, ...rest}, form) => {
-                if (type === 'form') {
-                    return null;
-                }
-                return <DepartmentSelect {...rest} />;
-            },
-            render: ((text: any, record: any) => {
-                if (text === '-') {
-                    return '-';
-                }
-                return <NLink to={`/department/${record.departmentId}`}>{text}</NLink>
-            })
-        },
-        {
-            title: t('menus.resource.submenus.website'),
-            dataIndex: 'websiteName',
-            formItemProps: {
-                name: 'websiteId',
-            },
-            renderFormItem: (_, {type, defaultRender, ...rest}, form) => {
-                if (type === 'form') {
-                    return null;
-                }
-                return <WebsiteSelect {...rest} />;
-            },
-            render: ((text, record) => {
-                if (text === '-') {
-                    return '-';
-                }
-                return <NLink to={`/website?websiteId=${record['websiteId']}`}>{text}</NLink>
-            })
-        },
-        {
             title: t('authorised.label.website_group'),
             dataIndex: 'websiteGroupName',
             formItemProps: {
                 name: 'websiteGroupId',
             },
-            renderFormItem: (_, {type, defaultRender, ...rest}, form) => {
+            renderFormItem: (_, {type, defaultRender, ...rest}, _form) => {
                 if (type === 'form') {
                     return null;
                 }
-                return <WebsiteGroupSelect {...rest} />;
+                return <WebsiteGroupTreeSelect {...rest} />;
             },
             render: ((text: any, record: any) => {
                 if (text === '-') {
@@ -130,11 +109,30 @@ const AuthorisedWebsitePage = () => {
             })
         },
         {
+            title: t('menus.resource.submenus.website'),
+            dataIndex: 'websiteName',
+            formItemProps: {
+                name: 'websiteId',
+            },
+            renderFormItem: (_, {type, defaultRender, ...rest}, _form) => {
+                if (type === 'form') {
+                    return null;
+                }
+                return <WebsiteTreeSelect {...rest} />;
+            },
+            render: ((text, record) => {
+                if (text === '-') {
+                    return '-';
+                }
+                return <NLink to={`/website?websiteId=${record['websiteId']}`}>{text}</NLink>
+            })
+        },
+        {
             title: t('assets.limit_time'),
             key: 'expiredAt',
             dataIndex: 'expiredAt',
             hideInSearch: true,
-            render: (text, record) => {
+            render: (_text, record) => {
                 if (record.expiredAt === 0) {
                     return '-';
                 }
@@ -170,7 +168,7 @@ const AuthorisedWebsitePage = () => {
             valueType: 'option',
             key: 'option',
             width: 50,
-            render: (text, record) => (
+            render: (_text, record) => (
                 <Space>
                     <Popconfirm
                         key="unbind-confirm"
@@ -181,7 +179,7 @@ const AuthorisedWebsitePage = () => {
                         }}
                     >
                         <NButton key="unbind" danger>
-                            {t('actions.unbind')}
+                            {t('actions.delete')}
                         </NButton>
                     </Popconfirm>
                 </Space>
@@ -194,14 +192,13 @@ const AuthorisedWebsitePage = () => {
             <NTable
                 columns={columns}
                 actionRef={actionRef}
-                formRef={formRef}
                 params={tableParams}
                 form={{
                     initialValues: urlState,
                 }}
                 onSubmit={(values) => syncUrl(values)}
                 onReset={() => syncUrl({})}
-                request={async (params = {}, sort, filter) => {
+                request={async (params = {}, _sort, _filter) => {
 
                     let queryParams = {
                         pageIndex: params.current,
@@ -225,6 +222,7 @@ const AuthorisedWebsitePage = () => {
                 rowSelection={{
                     selections: [Table.SELECTION_ALL, Table.SELECTION_INVERT],
                 }}
+                rowClassName={(record) => isExpired(record) ? 'authorised-row-expired' : ''}
                 tableAlertOptionRender={({selectedRowKeys}) => (
                     <Popconfirm
                         title={t('general.confirm_delete')}
@@ -234,7 +232,7 @@ const AuthorisedWebsitePage = () => {
                         }}
                     >
                         <NButton danger>
-                            {t('actions.unbind')}
+                            {t('actions.delete')}
                         </NButton>
                     </Popconfirm>
                 )}
@@ -245,12 +243,18 @@ const AuthorisedWebsitePage = () => {
                 dateFormatter="string"
                 headerTitle={t('actions.authorized')}
                 toolBarRender={() => [
-                    <Button key="button" type="primary" onClick={() => {
-                        navigate('/authorised-website/post')
-                    }}>
+                    <Button key="button" type="primary" onClick={() => setPostOpen(true)}>
                         {t('actions.authorized')}
                     </Button>
                 ]}
+            />
+            <AuthorisedWebsitePost
+                open={postOpen}
+                onCancel={() => setPostOpen(false)}
+                onSuccess={() => {
+                    setPostOpen(false);
+                    actionRef.current?.reload();
+                }}
             />
         </div>
     );

@@ -1,18 +1,19 @@
-import React, {useRef, useState} from 'react';
-import {
-    App,
-    Badge,
-    Button,
-    Popconfirm,
-    Space,
-    Tag} from "antd";
-import NTable, {type NTableActionType, type NColumn} from "@/components/NTable";
-import commandFilterRuleApi, {CommandFilterRule} from "../../api/command-filter-rule-api.js";
-import CommandFilterRuleModal from "./CommandFilterRuleModal";
-import {useTranslation} from "react-i18next";
-import {getSort} from "@/utils/sort";
-import {useMutation} from "@tanstack/react-query";
 import NButton from "@/components/NButton";
+import NTable,{ type NColumn,type NTableActionType } from "@/components/NTable";
+import { getSort } from "@/utils/sort";
+import { useMutation } from "@tanstack/react-query";
+import {
+App,
+Badge,
+Button,
+Popconfirm,
+Space,
+Tag
+} from "antd";
+import { useRef,useState } from 'react';
+import { useTranslation } from "react-i18next";
+import commandFilterRuleApi,{ CommandFilterRule } from "../../api/command-filter-rule-api.js";
+import CommandFilterRuleModal from "./CommandFilterRuleModal";
 
 const api = commandFilterRuleApi;
 
@@ -119,7 +120,7 @@ const CommandFilterRulePage = ({id}: Props) => {
             title: t('actions.label'),
             valueType: 'option',
             key: 'option',
-            render: (text, record) => (
+            render: (_text, record) => (
                 <Space>
                     <NButton
                         key="edit"
@@ -150,7 +151,7 @@ const CommandFilterRulePage = ({id}: Props) => {
             <NTable
                 columns={columns}
                 actionRef={actionRef}
-                request={async (params = {}, sort, filter) => {
+                request={async (params = {}, sort, _filter) => {
                     let [sortOrder, sortField] = getSort(sort);
                     
                     let queryParams = {

@@ -1,20 +1,20 @@
-import React, {useEffect, useRef, useState} from 'react';
-import {Button, ConfigProvider, Divider, Form, Input, Select, Space, Spin, Typography} from "antd";
-import {useNavigate, useSearchParams} from "react-router-dom";
-import {LockOutlined, UserOutlined} from "@ant-design/icons";
-import accountApi, {LoginResult, LoginStatus} from "../../api/account-api";
-import {useMutation, useQuery} from "@tanstack/react-query";
-import {StyleProvider} from '@ant-design/cssinjs';
 import brandingApi from "@/api/branding-api";
-import {useTranslation} from "react-i18next";
-import {startAuthentication} from "@simplewebauthn/browser";
-import {LanguagesIcon, Moon, Sun} from "lucide-react";
-import i18n from "i18next";
-import wechatWorkApi from "@/api/wechat-work-api";
 import oidcApi from "@/api/oidc-api";
-import {useNTTheme} from "@/hook/use-theme";
-import {translateI18nToAntdLocale} from "@/helper/lang";
-import {useThemeToggle} from "@/layout/hooks/use-theme-toggle";
+import wechatWorkApi from "@/api/wechat-work-api";
+import { translateI18nToAntdLocale } from "@/helper/lang";
+import { useNTTheme } from "@/hook/use-theme";
+import { useThemeToggle } from "@/layout/hooks/use-theme-toggle";
+import { StyleProvider } from '@ant-design/cssinjs';
+import { LockOutlined,UserOutlined } from "@ant-design/icons";
+import { startAuthentication } from "@simplewebauthn/browser";
+import { useMutation,useQuery } from "@tanstack/react-query";
+import { Button,ConfigProvider,Divider,Form,Input,Select,Space,Spin,Typography } from "antd";
+import i18n from "i18next";
+import { LanguagesIcon,Moon,Sun } from "lucide-react";
+import { useEffect,useRef,useState } from 'react';
+import { useTranslation } from "react-i18next";
+import { useNavigate,useSearchParams } from "react-router-dom";
+import accountApi,{ LoginResult,LoginStatus } from "../../api/account-api";
 
 const {Title} = Typography;
 
@@ -74,20 +74,24 @@ const LoginPage = () => {
         onSuccess: data => {
             afterLoginSuccess(data, true);
         },
-        onError: error => {
+        onError: _error => {
             queryCaptcha.refetch();
         }
     });
 
     const isSafeRedirectUrl = (url: string): boolean => {
+        // 先拒绝危险子集 /\evil.com /abc\nLocation://evil.com
+        if (/[\u0000-\u001F\u007F]/.test(url) || url.startsWith('/\\')) {
+            return false;
+        }
         // 允许相对路径（以 / 开头，但不能是 // 开头的协议相对URL）
         if (url.startsWith('/') && !url.startsWith('//')) {
             return true;
         }
-        // 仅允许 http/https 协议，阻止 javascript:、data: 等
+        // 仅允许同源 http/https URL，阻止 javascript:、data: 以及外部跳转
         try {
-            const parsed = new URL(url);
-            return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+            const parsed = new URL(url, window.location.origin);
+            return (parsed.protocol === 'http:' || parsed.protocol === 'https:') && parsed.origin === window.location.origin;
         } catch {
             return false;
         }
@@ -104,7 +108,7 @@ const LoginPage = () => {
 
     let validateTOTP = useMutation({
         mutationFn: accountApi.validateTOTP,
-        onSuccess: data => {
+        onSuccess: _data => {
             redirect();
         }
     });
@@ -126,7 +130,7 @@ const LoginPage = () => {
         mutation.mutate(params);
     };
 
-    const handleOTPChange = (value) => {
+    const handleOTPChange = (value: string) => {
         if (!validateTOTP.isPending) {
             validateTOTP.mutate({
                 'totp': value,
@@ -166,7 +170,8 @@ const LoginPage = () => {
     const loginByWechatWork = async () => {
         setLoading(true);
         try {
-            const {authorizeUrl} = await wechatWorkApi.getAuthorizeUrl('login');
+            const {authorizeUrl, state} = await wechatWorkApi.getAuthorizeUrl();
+            sessionStorage.setItem('wechat_work_state', state);
             // 跳转到企业微信授权页面
             window.location.href = authorizeUrl;
         } catch (e) {

@@ -1,20 +1,20 @@
-import React, {useEffect, useState} from 'react';
-import {Typography, Card, Row, Col, Steps, Alert, Divider, List, Tag, Space} from "antd";
 import {
-    SafetyOutlined, 
-    MobileOutlined, 
-    ClockCircleOutlined, 
-    GlobalOutlined,
-    CheckCircleOutlined,
-    InfoCircleOutlined
+CheckCircleOutlined,
+ClockCircleOutlined,
+GlobalOutlined,
+InfoCircleOutlined,
+MobileOutlined,
+SafetyOutlined
 } from '@ant-design/icons';
+import { useQuery } from "@tanstack/react-query";
+import { Alert,Card,Col,List,Row,Space,Steps,Tag,Typography } from "antd";
+import { useEffect,useState } from 'react';
+import { useTranslation } from "react-i18next";
 import accountApi from "../../api/account-api";
-import {useQuery} from "@tanstack/react-query";
 import OTPBinding from "./OTPBinding";
 import OTPUnBinding from "./OTPUnBinding";
-import {useTranslation} from "react-i18next";
 
-const {Title, Paragraph, Text} = Typography;
+const {Title, Paragraph, Text: _Text} = Typography;
 
 const OTP = () => {
 

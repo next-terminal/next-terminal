@@ -21,6 +21,7 @@ const OidcServerConsent: React.FC = () => {
         'openid': t('account.oidc_consent.scope.openid'),
         'profile': t('account.oidc_consent.scope.profile'),
         'email': t('account.oidc_consent.scope.email'),
+        'phone': t('account.oidc_consent.scope.phone'),
         'offline_access': t('account.oidc_consent.scope.offline_access'),
     };
 

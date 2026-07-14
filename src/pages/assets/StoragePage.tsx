@@ -1,22 +1,23 @@
-import React, {useState} from 'react';
-import {
-    App,
-    Button,
-    Input,
-    Popconfirm,
-    Space,
-    Table,
-    type TableProps,
-    Tag} from "antd";
-import {useTranslation} from "react-i18next";
-import {useMutation, useQuery} from "@tanstack/react-query";
-import storageApi, {Storage} from "@/api/storage-api";
-import StorageModal from "@/pages/assets/StorageModal";
-import {renderSize} from "@/utils/utils";
-import FileSystemPage from "@/pages/access/FileSystemPage";
+import storageApi,{ Storage } from "@/api/storage-api";
 import NButton from "@/components/NButton";
-import {getSort} from "@/utils/sort";
+import FileSystemPage from "@/pages/access/FileSystemPage";
+import StorageModal from "@/pages/assets/StorageModal";
+import { getSort } from "@/utils/sort";
+import { renderSize } from "@/utils/utils";
+import { useMutation,useQuery } from "@tanstack/react-query";
+import {
+App,
+Button,
+Input,
+Popconfirm,
+Space,
+Table,
+type TableProps,
+Tag
+} from "antd";
 import dayjs from "dayjs";
+import { useState } from 'react';
+import { useTranslation } from "react-i18next";
 
 const api = storageApi;
 
@@ -64,7 +65,7 @@ const StoragePage = () => {
         onSuccess: () => {
             reloadTable();
             setOpen(false);
-            setSelectedRowKey(undefined);
+            setSelectedRowKey('');
             showSuccess();
         }
     });
@@ -76,7 +77,7 @@ const StoragePage = () => {
         });
     }
 
-    const handleTableChange: TableProps<Storage>['onChange'] = (nextPagination, filters, sorter) => {
+    const handleTableChange: TableProps<Storage>['onChange'] = (nextPagination, _filters, sorter) => {
         const activeSorter = Array.isArray(sorter) ? sorter.find((item) => item.order) : sorter;
         const field = activeSorter?.field;
         const fieldName = Array.isArray(field) ? field.join('.') : field ? String(field) : '';

@@ -1,6 +1,6 @@
 import QuerySelect from "@/components/QuerySelect";
 import React from 'react';
-import {Checkbox, Form, Input, Switch, Tabs, type TabsProps} from "antd";
+import {Alert, Form, Input, InputNumber, Select, Space, Switch, Tabs, type TabsProps} from "antd";
 import {useTranslation} from "react-i18next";
 import DisplaySettings from './DisplaySettings';
 import SecuritySettings from './SecuritySettings';
@@ -19,7 +19,10 @@ export type AssetAdvancedSection = 'security_settings'
     | 'remote-app'
     | 'rdp-drive'
     | 'terminal_settings'
+    | 'ai_settings'
     | 'wol-settings';
+
+export const DefaultTerminalConnectTimeout = 15;
 
 const AudioSettings = () => {
     const {t} = useTranslation();
@@ -98,24 +101,103 @@ const SshTerminalSettings = () => {
     const {t} = useTranslation();
 
     return <div>
-        <Form.Item name={['attrs', 'disableAliveCheck']}
-                   extra={t('assets.disable_alive_check_extra')}
-                   label={t('assets.disable_alive_check')}
+        <Form.Item name={['attrs', 'enableAliveCheck']}
+                   extra={t('assets.enable_alive_check_extra')}
+                   label={t('assets.enable_alive_check')}
                    valuePropName="checked">
-            <Checkbox/>
+            <Switch checkedChildren={t('general.enabled')} unCheckedChildren={t('general.disabled')}/>
         </Form.Item>
-        <Form.Item name={['attrs', 'disableDetectOS']}
-                   extra={t('assets.disable_detect_os_extra')}
+        <Form.Item name={['attrs', 'enableDetectOS']}
+                   extra={t('assets.enable_detect_os_extra')}
                    valuePropName="checked"
-                   label={t('assets.disable_detect_os')}
+                   label={t('assets.enable_detect_os')}
         >
-            <Checkbox/>
+            <Switch checkedChildren={t('general.enabled')} unCheckedChildren={t('general.disabled')}/>
+        </Form.Item>
+        <Form.Item
+            name={['attrs', 'connectTimeout']}
+            label={t('assets.connect_timeout')}
+        >
+            <Space.Compact>
+                <InputNumber
+                    min={1}
+                    max={300}
+                    style={{width: 140}}
+                    placeholder={`${DefaultTerminalConnectTimeout}`}
+                />
+                <Space.Addon>
+                    {t('general.second')}
+                </Space.Addon>
+            </Space.Compact>
+        </Form.Item>
+        <Form.Item name={['attrs', 'backspaceMode']} label={t('assets.backspace_mode')}>
+            <Select options={[
+                {
+                    label: t('assets.backspace_mode_del'),
+                    value: 'del'
+                },
+                {
+                    label: t('assets.backspace_mode_bs'),
+                    value: 'bs'
+                }
+            ]}/>
         </Form.Item>
         <Form.Item label={t('assets.env')} name={['attrs', 'env']}>
             <Input.TextArea
                 rows={4}
                 allowClear
                 placeholder={t('assets.env_placeholder')}
+            />
+        </Form.Item>
+    </div>;
+};
+
+const SshAISettings = () => {
+    const {t} = useTranslation();
+
+    return <div>
+        <Form.Item
+            name={['attrs', 'ai-enabled']}
+            label={t('assets.ai.enabled')}
+            valuePropName="checked"
+            extra={t('assets.ai.enabled_extra')}
+        >
+            <Switch checkedChildren={t('general.enabled')} unCheckedChildren={t('general.disabled')}/>
+        </Form.Item>
+        <Form.Item
+            name={['attrs', 'ai-restricted-shell']}
+            label={t('assets.ai.restricted_shell')}
+            valuePropName="checked"
+            extra={t('assets.ai.restricted_shell_extra')}
+        >
+            <Switch checkedChildren={t('general.enabled')} unCheckedChildren={t('general.disabled')}/>
+        </Form.Item>
+        <Form.Item noStyle shouldUpdate>
+            {({getFieldValue}) => {
+                const restrictedShell = getFieldValue(['attrs', 'ai-restricted-shell']);
+                return restrictedShell ? (
+                    <Alert
+                        className="mb-4"
+                        type="info"
+                        showIcon
+                        message={t('assets.ai.restricted_shell_tip')}
+                    />
+                ) : null;
+            }}
+        </Form.Item>
+        <Form.Item
+            name={['attrs', 'ai-command-policy']}
+            label={t('assets.ai.command_policy')}
+            extra={t('assets.ai.command_policy_extra')}
+        >
+            <Select
+                allowClear
+                options={[
+                    {label: t('assets.ai.follow_global'), value: ''},
+                    {label: t('settings.ai.command_policy_auto'), value: 'auto'},
+                    {label: t('settings.ai.command_policy_balanced'), value: 'balanced'},
+                    {label: t('settings.ai.command_policy_always'), value: 'always'},
+                ]}
             />
         </Form.Item>
     </div>;
@@ -170,6 +252,11 @@ export const getAssetAdvancedItems = (protocol: string, t: (key: string) => stri
         key: 'terminal_settings',
         forceRender: true,
         children: <SshTerminalSettings/>
+    }, {
+        label: t('assets.ai.settings'),
+        key: 'ai_settings',
+        forceRender: true,
+        children: <SshAISettings/>
     }, wolTab(t('assets.wol.settings'), true)];
 
     const vncTabs: TabsProps['items'] = [{
@@ -198,7 +285,7 @@ export const getAssetAdvancedItems = (protocol: string, t: (key: string) => stri
 
 const AssetAdvancedSettings: React.FC<AssetAdvancedSettingsProps> = ({protocol}) => {
     const {t} = useTranslation();
-    const items = getAssetAdvancedItems(protocol, t);
+    const items = getAssetAdvancedItems(protocol, t) ?? [];
 
     if (items.length === 0) {
         return null;

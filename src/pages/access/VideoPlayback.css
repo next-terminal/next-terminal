@@ -1,0 +1,17 @@
+.video-playback-player,
+.video-playback-player .plyr,
+.video-playback-player .plyr__video-wrapper {
+    height: 100%;
+    width: 100%;
+}
+
+.video-playback-player .plyr {
+    --plyr-color-main: #1677ff;
+    background: #000;
+}
+
+.video-playback-player video {
+    height: 100%;
+    width: 100%;
+    object-fit: contain;
+}

@@ -1,4 +1,3 @@
-import React from 'react';
 import {useMutation, useQuery} from "@tanstack/react-query";
 import accountApi, {OidcUserConsentItem} from "@/api/account-api";
 import {App, Button, Empty, List, Space, Tag, Typography} from "antd";

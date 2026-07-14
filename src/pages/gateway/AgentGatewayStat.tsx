@@ -1,4 +1,3 @@
-import React from 'react';
 import {Drawer, Card, Progress, Tag, Divider} from "antd";
 import {useQuery} from "@tanstack/react-query";
 import agentGatewayApi from "@/api/agent-gateway-api";
@@ -164,9 +163,9 @@ const AgentGatewayStat = ({open, id, updatedAt, onClose}: Props) => {
                                 <div className="text-xs text-gray-500 mt-2">
                                     {t('gateways.stat.available')}: {renderSize(data?.memory.available)} · {t('gateways.stat.free')}: {renderSize(data?.memory.free)}
                                 </div>
-                                {data?.memory.swap_total > 0 && (
+                                {(data?.memory.swap_total ?? 0) > 0 && (
                                     <div className="text-xs text-gray-500 mt-1">
-                                        {t('gateways.stat.swap')}: {renderSize(data.memory.swap_total)} / {renderSize(data.memory.swap_free)}
+                                        {t('gateways.stat.swap')}: {renderSize(data?.memory.swap_total)} / {renderSize(data?.memory.swap_free)}
                                     </div>
                                 )}
                             </div>

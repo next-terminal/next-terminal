@@ -1,5 +1,6 @@
 import {Api} from "./core/api";
 import requests from "./core/requests";
+import type {RegionInfo} from "@/api/region-info";
 
 export interface User {
     id: string;
@@ -8,13 +9,13 @@ export interface User {
     status: string;
     type: string;
     mail: string;
-    source: string;
     createdAt: number;
     roles: string[];
     lastLoginAt: number;
     departments?: SimpleDepartment[];
     remark?: string;
     enabledTotp?: boolean;
+    passwordSet?: boolean;
 }
 
 interface SimpleDepartment {
@@ -30,7 +31,7 @@ export interface LoginLog {
     loginAt: number;
     success: boolean;
     reason: string;
-    region: string;
+    regionInfo?: RegionInfo;
 }
 
 export interface UserAgent {
@@ -72,6 +73,57 @@ export interface UserClientCertInfo {
     revokedAt: number;
     lastUsedAt: number;
     createdAt: number;
+}
+
+export interface UserExternalIdentity {
+    id: string;
+    provider: string;
+    providerKey: string;
+    subject: string;
+    username: string;
+    nickname: string;
+    mail: string;
+    legacy: boolean;
+    createdAt: number;
+    lastLoginAt: number;
+}
+
+export interface UserWebauthnCredential {
+    id: string;
+    name: string;
+    createdAt: number;
+    usedAt: number;
+}
+
+export interface UserSSHKeyItem {
+    id: string;
+    name: string;
+    fingerprint: string;
+    algorithm: string;
+    publicKey: string;
+    comment: string;
+    lastUsedAt: number;
+    createdAt: number;
+    updatedAt: number;
+}
+
+export interface UserAccessTokenItem {
+    id: string;
+    token: string;
+    type: string;
+    source?: string;
+    sourceName?: string;
+    createdFrom?: string;
+    expiresAt?: number;
+    createdAt: number;
+}
+
+export interface UserOidcConsentItem {
+    id: string;
+    clientId: string;
+    scopes: string[];
+    createdAt: number;
+    updatedAt: number;
 }
 
 export interface SetupStatus {
@@ -140,6 +192,46 @@ class UserApi extends Api<User> {
 
     revokeUserClientCert = async (userId: string) => {
         return await requests.delete(`/${this.group}/${userId}/client-cert`);
+    }
+
+    getExternalIdentities = async (userId: string) => {
+        return await requests.get(`/${this.group}/${userId}/external-identities`) as UserExternalIdentity[];
+    }
+
+    deleteExternalIdentity = async (userId: string, identityId: string) => {
+        return await requests.delete(`/${this.group}/${userId}/external-identities/${identityId}`);
+    }
+
+    getWebauthnCredentials = async (userId: string) => {
+        return await requests.get(`/${this.group}/${userId}/webauthn/credentials`) as UserWebauthnCredential[];
+    }
+
+    deleteWebauthnCredential = async (userId: string, credentialId: string) => {
+        return await requests.delete(`/${this.group}/${userId}/webauthn/credentials/${credentialId}`);
+    }
+
+    getSSHKeys = async (userId: string) => {
+        return await requests.get(`/${this.group}/${userId}/ssh-keys`) as UserSSHKeyItem[];
+    }
+
+    deleteSSHKey = async (userId: string, sshKeyId: string) => {
+        return await requests.delete(`/${this.group}/${userId}/ssh-keys/${sshKeyId}`);
+    }
+
+    getAccessTokens = async (userId: string) => {
+        return await requests.get(`/${this.group}/${userId}/access-tokens`) as UserAccessTokenItem[];
+    }
+
+    deleteAccessToken = async (userId: string, tokenId: string) => {
+        return await requests.delete(`/${this.group}/${userId}/access-tokens/${tokenId}`);
+    }
+
+    getOidcServerConsents = async (userId: string) => {
+        return await requests.get(`/${this.group}/${userId}/oidc-server-consents`) as UserOidcConsentItem[];
+    }
+
+    revokeOidcServerConsent = async (userId: string, clientId: string) => {
+        return await requests.delete(`/${this.group}/${userId}/oidc-server-consents/${clientId}`);
     }
 }
 

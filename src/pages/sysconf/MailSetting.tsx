@@ -1,13 +1,10 @@
-import React, {useState} from 'react';
-import {Alert, App, Button, Card, Form, Input, InputNumber, Switch, Typography} from "antd";
+import {useState} from 'react';
+import {Alert, App, Button, Card, Form, Input, InputNumber, Switch} from "antd";
 import {SettingProps} from "./SettingPage";
 import {useTranslation} from "react-i18next";
 import propertyApi from "@/api/property-api";
 import {useFormRequest} from "@/hook/use-antd-form-query";
 
-const {
-    Title
-} = Typography;
 const MailSetting = ({
                          get,
                          set
@@ -28,7 +25,6 @@ const MailSetting = ({
         message.success(t('general.success'));
     };
     return <div>
-        <Title level={5} style={{marginTop: 0}}>{t('settings.mail.setting')}</Title>
         <div className={'grid grid-cols-1 gap-4 lg:grid-cols-2'}>
             <div>
                 <Card>

@@ -1,21 +1,22 @@
-import React, {useState} from 'react';
-import {
-    App,
-    Button,
-    Input,
-    Popconfirm,
-    Space,
-    Table,
-    type TableProps,
-    Tag,
-    Typography} from "antd";
-import snippetApi, {Snippet} from "../../api/snippet-api";
-import SnippetModal from "./SnippetModal";
-import {useTranslation} from "react-i18next";
-import {getSort} from "@/utils/sort";
-import {useMutation, useQuery} from "@tanstack/react-query";
 import NButton from "@/components/NButton";
+import { getSort } from "@/utils/sort";
+import { useMutation,useQuery } from "@tanstack/react-query";
+import {
+App,
+Button,
+Input,
+Popconfirm,
+Space,
+Table,
+type TableProps,
+Tag,
+Typography
+} from "antd";
 import dayjs from "dayjs";
+import { useState } from 'react';
+import { useTranslation } from "react-i18next";
+import snippetApi,{ Snippet } from "../../api/snippet-api";
+import SnippetModal from "./SnippetModal";
 
 const api = snippetApi;
 
@@ -74,7 +75,7 @@ const SnippetPage = () => {
         });
     }
 
-    const handleTableChange: TableProps<Snippet>['onChange'] = (nextPagination, filters, sorter) => {
+    const handleTableChange: TableProps<Snippet>['onChange'] = (nextPagination, _filters, sorter) => {
         const activeSorter = Array.isArray(sorter) ? sorter.find((item) => item.order) : sorter;
         const field = activeSorter?.field;
         const fieldName = Array.isArray(field) ? field.join('.') : field ? String(field) : '';
