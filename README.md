@@ -22,6 +22,13 @@ Next Terminal is a simple, secure, and user-friendly interactive auditing system
 Refer to the installation guide here:
 👉 [Installation Documentation](https://www.next-terminal.com/docs/)
 
+### Documentation
+
+- [Docs home](https://www.next-terminal.com/docs/) — installation, usage, and FAQ
+- Install: [Docker Compose](https://www.next-terminal.com/docs/install/container-install) · [Reverse proxy](https://www.next-terminal.com/docs/install/reverse-proxy) · [Real client IP](https://www.next-terminal.com/docs/install/real-ip)
+- Usage: [Assets](https://www.next-terminal.com/docs/usage/asset) · [SSH server](https://www.next-terminal.com/docs/usage/ssh-server) · [RDP server](https://www.next-terminal.com/docs/usage/rdp-server) · [Agent gateway](https://www.next-terminal.com/docs/usage/agent-gateway)
+- [FAQ](https://www.next-terminal.com/docs/faq/readme) · [Changelog](https://www.next-terminal.com/changelog) · [Live demo](https://demo.next-terminal.com)
+
 
 ## Screenshots
 

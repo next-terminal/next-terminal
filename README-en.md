@@ -14,6 +14,13 @@ Next Terminal 是一个简洁、安全、易用的运维审计系统，支持多
 
 [👉 安装文档](https://www.next-terminal.com/zh/docs/)
 
+## 文档
+
+- [文档首页](https://www.next-terminal.com/zh/docs/) —— 安装、使用与常见问题
+- 安装：[Docker Compose 部署](https://www.next-terminal.com/zh/docs/install/container-install) · [反向代理](https://www.next-terminal.com/zh/docs/install/reverse-proxy) · [获取客户端真实 IP](https://www.next-terminal.com/zh/docs/install/real-ip)
+- 使用：[资产](https://www.next-terminal.com/zh/docs/usage/asset) · [SSH 服务](https://www.next-terminal.com/zh/docs/usage/ssh-server) · [RDP 服务](https://www.next-terminal.com/zh/docs/usage/rdp-server) · [Agent 网关](https://www.next-terminal.com/zh/docs/usage/agent-gateway)
+- [常见问题](https://www.next-terminal.com/zh/docs/faq/readme) · [更新日志](https://www.next-terminal.com/zh/changelog) · [在线演示](https://demo.next-terminal.com)
+
 ## 屏幕截图
 
 ![](screenshots/zh/dashboard.png)
