@@ -34,11 +34,11 @@ export class Api<T> {
         return result as T;
     }
 
-    updateById = async (id: string, data: T) => {
-        await requests.put(`/${this.group}/${id}`, data);
+    updateById = async (id: string, data: T): Promise<void> => {
+        await requests.put<void>(`/${this.group}/${id}`, data);
     }
 
-    deleteById = async (id: string) => {
-        await requests.delete(`/${this.group}/${id}`);
+    deleteById = async (id: string): Promise<void> => {
+        await requests.delete<void>(`/${this.group}/${id}`);
     }
 }

@@ -5,6 +5,7 @@ import brandingApi from "@/api/branding-api";
 import {Drawer, Dropdown, Menu, Select, Spin} from "antd";
 import accountApi from "@/api/account-api";
 import {
+    BookOpenIcon,
     ChevronDownIcon,
     LanguagesIcon,
     LaptopIcon,
@@ -59,9 +60,16 @@ const UserHeader = () => {
             danger: false,
         },
 
+
     ];
 
     if (infoQuery.data?.type === 'admin' || infoQuery.data?.type === 'super-admin') {
+        dropItems.push({
+            key: 'api-docs',
+            icon: <BookOpenIcon className={'w-4 h-4'}/>,
+            label: <a href="/swagger/index.html" target="_blank" rel="noopener noreferrer">{t('agent_access.advanced')}</a>,
+            danger: false,
+        });
         dropItems.push({
             key: 'admin',
             icon: <LayoutDashboard className={'w-4 h-4'}/>,

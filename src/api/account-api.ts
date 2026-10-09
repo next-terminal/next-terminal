@@ -9,6 +9,7 @@ type PublicKeyCredentialRequestOptionsJSON = Parameters<typeof startAuthenticati
 
 export interface AccessTokenItem {
     id: string;
+    name?: string;
     token: string;
     type: string;
     source?: string;
@@ -34,6 +35,7 @@ export interface OAuthConsentResult {
 
 export interface AccessTokenCreateResult {
     id: string;
+    name: string;
     token: string;
     mask: string;
     type: string;
@@ -135,6 +137,7 @@ export type AccountInfo = {
     enabledTotp: boolean;
     mfaEnabled: boolean;
     roles: string[];
+    permissions?: {method: string; path: string}[];
     menus?: Menu[];
     language: string;
     forceTotpEnabled: boolean
@@ -202,7 +205,7 @@ class AccountApi {
     }
 
     bindCurrentExternalLogin = async (request: BindCurrentExternalLogin) => {
-        return await requests.post(`/${this.group}/external-login/bind-current`, request);
+        return await requests.post<void>(`/${this.group}/external-login/bind-current`, request);
     }
 
     validateTOTP = async (values: any) => {
@@ -210,7 +213,7 @@ class AccountApi {
     }
 
     logout = async () => {
-        return await requests.post('/logout')
+        return await requests.post<void>('/logout')
     }
 
     getLoginStatus = async () => {
@@ -238,12 +241,16 @@ class AccountApi {
         return await requests.get(`/${this.group}/access-token`) as AccessTokenItem[];
     }
 
-    createAccessToken = async (type: string = 'api') => {
-        return await requests.post(`/${this.group}/access-token`, {type}) as AccessTokenCreateResult;
+    createAccessToken = async (name: string, type: string = 'api', expiresAt?: number) => {
+        return await requests.post(`/${this.group}/access-token`, {name, type, expiresAt}) as AccessTokenCreateResult;
+    }
+
+    updateAccessToken = async (id: string, name: string) => {
+        return await requests.put<void>(`/${this.group}/access-token/${encodeURIComponent(id)}`, {name});
     }
 
     deleteAccessToken = async (id: string) => {
-        return await requests.delete(`/${this.group}/access-token/${id}`);
+        return await requests.delete<void>(`/${this.group}/access-token/${id}`);
     }
 
     getClientCert = async () => {
@@ -263,16 +270,15 @@ class AccountApi {
     }
 
     deleteSSHKey = async (id: string, securityToken?: string) => {
-        return await requests.delete(`/${this.group}/ssh-keys/${encodeURIComponent(id)}`, {securityToken});
+        return await requests.delete<void>(`/${this.group}/ssh-keys/${encodeURIComponent(id)}`, {securityToken});
     }
 
-    downloadClientCert = async () => {
-        let u = `${baseUrl()}/${this.group}/client-cert/download`
-        browserDownload(u)
+    downloadClientCert = () => {
+        browserDownload(`${baseUrl()}/${this.group}/client-cert/download`);
     }
 
     revokeClientCert = async () => {
-        return await requests.delete(`/${this.group}/client-cert`);
+        return await requests.delete<void>(`/${this.group}/client-cert`);
     }
 
     getPasswordPolicy = async () => {
@@ -280,11 +286,11 @@ class AccountApi {
     }
 
     changePassword = async (values: any) => {
-        await requests.post(`/${this.group}/change-password`, values);
+        await requests.post<void>(`/${this.group}/change-password`, values);
     }
 
     changeInfo = async (values: any) => {
-        return await requests.post(`/${this.group}/change-info`, values);
+        return await requests.post<void>(`/${this.group}/change-info`, values);
     }
 
     reloadTotp = async (host: string) => {
@@ -292,11 +298,11 @@ class AccountApi {
     }
 
     confirmTotp = async (values: any) => {
-        await requests.post(`/${this.group}/confirm-totp`, values);
+        await requests.post<void>(`/${this.group}/confirm-totp`, values);
     }
 
     resetTotp = async (securityToken: string) => {
-        await requests.post(`/${this.group}/reset-totp`, undefined, {securityToken});
+        await requests.post<void>(`/${this.group}/reset-totp`, undefined, {securityToken});
     }
 
     getCaptcha = async () => {
@@ -308,11 +314,11 @@ class AccountApi {
     }
 
     updateWebauthnCredentials = async (id: string, val: any) => {
-        await requests.put(`/${this.group}/webauthn/credentials/${id}`, val);
+        await requests.put<void>(`/${this.group}/webauthn/credentials/${id}`, val);
     }
 
     deleteWebauthnCredentials = async (id: string, securityToken?: string) => {
-        await requests.delete(`/${this.group}/webauthn/credentials/${id}`, {securityToken});
+        await requests.delete<void>(`/${this.group}/webauthn/credentials/${id}`, {securityToken});
     }
 
     webauthnCredentialStart = async (securityToken?: string) => {
@@ -320,7 +326,7 @@ class AccountApi {
     }
 
     webauthnCredentialFinish = async (val: any) => {
-        return await requests.post(`/${this.group}/webauthn/credentials/finish`, val);
+        return await requests.post<void>(`/${this.group}/webauthn/credentials/finish`, val);
     }
 
     webauthnLoginStartV2 = async () => {
@@ -386,7 +392,7 @@ class AccountApi {
 
     // 撤销 OIDC Server 授权
     revokeOidcServerConsent = async (clientId: string) => {
-        return await requests.delete(`/${this.group}/oidc-server-consents/${clientId}`);
+        return await requests.delete<void>(`/${this.group}/oidc-server-consents/${clientId}`);
     }
 
     // 第三方 OAuth 授权流程：获取同意页元数据

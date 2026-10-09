@@ -1,5 +1,4 @@
 import {Api} from "@/api/core/api";
-import requests from "@/api/core/requests";
 
 export interface CommandFilter {
     id: string;
@@ -11,14 +10,6 @@ class CommandFilterApi extends Api<CommandFilter>{
 
     constructor() {
         super("admin/command-filters");
-    }
-
-    Bind = async (id: string, data: any) => {
-        await requests.post(`/${this.group}/${id}/bind`, data)
-    }
-
-    Unbind = async (id: string, data: any) => {
-        await requests.post(`/${this.group}/${id}/unbind`, data);
     }
 }
 

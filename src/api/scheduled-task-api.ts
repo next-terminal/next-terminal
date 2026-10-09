@@ -52,11 +52,11 @@ class ScheduledTaskApi extends Api<ScheduledTask> {
     }
 
     changeStatus = async (id: string, enabled: boolean) => {
-        return await requests.post(`/${this.group}/${id}/change-status?enabled=${enabled}`);
+        return await requests.post<void>(`/${this.group}/${id}/change-status?enabled=${enabled}`);
     }
 
     exec = async (id: string) => {
-        await requests.post(`/${this.group}/${id}/exec`)
+        await requests.post<void>(`/${this.group}/${id}/exec`)
     }
 
     getLogPaging = async (jobId: string, params: any) => {
@@ -65,7 +65,7 @@ class ScheduledTaskApi extends Api<ScheduledTask> {
     }
 
     clearLog = async (jobId: string) => {
-        await requests.delete(`/${this.group}/${jobId}/logs`);
+        await requests.delete<void>(`/${this.group}/${jobId}/logs`);
     }
 
     getNextTenRuns = async (spec: string) => {

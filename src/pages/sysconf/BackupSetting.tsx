@@ -462,7 +462,7 @@ const BackupSetting = () => {
             fixed: 'right',
             render: (_, record) => (
                 <Space>
-                    <Button icon={<Download size={16}/>} onClick={() => window.open(backupApi.downloadUrl(record.name))}/>
+                    <Button icon={<Download size={16}/>} onClick={() => backupApi.download(record.name)}/>
                     <Button icon={<RotateCcw size={16}/>} danger loading={restoreMutation.isPending}
                             onClick={() => handleRestore(record)}/>
                     <Popconfirm title={t('settings.backup.delete_confirm_title')}

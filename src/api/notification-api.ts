@@ -15,7 +15,6 @@ export interface NotificationRule {
     name: string;
     enabled: boolean;
     eventTypes: string[];
-    severities: string[];
     channelIds: string[];
     conditions: Record<string, any>;
     quietMinutes: number;

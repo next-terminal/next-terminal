@@ -3,6 +3,7 @@ import {useMutation, useQuery} from "@tanstack/react-query";
 import {
     App,
     Button,
+    DatePicker,
     Empty,
     Form,
     Input,
@@ -171,6 +172,12 @@ const AccessRequestUserPage = () => {
             width: 150,
         },
         {
+            title: t('access_request.start_at_label'),
+            dataIndex: 'requestedStartAt',
+            width: 180,
+            render: (value: number) => value ? dayjs(value).format('YYYY-MM-DD HH:mm') : '-',
+        },
+        {
             title: t('general.status'),
             dataIndex: 'status',
             width: 120,
@@ -321,6 +328,9 @@ const AccessRequestUserPage = () => {
                     </Form.Item>
                     <Form.Item label={t('access_request.duration_minutes')} name="durationMinutes" rules={[{required: true}]}>
                         <InputNumber min={1} max={1440} style={{width: '100%'}} />
+                    </Form.Item>
+                    <Form.Item label={t('access_request.start_at')} name="startAt" getValueProps={(value?: number) => ({value: value ? dayjs(value) : undefined})} normalize={(value?: dayjs.Dayjs) => value?.valueOf()}>
+                        <DatePicker showTime style={{width: '100%'}} disabledDate={(date) => date.isBefore(dayjs(), 'day')} />
                     </Form.Item>
                     <Form.Item label={t('access_request.request_reason')} name="requestReason" rules={[{required: true}]}>
                         <Input.TextArea rows={4} placeholder={t('access_request.request_reason_placeholder')} />

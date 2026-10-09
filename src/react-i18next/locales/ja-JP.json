@@ -1,4 +1,9 @@
 {
+  "errors": {
+    "10013": "組み込みデータは削除できません",
+    "10028": "システム管理者ロールは編集できません",
+    "10029": "このロールはユーザーに割り当てられているため削除できません"
+  },
   "general": {
     "created_at": "作成日時",
     "updated_at": "更新日時",
@@ -369,6 +374,7 @@
       "department_binding_tip": "関連付けたポリシーグループは、この部門の現在および今後の直接メンバーに適用され、子部門のメンバーには適用されません。"
     },
     "role": {
+      "system_permission_notice": "システム管理者は常にすべての権限を持ち、権限はシステムが自動的に管理します。",
       "type": "ロール種別",
       "types": {
         "default": "組み込みロール",
@@ -1121,11 +1127,14 @@
     },
     "access_token": "アクセストークン",
     "access_token_create": "トークン作成",
+    "access_token_edit_name": "トークン名を編集",
+    "access_token_name_required": "トークン名を入力してください",
     "access_token_type": "トークン種別",
     "access_token_source": "発行元",
     "access_token_source_manual": "手動作成",
     "access_token_expires_at": "有効期限",
     "access_token_expires_never": "無期限",
+    "access_token_expires_future": "有効期限は現在より後にしてください",
     "access_token_once_tip": "トークンは1度だけ表示されます。安全に保管してください。",
     "access_token_type_values": {
       "session": "ログインセッション",
@@ -1508,7 +1517,7 @@
     "dns_provider_config": "DNS プロバイダー設定",
     "terminal_settings": "ターミナル設定",
     "restricted_shell": "ネットワーク機器 / 制限付き Shell",
-    "restricted_shell_extra": "スイッチ、ルーター、ファイアウォール、RouterOS などの非標準 Linux SSH 環境向けです。このような環境では SSH 子セッションを開始できません。有効にすると、ファイルシステム（SFTP）や実行統計（Stats）などの機能は使用できなくなります。",
+    "restricted_shell_extra": "スイッチ、ルーター、ファイアウォールなどの非標準 Linux SSH 環境向けです。このような環境では SSH 子セッションを開始できません。有効にすると、ファイルシステム（SFTP）や実行統計（Stats）などの機能は使用できなくなります。",
     "sftp_directory_follow": "SFTP ディレクトリの自動追従",
     "sftp_directory_follow_extra": "有効にすると、SFTP ファイルシステムのディレクトリがターミナルの現在のディレクトリに自動的に追従します。",
     "enable_alive_check": "生存チェック",
@@ -2095,6 +2104,8 @@
       "swap_red_blue": "赤青を入れ替え"
     },
     "mail": {
+      "work_order_enabled": "作業申請の結果メール",
+      "work_order_tip": "却下、成功、失敗、結果確認が必要な場合に申請者へメールを送信します。メールサービスとユーザーのメールアドレスが必要です。通知ルールとは独立しています。",
       "setting": "メールサービス",
       "enabled": "メールサービス",
       "host": "メールサーバー",
@@ -2109,11 +2120,13 @@
       "send": "メール送信"
     },
     "notification": {
+      "work_order_quiet_tip": "作業申請イベントは個別に送信され、通知抑制時間の対象外です。",
       "channels": "通知チャネル",
       "rules": "通知ルール",
       "deliveries": "送信履歴",
       "channel": "通知チャネル",
       "channel_types": {
+        "work-order-mail": "作業申請者へのメール",
         "mail": "メール",
         "wecom": "WeCom ボット",
         "wecomApp": "WeCom アプリ",
@@ -2134,6 +2147,9 @@
         "critical": "重大"
       },
       "event_types": {
+        "access.request.submitted": "アクセス申請の提出",
+        "access.request.approved": "アクセス申請の承認",
+        "access.request.rejected": "アクセス申請の却下",
         "identity.user.created": "ユーザー作成",
         "identity.admin.created": "管理者作成",
         "identity.user.disabled": "ユーザー無効化",
@@ -2147,10 +2163,16 @@
         "access.recording.failed": "録画処理失敗",
         "database.sql.blocked": "データベース SQL ブロック",
         "database.sql.failed": "データベース SQL 実行失敗",
+        "database.work_order.created": "データベース作業申請の作成",
+        "database.work_order.approved": "データベース作業申請の承認",
+        "database.work_order.rejected": "データベース作業申請の却下",
+        "database.work_order.executed": "データベース作業の実行成功",
+        "database.work_order.failed": "データベース作業の実行失敗",
+        "database.work_order.unknown": "データベース作業の結果確認が必要",
         "backup.succeeded": "バックアップ成功",
         "backup.failed": "バックアップ失敗",
-        "agent.online": "Agent オンライン",
-        "agent.offline": "Agent オフライン",
+        "agent.online": "セキュリティゲートウェイ オンライン",
+        "agent.offline": "セキュリティゲートウェイ オフライン",
         "system.cpu.warning": "CPU 使用率が高い",
         "system.cpu.critical": "CPU 使用率が重大",
         "system.cpu.recovered": "CPU 使用率が復旧",
@@ -2163,11 +2185,12 @@
         "system.notification.test": "テスト通知"
       },
       "event_groups": {
+        "access_request": "アクセス申請",
         "identity": "認証",
         "access": "アクセスセッション",
         "database": "データベース",
         "backup": "バックアップ",
-        "agent": "Agent",
+        "agent": "セキュリティゲートウェイ",
         "system": "システム"
       },
       "new_rule": "通知ルールを作成",
@@ -2199,7 +2222,6 @@
       "test": "テスト",
       "test_success": "テスト通知を送信しました",
       "event_types_label": "イベントタイプ",
-      "severities_label": "重要度",
       "quiet_minutes": "抑制時間（分）",
       "event_type": "イベントタイプ",
       "severity": "重要度",
@@ -2431,7 +2453,7 @@
     "ai": {
       "setting": "AI アシスタント",
       "enabled": "AI アシスタントを有効化",
-      "asset_enable_tip": "グローバル AI を有効にした後、検索・操作を許可する SSH アセットで「AI を有効化」をオンにしてください。",
+      "asset_enable_tip": "グローバル AI を有効にすると、AI アシスタントは現在のユーザーにアクセス権限がある SSH アセットを検索・操作できます。",
       "disclaimer_title": "AI アシスタント免責事項",
       "disclaimer_description": "AI アシスタントが生成する内容やコマンドには、誤り、欠落、誤解を招く内容、または危険な操作が含まれる可能性があります。有効化後は出力結果を自分で評価し、コマンドを実行する前に意図と影響を確認してください。AI アシスタントの利用により生じるリスクと結果は利用者が負担します。",
       "disclaimer_accepted": "リスクを理解しました",
@@ -2541,6 +2563,17 @@
   },
   "access_request": {
     "new": "新規申請",
+    "start_at": "有効開始日時（空欄の場合は承認後すぐに有効）",
+    "start_at_label": "申請有効開始日時",
+    "scope_title": "申請可能なリソース",
+    "scope_new": "部署の設定を追加",
+    "scope_empty": "許可なし",
+    "asset_groups": "申請可能なアセットグループ",
+    "website_groups": "申請可能なサイトグループ",
+    "databases": "申請可能なデータベース",
+    "scope_tip": "該当する部署の設定がない場合はすべてのリソースを申請できます。設定済みの空の範囲は申請不可です。複数部署の範囲は統合されます。",
+    "scope_unconfigured_tip": "設定のないユーザーはすべてのリソースを申請できます。設定後は選択した範囲に制限されます。",
+    "scope_delete_confirm": "この部署の設定を削除しますか？他に該当する設定がないユーザーはすべてのリソースを申請できるようになります。",
     "resource": "申請リソース",
     "resource_type": "リソース種別",
     "request_reason": "申請理由",
@@ -2572,6 +2605,9 @@
       "type_pg": "PostgreSQL",
       "host": "ホスト",
       "database": "データベース",
+      "mysql_database_extra": "任意。空欄の場合はデータベースを選択せずに接続し、入力した場合は指定したデータベースに接続します。",
+      "database_access_extra": "この設定では、アクセス先をこのデータベースだけに制限できません。MySQL ユーザーは USE でデータベースを切り替えられます。接続先データベースのアカウント権限でアクセス範囲を制限してください。",
+      "postgres_database_extra": "任意。空欄の場合はユーザー名と同名のデータベースに接続し、入力した場合は指定したデータベースに接続します。",
       "postgres_ssl_mode": "PostgreSQL バックエンド TLS モード",
       "postgres_ssl_mode_extra": "verify-ca と verify-full はシステムで信頼された CA を使用します。ゲートウェイ経由でも資産のホスト名で証明書を検証します。"
     },
@@ -2874,5 +2910,35 @@
       "benefit_2": "承認された変更をプラットフォームで実行し、手作業の引き継ぎを減らします。",
       "benefit_3": "申請者、承認者、実行結果をまとめて記録し、追跡できます。"
     }
+  },
+  "agent_access": {
+    "title": "Agent 接続",
+    "description": "OpenClaw、Hermes、または独自の Agent に Next Terminal Skill をインストールします。一度インストールすれば、以後は付属のスクリプトでリソースを照会・管理できます。",
+    "create_key": "API Key を作成",
+    "download_skill": "Skill ドキュメントをダウンロード",
+    "download_client": "API クライアントをダウンロード",
+    "base_url": "API ベース URL",
+    "spec_url": "OpenAPI ドキュメント URL",
+    "auth": "認証ヘッダー",
+    "setup": "設定と API 呼び出し",
+    "key_instruction": "Agent のローカル環境に NT_API_KEY を安全に設定してください。キーをチャットに貼り付けないでください。",
+    "setup_tip": "アカウントのアクセストークン画面で api タイプのトークンを作成し、Agent の永続的な環境に NT_API_KEY を設定します。インストーラーで Skill とスクリプトを永続的な Skill ディレクトリにインストールしてください。Python 3 のみ必要です。別の環境変数名を使う場合は --token-env で指定できます。",
+    "copy_prompt": "インストール手順をコピー",
+    "permissions": "Agent は API Key の所有アカウントの権限を使用します。有効期限を設定し、Agent の利用を終了する際はアクセストークン画面でトークンを失効させてください。",
+    "heading": "Agent でリソースを管理",
+    "step_key": "API Key を作成",
+    "step_key_tip": "アクセストークン画面で「API トークン」を選択し、有効期限を設定してください。作成後にトークンをコピーします。有効な API Key がある場合は次へ進めます。",
+    "step_configure": "API Key を永続的に設定",
+    "step_configure_tip": "Agent の環境変数、シークレット設定、または起動設定に NT_API_KEY を追加し、作成したトークンを設定します。保存後、プラットフォームの手順に従って Agent を再読み込みまたは再起動してください。",
+    "config_hint": "環境変数名は NT_API_KEY です。以後のセッションでも有効な設定を使用してください。一時的なターミナルだけに設定せず、キーをチャットに送信しないでください。",
+    "step_agent": "Skill と API スクリプトをインストール",
+    "step_agent_tip": "インストール手順をコピーして Agent に送信してください。Agent が Skill とスクリプトを永続的な Skill ディレクトリにインストールし、インスタンス設定を保存して接続を確認します。",
+    "copied": "インストール手順をコピーしました。Agent に送信してください。",
+    "copy_failed": "コピーできませんでした。インストール手順を展開して手動でコピーしてください。",
+    "verify_tip": "インストールと読み込みが完了すると、Agent がインストール先と接続結果を報告します。以後は接続設定を繰り返さずにリソース管理タスクを依頼できます。",
+    "preview_prompt": "インストール手順を表示",
+    "advanced": "API ドキュメント（開発者向け）",
+    "advanced_tip": "インストールした Skill には API の探索・呼び出しスクリプトが含まれます。独自の連携を開発する場合は、こちらで API の仕様を確認できます。",
+    "prompt": "Next Terminal のリソース管理 Skill をインストールしてください。インスタンス URL は {{url}} です。\n\n1. この Agent フレームワークの永続的な Skill ディレクトリを確認し、その中の next-terminal-api サブディレクトリを使用してください。一時ディレクトリを使ったり、この会話の間だけドキュメントを読んだりしないでください。\n2. {{url}}/agent/next-terminal/install.py をダウンロードし、ローカルで python3 install.py --base-url {{url}} --directory <永続Skillディレクトリ>/next-terminal-api を実行してください。SKILL.md、scripts/nt_api.py、秘密情報を含まないインスタンス設定が保存されます。同名の Skill が別のインスタンスに接続している場合は、上書きする前にインストール先を確認してください。\n3. フレームワークの手順に従ってインストール済みの Skill を読み込むか、再読み込みしてください。API Key は永続的な環境変数 NT_API_KEY に設定済みです。キーの平文を出力・保存したり、チャットで要求したりしないでください。読み取れない場合は、どの実行環境で設定すべきか教えてください。\n4. インストール済みの scripts/nt_api.py check で接続を確認し、インストール先、読み込み状況、アカウント名を報告してください。失敗した場合は原因を説明し、成功したと報告しないでください。\n5. 以後の管理タスクでは、インストール済みの Skill とスクリプトを使用し、必要な API を調べて私が許可した操作を実行してください。\n\nインストールと確認が完了したら、具体的なタスクの指示を待ってください。\n\nscripts/nt_api.py permissions も実行してアカウント権限とシステムライセンスを取得し、API を選ぶ前に確認してください。完全な仕様書に表示されることは呼び出し権限を意味しません。"
   }
 }

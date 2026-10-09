@@ -34,7 +34,7 @@ class ExecCommandLogApi {
     }
 
     clear = async () => {
-        await requests.post(`/${this.group}/clear`);
+        await requests.post<void>(`/${this.group}/clear`);
     }
 }
 

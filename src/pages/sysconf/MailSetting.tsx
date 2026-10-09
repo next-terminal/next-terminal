@@ -35,6 +35,10 @@ const MailSetting = ({
                             <Switch checkedChildren={t('general.enabled')} unCheckedChildren={t('general.disabled')}
                                     onChange={setEnabled}/>
                         </Form.Item>
+                        <Form.Item name="work-order-mail-enabled" label={t('settings.mail.work_order_enabled')}
+                                   extra={t('settings.mail.work_order_tip')} valuePropName="checked">
+                            <Switch disabled={!enabled}/>
+                        </Form.Item>
                         <Form.Item name="mail-host" label={t('settings.mail.host')} required={enabled}>
                             <Input disabled={!enabled}/>
                         </Form.Item>

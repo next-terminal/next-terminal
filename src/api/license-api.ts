@@ -55,11 +55,11 @@ class LicenseApi {
     }
 
     setLicense = async (values: any) => {
-        await requests.post(`${this.group}`, values);
+        await requests.post<void>(`${this.group}`, values);
     }
 
     requestLicense = async () => {
-        await requests.post(`${this.group}/request`);
+        await requests.post<void>(`${this.group}/request`);
     }
 }
 

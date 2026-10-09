@@ -8,6 +8,9 @@ export interface Role {
     type: string;
     createdAt: number;
     menus: Menu[];
+    editable: boolean;
+    permissionsEditable: boolean;
+    deletable: boolean;
 }
 
 export interface TreeNode {

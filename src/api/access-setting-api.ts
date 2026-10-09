@@ -31,7 +31,7 @@ class AccessSettingApi {
     }
 
     set = async (data: Record<string, string>) => {
-        await requests.put('/access/settings', data);
+        await requests.put<void>('/access/settings', data);
     }
 }
 

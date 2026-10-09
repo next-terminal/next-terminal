@@ -44,7 +44,7 @@ class CredentialRotationApi extends Api<RotationPolicy> {
     }
 
     changeStatus = async (id: string, enabled: boolean) => {
-        await requests.post(`/${this.group}/${id}/change-status`, {enabled});
+        await requests.post<void>(`/${this.group}/${id}/change-status`, {enabled});
     }
 
     rotateAssets = async (assetIds: string[], rotateType?: string) => {

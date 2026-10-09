@@ -72,7 +72,7 @@ class AccessPolicyApi extends Api<AccessPolicyGroup> {
     }
 
     deleteRuleById = async (groupId: string, ruleId: string) => {
-        await requests.delete(`/${this.group}/${groupId}/rules/${ruleId}`);
+        await requests.delete<void>(`/${this.group}/${groupId}/rules/${ruleId}`);
     }
 
     getGroupIdsByUserId = async (userId: string) => {
@@ -80,7 +80,7 @@ class AccessPolicyApi extends Api<AccessPolicyGroup> {
     }
 
     setGroupIdsByUserId = async (userId: string, data: string[]) => {
-        await requests.put(`/${this.group}/bindings/users/${userId}`, data);
+        await requests.put<void>(`/${this.group}/bindings/users/${userId}`, data);
     }
 
     getGroupIdsByDepartmentId = async (departmentId: string) => {
@@ -88,7 +88,7 @@ class AccessPolicyApi extends Api<AccessPolicyGroup> {
     }
 
     setGroupIdsByDepartmentId = async (departmentId: string, data: string[]) => {
-        await requests.put(`/${this.group}/bindings/departments/${departmentId}`, data);
+        await requests.put<void>(`/${this.group}/bindings/departments/${departmentId}`, data);
     }
 
     getEffectiveGroups = async (userId: string) => {
@@ -100,11 +100,11 @@ class AccessPolicyApi extends Api<AccessPolicyGroup> {
     }
 
     setUserIdsByGroupId = async (groupId: string, data: string[]) => {
-        await requests.put(`/${this.group}/${groupId}/bindings/users`, data);
+        await requests.put<void>(`/${this.group}/${groupId}/bindings/users`, data);
     }
 
     setDepartmentIdsByGroupId = async (groupId: string, data: string[]) => {
-        await requests.put(`/${this.group}/${groupId}/bindings/departments`, data);
+        await requests.put<void>(`/${this.group}/${groupId}/bindings/departments`, data);
     }
 }
 

@@ -34,12 +34,7 @@ class DepartmentApi extends Api<Department> {
 
     // 设置部门的用户关联
     setDepartmentUsers = async (departmentId: string, userIds: string[]) => {
-        await requests.post(`/${this.group}/${departmentId}/users`, userIds);
-    }
-
-    // 从部门中移除用户
-    removeUsersFromDepartment = async (departmentId: string, userIds: string[]) => {
-        await requests.post(`/${this.group}/${departmentId}/remove-users`, {userIds});
+        await requests.post<void>(`/${this.group}/${departmentId}/users`, userIds);
     }
 }
 

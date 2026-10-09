@@ -2,7 +2,7 @@ import {Link} from 'react-router-dom';
 import {useTranslation} from 'react-i18next';
 import {useQuery} from '@tanstack/react-query';
 import type {MenuProps} from 'antd';
-import {BugOutlined} from '@ant-design/icons';
+import {BugOutlined, ApiOutlined} from '@ant-design/icons';
 import {LaptopIcon, LogOutIcon, UserIcon} from 'lucide-react';
 import brandingApi from '@/api/branding-api.ts';
 import accountApi from '@/api/account-api.ts';
@@ -30,6 +30,16 @@ export function useUserDropdownMenu() {
             key: 'info',
             icon: <UserIcon className={'h-4 w-4'}/>,
             label: <Link to={'/info'}>{t('account.profile')}</Link>
+        },
+        {
+            key: 'agent-access',
+            icon: <ApiOutlined/>,
+            label: <Link to='/info?activeKey=agent-access'>{t('agent_access.title')}</Link>,
+        },
+        {
+            key: 'openapi',
+            icon: <ApiOutlined/>,
+            label: <a target="_blank" rel="noopener noreferrer" href="/swagger/index.html">OpenAPI</a>,
         },
         {
             key: 'logout',

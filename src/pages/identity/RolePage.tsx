@@ -95,7 +95,7 @@ const RolePage = () => {
                     <NButton key="info">
                         <Link key="get" to={`/role/${record['id']}`}>{t('actions.detail')}</Link>
                     </NButton>
-                    <NButton
+                    {record.editable && <NButton
                         key="edit"
                         onClick={() => {
                             setOpen(true);
@@ -103,8 +103,8 @@ const RolePage = () => {
                         }}
                     >
                         {t('actions.edit')}
-                    </NButton>
-                    <Popconfirm
+                    </NButton>}
+                    {record.deletable && <Popconfirm
                         key={'delete-confirm'}
                         title={t('general.confirm_delete')}
                         onConfirm={async () => {
@@ -113,7 +113,7 @@ const RolePage = () => {
                         }}
                     >
                         <NButton key='delete' danger={true}>{t('actions.delete')}</NButton>
-                    </Popconfirm>
+                    </Popconfirm>}
                 </Space>
             ),
         },

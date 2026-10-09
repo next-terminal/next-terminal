@@ -164,7 +164,7 @@ class MonitoringApi {
     }
 
     acknowledgeAlert = async (key: string) => {
-        await requests.post('/admin/monitoring/alerts/acknowledge', {key});
+        await requests.post<void>('/admin/monitoring/alerts/acknowledge', {key});
     }
 }
 

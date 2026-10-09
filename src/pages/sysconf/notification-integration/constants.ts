@@ -20,6 +20,10 @@ export const notificationLanguages = ['zh-CN', 'zh-TW', 'en-US', 'ja-JP'];
 
 export const eventGroups = [
     {
+        key: 'access_request',
+        events: ['access.request.submitted', 'access.request.approved', 'access.request.rejected'],
+    },
+    {
         key: 'identity',
         events: [
             'identity.user.created',
@@ -45,6 +49,12 @@ export const eventGroups = [
         events: [
             'database.sql.blocked',
             'database.sql.failed',
+            'database.work_order.created',
+            'database.work_order.approved',
+            'database.work_order.rejected',
+            'database.work_order.executed',
+            'database.work_order.failed',
+            'database.work_order.unknown',
         ],
     },
     {

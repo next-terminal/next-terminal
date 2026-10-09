@@ -177,6 +177,15 @@ const DatabaseAssetModal = ({
                                 }}/>
                         </Form.Item>
                     </Col>
+                    <Col span={24}>
+                        <Form.Item name='database' label={t('db.asset.database')}
+                                   extra={<div>
+                                       <div>{t(databaseType === 'pg' ? 'db.asset.postgres_database_extra' : 'db.asset.mysql_database_extra')}</div>
+                                       <div>{t('db.asset.database_access_extra')}</div>
+                                   </div>} style={formItemStyle}>
+                            <Input allowClear/>
+                        </Form.Item>
+                    </Col>
                     {databaseType === 'pg' && <Col span={24}>
                         <Form.Item label={t('db.asset.postgres_ssl_mode')}
                                    extra={t('db.asset.postgres_ssl_mode_extra')}

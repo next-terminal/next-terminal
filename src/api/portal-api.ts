@@ -3,7 +3,6 @@ import { Strategy } from "@/api/strategy-api";
 import requests from "./core/requests";
 
 export interface SessionAttrs {
-    'ai-enabled'?: boolean;
     'restricted-shell'?: boolean;
     'sftp-directory-follow'?: boolean;
     backspaceMode?: string;
@@ -245,13 +244,6 @@ class PortalApi {
         return await requests.get(`/${this.group}/assets/tree?protocol=${protocol}&keyword=${keyword}`) as TreeDataNodeWithExtra[];
     }
 
-    getWebsitesTree = async (keyword?: string) => {
-        if (!keyword) {
-            keyword = '';
-        }
-        return await requests.get(`/${this.group}/websites/tree?keyword=${keyword}`) as TreeDataNodeWithExtra[];
-    }
-
     getAssetsGroupTree = async () => {
         return await requests.get(`/${this.group}/assets/group-tree`) as TreeDataNodeWithExtra[];
     }
@@ -287,7 +279,7 @@ class PortalApi {
     }
 
     cancelShare = async (sessionId: string) => {
-        await requests.delete(`/${this.group}/sessions/${sessionId}/share`);
+        await requests.delete<void>(`/${this.group}/sessions/${sessionId}/share`);
     }
 
     accessWebsite = async (id: string) => {

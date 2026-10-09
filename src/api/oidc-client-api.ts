@@ -65,7 +65,7 @@ class OidcClientApi extends Api<OidcClient> {
     }
 
     updateStatus = async (id: string, status: string): Promise<void> => {
-        await requests.patch(`/${this.group}/${id}/status`, {status});
+        await requests.patch<void>(`/${this.group}/${id}/status`, {status});
     }
 
 }

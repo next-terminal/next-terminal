@@ -1,6 +1,54 @@
+.ai-context-popover {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 12px 32px rgb(15 23 42 / 20%), 0 3px 10px rgb(15 23 42 / 10%);
+}
+
+.ai-context-details {
+    color: #1f2937;
+}
+
+.dark .ai-context-popover {
+    background: #2b2d31;
+    box-shadow: 0 12px 32px rgb(0 0 0 / 50%), 0 3px 10px rgb(0 0 0 / 30%);
+}
+
+.dark .ai-context-details {
+    color: #f3f4f6;
+}
+
+.dark .ai-context-details .text-gray-500 {
+    color: #b0b7c3;
+}
+
 .ai-assistant {
     --ai-scrollbar-thumb: rgb(100 116 139 / 32%);
     --ai-scrollbar-thumb-hover: rgb(100 116 139 / 55%);
+}
+
+.ai-assistant .ai-message-user {
+    border-color: color-mix(in srgb, #1677ff 20%, transparent);
+    background: color-mix(in srgb, #1677ff 13%, white);
+}
+
+.ai-assistant .ai-message-assistant {
+    border-color: color-mix(in srgb, currentColor 7%, transparent);
+    background: color-mix(in srgb, currentColor 3.5%, transparent);
+}
+
+.ai-assistant .ai-message-tool {
+    border-color: color-mix(in srgb, currentColor 7%, transparent);
+    background: color-mix(in srgb, currentColor 3%, transparent);
+}
+
+.ai-assistant .ai-message-tool-content {
+    border-color: color-mix(in srgb, currentColor 6%, transparent);
+    background: color-mix(in srgb, currentColor 1.75%, transparent);
+}
+
+.dark .ai-assistant .ai-message-user {
+    background: color-mix(in srgb, #1677ff 13%, #1e1f22);
 }
 
 .dark .ai-assistant {
@@ -53,5 +101,11 @@
         display: none;
         width: 0;
         height: 0;
+    }
+}
+
+@media (hover: none), (pointer: coarse) {
+    .ai-assistant .ai-message-copy-footer {
+        opacity: 1;
     }
 }

@@ -25,12 +25,6 @@ export interface AccessLog {
     websiteName: string;
 }
 
-export interface DomainStats {
-    domain: string;
-    totalRequests: number;
-    uniqueVisitors: number;
-}
-
 export interface StatusCodeStats {
     statusCode: number;
     count: number;
@@ -39,18 +33,6 @@ export interface StatusCodeStats {
 export interface HourlyStats {
     hour: number;
     count: number;
-}
-
-export interface TotalStats {
-    totalRequests: number;
-    uniqueDomains: number;
-    uniqueVisitors: number;
-    avgResponseTime: number;
-}
-
-export interface DateCounter {
-    date: string;
-    value: number;
 }
 
 // 新增接口定义
@@ -102,27 +84,7 @@ class AccessLogApi extends Api<AccessLog> {
     }
 
     clear = async () => {
-        await requests.post(`/${this.group}/clear`);
-    }
-
-    getDomainStats = async (days: number = 7): Promise<DomainStats[]> => {
-        return await requests.get(`/${this.group}/domain-stats?days=${days}`);
-    }
-
-    getDailyStats = async (days: number = 7): Promise<DateCounter[]> => {
-        return await requests.get(`/${this.group}/daily-stats?days=${days}`);
-    }
-
-    getStatusCodeStats = async (days: number = 7): Promise<StatusCodeStats[]> => {
-        return await requests.get(`/${this.group}/status-code-stats?days=${days}`);
-    }
-
-    getHourlyStats = async (days: number = 7): Promise<HourlyStats[]> => {
-        return await requests.get(`/${this.group}/hourly-stats?days=${days}`);
-    }
-
-    getTotalStats = async (days: number = 7): Promise<TotalStats> => {
-        return await requests.get(`/${this.group}/total-stats?days=${days}`);
+        await requests.post<void>(`/${this.group}/clear`);
     }
 
     // 新增方法：获取网站统计

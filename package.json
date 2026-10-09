@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "NODE_OPTIONS=--max-old-space-size=6144 tsc && vite build",
     "lint": "tsc -p tsconfig.app.json",
+    "test:http": "node --experimental-strip-types --test tests/http-response.test.mjs",
     "audit:i18n": "node scripts/i18n-audit.mjs",
     "audit:antd": "node scripts/scan-antd.mjs --summary",
     "audit:antd:ci": "node scripts/scan-antd.mjs --fail-on-findings",
@@ -43,7 +44,7 @@
     "monaco-editor": "^0.56.0",
     "plyr": "^3.8.4",
     "plyr-react": "^6.0.0",
-    "qs": "^6.15.3",
+    "qs": "^6.16.0",
     "react": "^19.2.8",
     "react-countup": "^6.5.3",
     "react-dom": "^19.2.8",
@@ -72,6 +73,6 @@
     "vite-plugin-pwa": "^1.3.0"
   },
   "overrides": {
-    "dompurify": "3.4.14"
+    "dompurify": "3.4.16"
   }
 }

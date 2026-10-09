@@ -22,11 +22,11 @@ class AuthorisedWebsiteApi {
     }
 
     deleteById = async (id: string) => {
-        return await requests.delete(`/${this.group}/${id}`);
+        return await requests.delete<void>(`/${this.group}/${id}`);
     }
 
     authorise = async (values: any) => {
-        return await requests.post(`/${this.group}`, values);
+        return await requests.post<void>(`/${this.group}`, values);
     }
 }
 

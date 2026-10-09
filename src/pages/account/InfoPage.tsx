@@ -13,6 +13,8 @@ import OidcServerAuthorizations from "@/pages/account/OidcServerAuthorizations";
 import ClientCertificate from "@/pages/account/ClientCertificate";
 import SSHKey from "@/pages/account/SSHKey";
 
+import AgentAccess from "./AgentAccess";
+
 const InfoPage = () => {
 
     let {t} = useTranslation();
@@ -25,6 +27,7 @@ const InfoPage = () => {
     }
 
     const items = [
+        {label: t("agent_access.title"), key: "agent-access", children: <AgentAccess/>},
         {
             label: t('account.change.info'),
             key: 'change-info',

@@ -1,4 +1,9 @@
 {
+  "errors": {
+    "10013": "内置数据不能删除",
+    "10028": "系统管理员角色不能编辑",
+    "10029": "该角色仍被用户使用，无法删除"
+  },
   "general": {
     "created_at": "创建时间",
     "updated_at": "更新时间",
@@ -369,6 +374,7 @@
       "department_binding_tip": "绑定策略组将对该部门当前和以后加入的直接成员生效，不包含子部门成员。"
     },
     "role": {
+      "system_permission_notice": "系统管理员始终拥有全部权限，权限由系统自动维护。",
       "type": "角色类型",
       "types": {
         "default": "内置角色",
@@ -1121,11 +1127,14 @@
     },
     "access_token": "授权令牌",
     "access_token_create": "创建令牌",
+    "access_token_edit_name": "编辑令牌名称",
+    "access_token_name_required": "请输入令牌名称",
     "access_token_type": "令牌类型",
     "access_token_source": "来源",
     "access_token_source_manual": "手动创建",
     "access_token_expires_at": "过期时间",
     "access_token_expires_never": "永不过期",
+    "access_token_expires_future": "过期时间必须晚于当前时间",
     "access_token_once_tip": "令牌仅显示一次，请妥善保存。",
     "access_token_type_values": {
       "session": "登录会话",
@@ -1508,7 +1517,7 @@
     "dns_provider_config": "DNS 供应商配置",
     "terminal_settings": "终端设置",
     "restricted_shell": "网络设备 / 受限 Shell",
-    "restricted_shell_extra": "适用于交换机、路由器、防火墙、RouterOS 等非标准 Linux SSH 环境。此类环境不支持开启 SSH 子会话，启用后将无法使用文件系统（SFTP）、运行指标（Stats）等功能。",
+    "restricted_shell_extra": "适用于交换机、路由器、防火墙等非标准 Linux SSH 环境。此类环境不支持开启 SSH 子会话，启用后将无法使用文件系统（SFTP）、运行指标（Stats）等功能。",
     "sftp_directory_follow": "SFTP 目录自动跟随",
     "sftp_directory_follow_extra": "启用后，SFTP 文件系统目录将自动跟随终端当前目录。",
     "enable_alive_check": "存活检查",
@@ -1961,7 +1970,7 @@
     "ai": {
       "setting": "AI 助手",
       "enabled": "启用 AI 助手",
-      "asset_enable_tip": "启用全局 AI 后，还需在 SSH 资产的“AI 设置”中开启“启用 AI”，AI 助手才能搜索并操作该主机。",
+      "asset_enable_tip": "启用全局 AI 后，AI 助手可搜索并操作当前用户有权限访问的 SSH 资产。",
       "disclaimer_title": "AI 助手免责声明",
       "disclaimer_description": "AI 助手生成的内容和命令可能存在错误、遗漏、误导或危险操作，启用后请自行评估输出结果，并在执行任何命令前确认其意图和影响。因使用 AI 助手产生的任何风险和后果由使用者自行承担。",
       "disclaimer_accepted": "我已了解风险",
@@ -2205,6 +2214,8 @@
       "swap_red_blue": "交换红蓝"
     },
     "mail": {
+      "work_order_enabled": "工单结果邮件通知",
+      "work_order_tip": "开启后向申请人发送驳回、执行成功、失败及结果待核实邮件；需要开启邮件服务并设置用户邮箱，不依赖通用通知规则。",
       "setting": "邮件服务",
       "enabled": "邮件服务",
       "host": "邮箱服务器",
@@ -2219,11 +2230,13 @@
       "send": "发送邮件"
     },
     "notification": {
+      "work_order_quiet_tip": "工单事件逐单发送，不受静默时间限制。",
       "channels": "通知渠道",
       "rules": "通知规则",
       "deliveries": "发送记录",
       "channel": "通知渠道",
       "channel_types": {
+        "work-order-mail": "工单申请人邮件",
         "mail": "邮件",
         "wecom": "企业微信机器人",
         "wecomApp": "企业微信应用",
@@ -2244,6 +2257,9 @@
         "critical": "严重"
       },
       "event_types": {
+        "access.request.submitted": "访问申请已提交",
+        "access.request.approved": "访问申请已通过",
+        "access.request.rejected": "访问申请已拒绝",
         "identity.user.created": "用户已创建",
         "identity.admin.created": "管理员已创建",
         "identity.user.disabled": "用户已禁用",
@@ -2257,10 +2273,16 @@
         "access.recording.failed": "录屏处理失败",
         "database.sql.blocked": "数据库 SQL 已阻断",
         "database.sql.failed": "数据库 SQL 执行失败",
+        "database.work_order.created": "数据库工单已创建",
+        "database.work_order.approved": "数据库工单审批通过",
+        "database.work_order.rejected": "数据库工单已驳回",
+        "database.work_order.executed": "数据库工单执行成功",
+        "database.work_order.failed": "数据库工单执行失败",
+        "database.work_order.unknown": "数据库工单结果待核实",
         "backup.succeeded": "备份成功",
         "backup.failed": "备份失败",
-        "agent.online": "Agent 上线",
-        "agent.offline": "Agent 离线",
+        "agent.online": "安全网关上线",
+        "agent.offline": "安全网关离线",
         "system.cpu.warning": "CPU 使用率过高",
         "system.cpu.critical": "CPU 使用率严重过高",
         "system.cpu.recovered": "CPU 使用率已恢复",
@@ -2273,11 +2295,12 @@
         "system.notification.test": "测试通知"
       },
       "event_groups": {
+        "access_request": "访问申请",
         "identity": "身份认证",
         "access": "访问会话",
         "database": "数据库",
         "backup": "备份",
-        "agent": "Agent",
+        "agent": "安全网关",
         "system": "系统"
       },
       "new_rule": "新建通知规则",
@@ -2309,7 +2332,6 @@
       "test": "测试",
       "test_success": "测试通知已发送",
       "event_types_label": "事件类型",
-      "severities_label": "告警等级",
       "quiet_minutes": "静默时间（分钟）",
       "event_type": "事件类型",
       "severity": "告警等级",
@@ -2541,6 +2563,17 @@
   },
   "access_request": {
     "new": "新建申请",
+    "start_at": "指定生效时间（不填则审批后立即生效）",
+    "start_at_label": "申请生效时间",
+    "scope_title": "可申请资源范围",
+    "scope_new": "新增部门配置",
+    "scope_empty": "未开放",
+    "asset_groups": "可申请的资产组",
+    "website_groups": "可申请的网站组",
+    "databases": "可申请的数据库",
+    "scope_tip": "没有匹配的部门配置时可申请全部资源；已配置的空范围表示不能申请资源。多个部门的范围合并生效。",
+    "scope_unconfigured_tip": "未配置的用户可申请全部资源；配置后仅能申请所选范围。",
+    "scope_delete_confirm": "删除该部门配置？若用户没有其他匹配的配置，将恢复为可申请全部资源。",
     "resource": "申请资源",
     "resource_type": "资源类型",
     "request_reason": "申请原因",
@@ -2647,6 +2680,9 @@
       "type_pg": "PostgreSQL",
       "host": "主机",
       "database": "数据库",
+      "mysql_database_extra": "可选；留空时不选择数据库，填写时连接指定数据库。",
+      "database_access_extra": "此配置不限制用户只能访问该数据库。MySQL 用户仍可通过 USE 切换数据库；请在目标数据库的账号权限层面限制访问范围。",
+      "postgres_database_extra": "可选；留空时连接与用户名同名的数据库，填写时连接指定数据库。",
       "postgres_ssl_mode": "PostgreSQL 后端 TLS 模式",
       "postgres_ssl_mode_extra": "verify-ca 和 verify-full 使用系统信任的 CA；通过网关连接时仍按资产主机名校验证书。"
     },
@@ -2874,5 +2910,35 @@
       "benefit_2": "审批通过后由平台执行，减少人工交接与重复操作。",
       "benefit_3": "集中记录申请人、审批人和执行结果，方便追溯。"
     }
+  },
+  "agent_access": {
+    "title": "Agent 接入",
+    "description": "为 OpenClaw、Hermes 或自定义 Agent 安装 Next Terminal Skill。安装一次，后续通过已安装的脚本查询和管理资源。",
+    "create_key": "创建 API Key",
+    "download_skill": "下载 Skill 文档",
+    "download_client": "下载 API 客户端",
+    "base_url": "API 根地址",
+    "spec_url": "OpenAPI 文档地址",
+    "auth": "认证请求头",
+    "setup": "配置与调用",
+    "key_instruction": "在 agent 本地环境安全配置 NT_API_KEY，不要将密钥粘贴到对话中",
+    "setup_tip": "在账户访问令牌页面创建 api 类型令牌，配置到 agent 的 NT_API_KEY 环境变量。将 Skill 文档保存为 next-terminal/SKILL.md，将客户端保存为 next-terminal/scripts/nt_api.py，然后进入 next-terminal 目录执行下方命令。脚本只需 Python 3；其他密钥变量名可通过 --token-env 指定。",
+    "copy_prompt": "复制安装指令",
+    "prompt": "请为我安装 Next Terminal 资源管理 Skill，实例地址为 {{url}}。\n\n1. 确认当前 Agent 框架的持久 Skill 目录，在其中使用 next-terminal-api 子目录。不要使用临时目录，也不要只在本轮对话中读取文档。\n2. 下载 {{url}}/agent/next-terminal/install.py，在本地运行 python3 install.py --base-url {{url}} --directory <持久Skill目录>/next-terminal-api。安装程序会下载 SKILL.md 和 scripts/nt_api.py，保存不含密钥的实例配置。若已有同名 Skill 指向另一实例，先确认安装位置，避免覆盖。\n3. 按框架要求加载或重新加载已安装的 Skill。API Key 已由我配置在持久环境变量 NT_API_KEY 中；不要输出、保存或索取密钥明文。无法读取时，告诉我应在什么运行环境配置。\n4. 使用已安装的 scripts/nt_api.py check 验证连接，报告 Skill 安装位置、加载情况及账户名称；失败时说明原因，不宣称安装和连接成功。\n5. 后续管理任务使用已安装的 Skill 和脚本，按需发现接口并执行我授权的操作。\n\n安装和验证完成后，等待我提供具体任务。\n\n并运行 scripts/nt_api.py permissions 获取当前账号权限和系统授权，后续先检查权限再选择接口；接口文档完整可见不代表可以调用。",
+    "permissions": "Agent 使用 API Key 所属账号的权限。请为令牌设置有效期；停用 Agent 时，在访问令牌页面撤销它。",
+    "heading": "让你的 Agent 管理资源",
+    "step_key": "创建 API Key",
+    "step_key_tip": "前往访问令牌页面，选择「API 令牌」类型并设置有效期。创建后复制令牌；如果已有可用的 API Key，可直接进入下一步。",
+    "step_configure": "配置持久的 API Key",
+    "step_configure_tip": "在 Agent 的环境变量、密钥设置或启动配置中添加 NT_API_KEY，值为刚才创建的令牌。保存后按平台要求重新加载或重启 Agent。",
+    "config_hint": "变量名为 NT_API_KEY。请使用能在后续会话继续生效的配置，不要只在临时终端设置，也不要将密钥发送到对话中。",
+    "step_agent": "安装 Skill 和 API 脚本",
+    "step_agent_tip": "复制安装指令并发给 Agent。它会将完整 Skill 和脚本安装到自己的持久 Skill 目录，保存当前实例配置，再验证连接。",
+    "copied": "安装指令已复制，请发送给你的 Agent。",
+    "copy_failed": "复制失败，请展开安装指令并手动复制。",
+    "verify_tip": "安装并加载成功后，Agent 会报告安装位置和连接结果。之后直接交给它资源管理任务，无需每次重复接入。",
+    "preview_prompt": "查看安装指令",
+    "advanced": "API 文档（开发者）",
+    "advanced_tip": "Skill 安装包含接口发现和调用脚本。自行开发集成时，可在此查阅 API 契约。"
   }
 }

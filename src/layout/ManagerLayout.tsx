@@ -59,15 +59,16 @@ const ManagerLayout: React.FC = () => {
     const {breakItems} = useBreadcrumb(breadcrumbNameMap);
     const {dropMenus} = useUserDropdownMenu();
 
-    // 事件监听
-    const {contextHolder} = useManagerEventListeners();
-    const {contextHolder: globalMonitorContextHolder} = useGlobalMonitorStatus();
-
     // 用户信息
     const infoQuery = useQuery({
         queryKey: ['infoQuery'],
         queryFn: accountApi.getUserInfo,
     });
+    const canViewMonitoring = infoQuery.data?.menus?.some(menu => menu.checked && menu.key === 'monitoring') ?? false;
+
+    // 事件监听
+    const {contextHolder} = useManagerEventListeners();
+    const {contextHolder: globalMonitorContextHolder} = useGlobalMonitorStatus(canViewMonitoring);
 
     const current = location.pathname.split('/')[1] ?? '';
 

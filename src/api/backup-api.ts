@@ -1,4 +1,5 @@
 import requests, {baseUrl} from "@/api/core/requests";
+import {browserDownload} from "@/utils/utils";
 
 export interface BackupConfig {
     scheduleEnabled: boolean;
@@ -78,6 +79,11 @@ export interface BackupTask {
     finishedAt: number;
 }
 
+export interface BackupTaskAccepted {
+    taskId: string;
+    statusUrl: string;
+}
+
 class BackupApi {
     group = "admin/backup";
 
@@ -86,19 +92,19 @@ class BackupApi {
     }
 
     setConfig = async (values: BackupConfigUpdate) => {
-        await requests.put(`/${this.group}/config`, values);
+        await requests.put<void>(`/${this.group}/config`, values);
     }
 
     testS3Action = async (values: BackupS3Action) => {
-        await requests.post(`/${this.group}/actions/s3/test`, values);
+        await requests.post<void>(`/${this.group}/actions/s3/test`, values);
     }
 
     testSFTPAction = async (values: BackupSFTPAction) => {
-        await requests.post(`/${this.group}/actions/sftp/test`, values);
+        await requests.post<void>(`/${this.group}/actions/sftp/test`, values);
     }
 
     testWebDAVAction = async (values: BackupWebDAVAction) => {
-        await requests.post(`/${this.group}/actions/webdav/test`, values);
+        await requests.post<void>(`/${this.group}/actions/webdav/test`, values);
     }
 
     files = async () => {
@@ -106,29 +112,29 @@ class BackupApi {
     }
 
     create = async (remark: string) => {
-        return await requests.post(`/${this.group}/files`, {remark}) as { taskId: string };
+        return await requests.post<BackupTaskAccepted>(`/${this.group}/files`, {remark});
     }
 
     restore = async (name: string) => {
-        return await requests.post(`/${this.group}/files/${encodeURIComponent(name)}/restore`) as { taskId: string };
+        return await requests.post<BackupTaskAccepted>(`/${this.group}/files/${encodeURIComponent(name)}/restore`);
     }
 
     uploadRestore = async (file: File) => {
         const formData = new FormData();
         formData.append('file', file);
-        return await requests.postForm(`/${this.group}/files/upload-restore`, formData) as { taskId: string };
+        return await requests.postForm<BackupTaskAccepted>(`/${this.group}/files/upload-restore`, formData);
     }
 
     delete = async (name: string) => {
-        await requests.delete(`/${this.group}/files/${encodeURIComponent(name)}`);
+        await requests.delete<void>(`/${this.group}/files/${encodeURIComponent(name)}`);
     }
 
     task = async (id: string) => {
         return await requests.get(`/${this.group}/tasks/${encodeURIComponent(id)}`) as BackupTask;
     }
 
-    downloadUrl = (name: string) => {
-        return `${baseUrl()}/${this.group}/files/${encodeURIComponent(name)}/download`;
+    download = (name: string) => {
+        browserDownload(`${baseUrl()}/${this.group}/files/${encodeURIComponent(name)}/download`);
     }
 }
 

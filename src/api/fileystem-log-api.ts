@@ -3,6 +3,7 @@ import type {RegionInfo} from "@/api/region-info";
 import requests from "@/api/core/requests";
 
 export interface FileSystemLog {
+	filesystemId: string;
     id: string;
     assetId: string;
     sessionId: string;
@@ -22,7 +23,7 @@ class FileSystemLogApi extends Api<FileSystemLog> {
     }
 
     clear = async () => {
-        await requests.post(`/${this.group}/clear`);
+        await requests.post<void>(`/${this.group}/clear`);
     }
 }
 

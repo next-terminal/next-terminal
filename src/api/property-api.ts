@@ -60,7 +60,7 @@ class PropertyApi {
     }
 
     set = async (values: any, securityToken?: string) => {
-        await requests.put(`/${this.group}`, values, {securityToken});
+        await requests.put<void>(`/${this.group}`, values, {securityToken});
     }
 
     genRSAPrivateKey = async () => {
@@ -69,7 +69,7 @@ class PropertyApi {
     }
 
     sendMail = async (values: any) => {
-        await requests.post(`/${this.group}/send-mail`, values);
+        await requests.post<void>(`/${this.group}/send-mail`, values);
     }
 
     getLatestVersion = async () => {

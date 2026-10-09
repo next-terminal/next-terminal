@@ -1,5 +1,6 @@
 import {ApiError, getErrorMessage, isAccessControlError, isApiError} from "@/api/core/api-error";
 import eventEmitter from "@/api/core/event-emitter";
+import {parseResponse} from "@/api/core/parse-response";
 
 export const baseUrl = () => {
     return '/api';
@@ -36,13 +37,6 @@ export interface RequestOptions {
     errorMode?: ApiErrorMode;
     securityToken?: string;
 }
-
-const parseResponse = async <T>(response: Response): Promise<T> => {
-    if (response.headers.get('Content-Type')?.includes('application/json')) {
-        return await response.json() as T;
-    }
-    return await response.text() as T;
-};
 
 const createHttpError = async (response: Response): Promise<ApiError> => {
     let message = response.statusText;
@@ -93,11 +87,14 @@ const normalizeError = (error: unknown): ApiError => {
 };
 
 const handleCrossPageError = (error: ApiError, errorMode: ApiErrorMode): boolean => {
-    if (errorMode === 'global' && error.status === 418) {
+    if (errorMode !== 'global') {
+        return false;
+    }
+    if (error.status === 418) {
         eventEmitter.emit("API:REDIRECT", "/setup");
         return true;
     }
-    if (errorMode === 'global' && error.status === 401) {
+    if (error.status === 401) {
         eventEmitter.emit("API:UN_AUTH");
         return true;
     }

@@ -111,11 +111,6 @@ export interface RegisterParam {
     token: string;
 }
 
-export interface SortItem {
-    id: string;
-    sortOrder: number;
-}
-
 export interface SortPositionRequest {
     id: string;        // 被拖拽的项 ID
     beforeId: string;  // 目标位置的前一项 ID (空字符串表示移到最前)
@@ -132,19 +127,15 @@ class AgentGatewayApi extends Api<AgentGateway> {
     }
 
     setRegisterAddr = async (endpoint: string) => {
-        return await requests.post(`/${this.group}/set-register-addr?endpoint=${endpoint}`);
+        return await requests.post<void>(`/${this.group}/set-register-addr?endpoint=${endpoint}`);
     }
 
     getStat = async (id: string) => {
         return await requests.get(`/${this.group}/${id}/stat`) as Stat;
     }
 
-    updateSort = async (items: SortItem[]) => {
-        return await requests.post(`/${this.group}/sort`, items);
-    }
-
     updateSortPosition = async (req: SortPositionRequest) => {
-        return await requests.post(`/${this.group}/sort`, req);
+        return await requests.post<void>(`/${this.group}/sort`, req);
     }
 
     deleteById = async (id: string) => {

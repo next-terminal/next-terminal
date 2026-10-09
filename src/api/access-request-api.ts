@@ -17,6 +17,8 @@ export interface AccessRequest {
     requestReason: string;
     reason: string;
     durationMinutes: number;
+    requestedStartAt: number;
+    startAt: number;
     approvedDurationMinutes: number;
     authorisedId: string;
     commandFilterId: string;
@@ -40,7 +42,16 @@ export interface CreateAccessRequestRequest {
     resourceId: string;
     requestReason: string;
     durationMinutes: number;
+    startAt?: number;
 }
+
+export interface AccessRequestScope {
+    departmentId: string;
+    assetGroupIds: string[];
+    websiteGroupIds: string[];
+    databaseAssetIds: string[];
+}
+
 
 export interface ApproveAccessRequestRequest {
     durationMinutes?: number;
@@ -77,6 +88,14 @@ class AccessRequestApi {
 
 class AccessRequestAdminApi {
     group = "admin/access-requests";
+
+    scopes = async () => await requests.get(`/${this.group}/scopes`) as AccessRequestScope[];
+
+    setScope = async (scope: AccessRequestScope) =>
+        await requests.put(`/${this.group}/scopes/${scope.departmentId}`, scope);
+
+    deleteScope = async (departmentId: string) =>
+        await requests.delete(`/${this.group}/scopes/${departmentId}`);
 
     paging = async (params: any) => {
         const paramsStr = qs.stringify(params);

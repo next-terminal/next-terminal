@@ -136,11 +136,11 @@ class UserApi extends Api<User> {
     }
 
     resetTOTP = async (keys: string[], securityToken: string) => {
-        await requests.post(`/${this.group}/reset-totp`, keys, {securityToken});
+        await requests.post<void>(`/${this.group}/reset-totp`, keys, {securityToken});
     }
 
     clearPasskeys = async (keys: string[], securityToken: string) => {
-        await requests.post(`/${this.group}/clear-passkeys`, keys, {securityToken});
+        await requests.post<void>(`/${this.group}/clear-passkeys`, keys, {securityToken});
     }
 
     resetPassword = async (keys: string[], password?: string) => {
@@ -152,7 +152,7 @@ class UserApi extends Api<User> {
     }
 
     changeStatus = async (id: string, status: string) => {
-        await requests.patch(`/${this.group}/${id}/status?status=${status}`);
+        await requests.patch<void>(`/${this.group}/${id}/status?status=${status}`);
     }
 
     // 不需要登录
@@ -165,29 +165,10 @@ class UserApi extends Api<User> {
         return await requests.get(`/setup-status`) as SetupStatus;
     }
 
-    syncLdapUser = async () => {
-        await requests.post(`/${this.group}/sync-from-ldap`);
-    }
-
     import = async (file: File) => {
         let formData = new FormData();
         formData.append("file", file);
-        await requests.postForm(`/${this.group}/import`, formData);
-    }
-
-    // 获取用户的部门关联
-    getUserDepartments = async (userId: string) => {
-        return await requests.get(`/${this.group}/${userId}/departments`);
-    }
-
-    // 设置用户的部门关联
-    setUserDepartments = async (userId: string, departmentIds: string[]) => {
-        await requests.post(`/${this.group}/${userId}/departments`, { departmentIds });
-    }
-
-    // 批量设置用户部门
-    batchSetUserDepartments = async (userIds: string[], departmentIds: string[]) => {
-        await requests.post(`/${this.group}/batch-departments`, { userIds, departmentIds });
+        await requests.postForm<void>(`/${this.group}/import`, formData);
     }
 
     getUserClientCert = async (userId: string) => {
@@ -195,7 +176,7 @@ class UserApi extends Api<User> {
     }
 
     revokeUserClientCert = async (userId: string) => {
-        return await requests.delete(`/${this.group}/${userId}/client-cert`);
+        return await requests.delete<void>(`/${this.group}/${userId}/client-cert`);
     }
 
     getExternalIdentities = async (userId: string) => {
@@ -203,7 +184,7 @@ class UserApi extends Api<User> {
     }
 
     deleteExternalIdentity = async (userId: string, identityId: string) => {
-        return await requests.delete(`/${this.group}/${userId}/external-identities/${identityId}`);
+        return await requests.delete<void>(`/${this.group}/${userId}/external-identities/${identityId}`);
     }
 
     getWebauthnCredentials = async (userId: string) => {
@@ -211,7 +192,7 @@ class UserApi extends Api<User> {
     }
 
     deleteWebauthnCredential = async (userId: string, credentialId: string, securityToken: string) => {
-        return await requests.delete(`/${this.group}/${userId}/webauthn/credentials/${credentialId}`, {securityToken});
+        return await requests.delete<void>(`/${this.group}/${userId}/webauthn/credentials/${credentialId}`, {securityToken});
     }
 
     getSSHKeys = async (userId: string) => {
@@ -219,7 +200,7 @@ class UserApi extends Api<User> {
     }
 
     deleteSSHKey = async (userId: string, sshKeyId: string) => {
-        return await requests.delete(`/${this.group}/${userId}/ssh-keys/${sshKeyId}`);
+        return await requests.delete<void>(`/${this.group}/${userId}/ssh-keys/${sshKeyId}`);
     }
 
     getAccessTokens = async (userId: string) => {
@@ -227,7 +208,7 @@ class UserApi extends Api<User> {
     }
 
     deleteAccessToken = async (userId: string, tokenId: string) => {
-        return await requests.delete(`/${this.group}/${userId}/access-tokens/${tokenId}`);
+        return await requests.delete<void>(`/${this.group}/${userId}/access-tokens/${tokenId}`);
     }
 
     getOidcServerConsents = async (userId: string) => {
@@ -235,7 +216,7 @@ class UserApi extends Api<User> {
     }
 
     revokeOidcServerConsent = async (userId: string, clientId: string) => {
-        return await requests.delete(`/${this.group}/${userId}/oidc-server-consents/${clientId}`);
+        return await requests.delete<void>(`/${this.group}/${userId}/oidc-server-consents/${clientId}`);
     }
 }
 

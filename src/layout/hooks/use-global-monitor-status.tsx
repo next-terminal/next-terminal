@@ -7,7 +7,7 @@ import monitoringApi from '@/api/monitoring-api';
 
 const storageKeyPrefix = 'nt-monitor-critical-dismissed:';
 
-export function useGlobalMonitorStatus() {
+export function useGlobalMonitorStatus(enabled: boolean) {
     const {t} = useTranslation();
     const navigate = useNavigate();
     const [modal, contextHolder] = Modal.useModal();
@@ -16,7 +16,8 @@ export function useGlobalMonitorStatus() {
     const query = useQuery({
         queryKey: ['monitoringGlobalStatus'],
         queryFn: monitoringApi.getGlobalStatus,
-        refetchInterval: 60000,
+        enabled,
+        refetchInterval: enabled ? 60000 : false,
         retry: false,
     });
 

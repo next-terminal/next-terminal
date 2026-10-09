@@ -91,15 +91,15 @@ class SessionApi extends Api<Session> {
     }
 
     disconnect = async (sessionId: string) => {
-        await requests.post(`/${this.group}/${sessionId}/disconnect`);
+        await requests.post<void>(`/${this.group}/${sessionId}/disconnect`);
     }
 
     clear = async () => {
-        await requests.post(`/${this.group}/clear`);
+        await requests.post<void>(`/${this.group}/clear`);
     }
 
     triggerRecordingConvert = async (sessionId: string) => {
-        await requests.post(`/${this.group}/${sessionId}/recording-convert`);
+        return await requests.post<{ sessionId: string; statusUrl: string }>(`/${this.group}/${sessionId}/recording-convert`);
     }
 
     getRecordingUploadFailedCount = async () => {

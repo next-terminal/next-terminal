@@ -27,25 +27,13 @@ class AuthorisedAssetApi {
         return await requests.get(`/${this.group}/paging?${paramsStr}`);
     }
 
-    authorisedAssets = async (data: any) => {
-        return await requests.post(`/${this.group}/assets`, data);
-    }
-
-    authorisedUsers = async (data: any) => {
-        return await requests.post(`/${this.group}/users`, data);
-    }
-
-    authorisedDepartments = async (data: any) => {
-        return await requests.post(`/${this.group}/departments`, data);
-    }
-
     selected = async (expect: string, userId?: string, userGroupId?: string, assetId?: string) => {
         let paramsStr = qs.stringify({expect, userId, userGroupId, assetId});
         return await requests.get(`/${this.group}/selected?${paramsStr}`) as String[];
     }
 
     deleteById = async (id: string) => {
-        await requests.delete(`/${this.group}/${id}`)
+        await requests.delete<void>(`/${this.group}/${id}`)
     }
 
     getById = async (id: string) => {
@@ -53,11 +41,11 @@ class AuthorisedAssetApi {
     }
 
     update = async (id: string, values: any) => {
-        await requests.put(`/${this.group}/${id}`, values)
+        await requests.put<void>(`/${this.group}/${id}`, values)
     }
 
     post = async (values: any) => {
-        await requests.post(`/${this.group}`, values)
+        await requests.post<void>(`/${this.group}`, values)
     }
 }
 

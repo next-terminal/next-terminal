@@ -79,15 +79,20 @@ const RoleInfo = ({id}: RoleInfoProps) => {
                             if (menusQuery.isLoading) {
                                 return <div>Loading</div>
                             }
-                            return <Tree
-                                checkable
-                                disabled={true}
-                                checkedKeys={roleMenus}
-                                treeData={menusQuery.data ?? []}
-                                style={{
-                                    backgroundColor: theme.backgroundColor,
-                                }}
-                            />
+                            return (
+                                <>
+                                    {role?.permissionsEditable === false && <p>{t('identity.role.system_permission_notice')}</p>}
+                                    <Tree
+                                        checkable
+                                        disabled={true}
+                                        checkedKeys={roleMenus}
+                                        treeData={menusQuery.data ?? []}
+                                        style={{
+                                            backgroundColor: theme.backgroundColor,
+                                        }}
+                                    />
+                                </>
+                            );
                             })(),
                         },
                         {

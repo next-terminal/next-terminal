@@ -1,5 +1,6 @@
 import {useState} from 'react';
-import {Button, Form, Modal, Popconfirm, Select, Space, Table, Tag, Typography} from "antd";
+import {Button, DatePicker, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Typography} from "antd";
+import dayjs, {type Dayjs} from "dayjs";
 import {useTranslation} from "react-i18next";
 import {useMutation, useQuery} from "@tanstack/react-query";
 import accountApi, {AccessTokenCreateResult, AccessTokenItem} from "@/api/account-api";
@@ -7,8 +8,10 @@ import times from "@/components/time/times";
 
 const AccessToken = () => {
     let {t} = useTranslation();
+    const [form] = Form.useForm<{ name: string; type: string; expiresAt?: Dayjs }>();
+    const [editForm] = Form.useForm<{ name: string }>();
+    const [editingToken, setEditingToken] = useState<AccessTokenItem | null>(null);
     const [createdToken, setCreatedToken] = useState<AccessTokenCreateResult | null>(null);
-    const [createType, setCreateType] = useState<string>('api');
     const [createModalOpen, setCreateModalOpen] = useState(false);
 
     let tokenQuery = useQuery({
@@ -17,10 +20,21 @@ const AccessToken = () => {
     });
 
     let tokenMutation = useMutation({
-        mutationFn: () => accountApi.createAccessToken(createType),
+        mutationFn: (values: { name: string; type: string; expiresAt?: Dayjs }) =>
+            accountApi.createAccessToken(values.name.trim(), values.type, values.expiresAt?.valueOf()),
         onSuccess: (data) => {
             setCreateModalOpen(false);
+            form.resetFields();
             setCreatedToken(data);
+            tokenQuery.refetch();
+        }
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: (values: { id: string; name: string }) => accountApi.updateAccessToken(values.id, values.name.trim()),
+        onSuccess: () => {
+            setEditingToken(null);
+            editForm.resetFields();
             tokenQuery.refetch();
         }
     });
@@ -68,6 +82,11 @@ const AccessToken = () => {
 
     const columns = [
         {
+            title: t('general.name'),
+            dataIndex: 'name',
+            render: (value?: string) => value || '—',
+        },
+        {
             title: t('account.access_token'),
             dataIndex: 'token',
             render: (value: string) => <Typography.Text code>{value}</Typography.Text>
@@ -90,7 +109,8 @@ const AccessToken = () => {
             title: t('account.access_token_expires_at'),
             dataIndex: 'expiresAt',
             render: (value?: number) => (
-                value ? times.format(value) : <Typography.Text type="secondary">{t('account.access_token_expires_never')}</Typography.Text>
+                value ? times.format(value) :
+                    <Typography.Text type="secondary">{t('account.access_token_expires_never')}</Typography.Text>
             )
         },
         {
@@ -102,20 +122,33 @@ const AccessToken = () => {
             title: t('actions.label'),
             dataIndex: 'id',
             render: (_: string, record: AccessTokenItem) => (
-                <Popconfirm
-                    title={t('general.confirm_delete')}
-                    onConfirm={() => deleteMutation.mutate(record.id)}
-                    okText={t('actions.confirm')}
-                    cancelText={t('actions.cancel')}
-                >
+                <Space>
                     <Button
                         type="link"
-                        danger
-                        loading={deleteMutation.isPending && deleteMutation.variables === record.id}
+                        style={{padding: 0, margin: 0}}
+                        onClick={() => {
+                            editForm.setFieldsValue({name: record.name || ''});
+                            setEditingToken(record);
+                        }}
                     >
-                        {t('actions.delete')}
+                        {t('actions.edit')}
                     </Button>
-                </Popconfirm>
+                    <Popconfirm
+                        title={t('general.confirm_delete')}
+                        onConfirm={() => deleteMutation.mutate(record.id)}
+                        okText={t('actions.confirm')}
+                        cancelText={t('actions.cancel')}
+                    >
+                        <Button
+                            type="link"
+                            danger
+                            style={{padding: 0, margin: 0}}
+                            loading={deleteMutation.isPending && deleteMutation.variables === record.id}
+                        >
+                            {t('actions.delete')}
+                        </Button>
+                    </Popconfirm>
+                </Space>
             )
         }
     ];
@@ -131,6 +164,7 @@ const AccessToken = () => {
 
             <Table
                 rowKey="id"
+                size="small"
                 columns={columns}
                 dataSource={tokenQuery.data || []}
                 loading={tokenQuery.isLoading}
@@ -155,21 +189,75 @@ const AccessToken = () => {
             <Modal
                 open={createModalOpen}
                 title={t('account.access_token_create')}
-                onCancel={() => setCreateModalOpen(false)}
-                onOk={() => tokenMutation.mutate()}
+                onCancel={() => {
+                    setCreateModalOpen(false);
+                    form.resetFields();
+                }}
+                onOk={() => form.submit()}
                 okText={t('actions.new')}
                 confirmLoading={tokenMutation.isPending}
             >
-                <Form layout="vertical">
-                    <Form.Item label={t('account.access_token_type')}>
+                <Form form={form} layout="vertical" initialValues={{type: 'api'}}
+                      onFinish={values => tokenMutation.mutate(values)}>
+                    <Form.Item
+                        name="name"
+                        label={t('general.name')}
+                        rules={[{required: true, whitespace: true, message: t('account.access_token_name_required')}]}
+                    >
+                        <Input/>
+                    </Form.Item>
+                    <Form.Item name="type" label={t('account.access_token_type')}>
                         <Select
-                            value={createType}
-                            onChange={setCreateType}
                             options={[
                                 {value: 'api', label: t('account.access_token_type_values.api')},
                                 {value: 'db-password', label: t('account.access_token_type_values.db_password')}
                             ]}
                         />
+                    </Form.Item>
+                    <Form.Item
+                        name="expiresAt"
+                        label={t('account.access_token_expires_at')}
+                        extra={t('account.access_token_expires_never')}
+                        rules={[{
+                            validator: (_, value?: Dayjs) =>
+                                !value || value.isAfter(dayjs())
+                                    ? Promise.resolve()
+                                    : Promise.reject(new Error(t('account.access_token_expires_future')))
+                        }]}
+                    >
+                        <DatePicker
+                            showTime
+                            format="YYYY-MM-DD HH:mm:ss"
+                            style={{width: '100%'}}
+                            disabledDate={date => date.isBefore(dayjs(), 'day')}
+                        />
+                    </Form.Item>
+                </Form>
+            </Modal>
+
+            <Modal
+                open={!!editingToken}
+                title={t('account.access_token_edit_name')}
+                onCancel={() => {
+                    setEditingToken(null);
+                    editForm.resetFields();
+                }}
+                onOk={() => editForm.submit()}
+                okText={t('actions.confirm')}
+                cancelText={t('actions.cancel')}
+                confirmLoading={updateMutation.isPending}
+            >
+                <Form form={editForm} layout="vertical" onFinish={values => {
+                    if (editingToken) {
+                        updateMutation.mutate({id: editingToken.id, name: values.name});
+                    }
+                }}>
+                    <Form.Item
+                        name="name"
+                        label={t('general.name')}
+                        rules={[{required: true, whitespace: true, message: t('account.access_token_name_required')}]}
+                    >
+                        <Input/>
                     </Form.Item>
                 </Form>
             </Modal>

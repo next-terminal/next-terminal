@@ -43,9 +43,7 @@ Next Terminal 是一个简洁、安全、易用的运维审计系统，支持多
 - **文档**：https://www.next-terminal.com/zh/docs/
 - **官方售后**（购买后 1 年内）：support@next-terminal.com，工作日 10:00–18:00，非工作时间顺延至下一工作日回复
 - **功能使用 / bug / 建议**：[GitHub Issues](https://github.com/next-terminal/next-terminal/issues)（公开可搜索，您的提问也会帮助他人）
-- **社群**：[Telegram](https://t.me/next_terminal) · 微信群 — 见下方二维码（二维码会定期更换；如已过期请见 https://www.next-terminal.com）：
-
-  <img src="images/wechat-group.jpg" alt="Next Terminal 微信交流群二维码" width="180">
+- **社群**：[Telegram](https://t.me/next_terminal) · 微信群 — 见 https://www.next-terminal.com（二维码会定期更换，不在仓库内维护）
 
 
 ## 赞助

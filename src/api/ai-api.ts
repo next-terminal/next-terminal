@@ -84,6 +84,7 @@ export interface AIConversation {
 }
 
 export interface AIModelOptions {
+    contextWindow?: number;
     model: string;
     models: string[];
 }

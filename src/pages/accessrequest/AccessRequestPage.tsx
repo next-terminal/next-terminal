@@ -3,6 +3,7 @@ import {useMutation, useQuery} from "@tanstack/react-query";
 import {
     App,
     Button,
+    Drawer,
     Form,
     Input,
     InputNumber,
@@ -12,6 +13,7 @@ import {
     Space,
     Table,
     type TableProps,
+    type TreeDataNode,
     Tag,
     Tooltip,
     Typography
@@ -23,18 +25,37 @@ import {
     AccessRequest,
     AccessRequestResourceType,
     accessRequestAdminApi,
-    ApproveAccessRequestRequest
+    ApproveAccessRequestRequest,
+    type AccessRequestScope
 } from "@/api/access-request-api";
-import {UserSelect} from "@/components/shared/QuerySelects";
+import {AssetGroupTreeSelect, DatabaseAssetSelect, DepartmentTreeSelect, UserSelect, WebsiteGroupTreeSelect} from "@/components/shared/QuerySelects";
+import departmentApi from "@/api/department-api";
+import assetApi from "@/api/asset-api";
+import websiteApi from "@/api/website-api";
+import databaseAssetApi from "@/api/database-asset-api";
 import {getSort} from "@/utils/sort";
 
 const {Text} = Typography;
+
+const collectNames = (nodes: TreeDataNode[], names: Record<string, string> = {}, parent = ''): Record<string, string> => {
+    for (const node of nodes) {
+        const title = typeof node.title === 'function' ? node.title(node) : node.title;
+        const name = String(title ?? node.key);
+        const path = parent ? `${parent} / ${name}` : name;
+        names[String(node.key)] = path;
+        collectNames(node.children || [], names, path);
+    }
+    return names;
+};
 
 const AccessRequestPage = () => {
     const {t} = useTranslation();
     const {message} = App.useApp();
     const [approveForm] = Form.useForm<ApproveAccessRequestRequest>();
     const [rejectForm] = Form.useForm<{reason: string}>();
+    const [scopeForm] = Form.useForm<AccessRequestScope>();
+    const [scopeOpen, setScopeOpen] = useState(false);
+    const [scopeEditOpen, setScopeEditOpen] = useState(false);
     const [pagination, setPagination] = useState({current: 1, pageSize: 10});
     const [sort, setSort] = useState<Record<string, string | null>>({});
     const [status, setStatus] = useState<string>();
@@ -44,6 +65,57 @@ const AccessRequestPage = () => {
     const [approveId, setApproveId] = useState<string>();
     const [rejectOpen, setRejectOpen] = useState(false);
     const [rejectId, setRejectId] = useState<string>();
+
+    const scopesQuery = useQuery({
+        queryKey: ['access-request-scopes'],
+        queryFn: accessRequestAdminApi.scopes,
+        enabled: scopeOpen,
+    });
+    const scopeNamesQuery = useQuery({
+        queryKey: ['access-request-scope-names'],
+        queryFn: async () => {
+            const [departments, assetGroups, websiteGroups, databases] = await Promise.all([
+                departmentApi.getTree(), assetApi.getGroups(), websiteApi.getGroups(), databaseAssetApi.getAll(),
+            ]);
+            return {
+                departments: collectNames(departments),
+                assetGroups: collectNames(assetGroups),
+                websiteGroups: collectNames(websiteGroups),
+                databases: Object.fromEntries(databases.map(item => [item.id, item.name])),
+            };
+        },
+        enabled: scopeOpen,
+    });
+    const scopeMutation = useMutation({
+        mutationFn: accessRequestAdminApi.setScope,
+        onSuccess: () => {
+            scopesQuery.refetch();
+            setScopeEditOpen(false);
+            scopeForm.resetFields();
+            message.success(t('general.success'));
+        },
+    });
+    const deleteScopeMutation = useMutation({
+        mutationFn: accessRequestAdminApi.deleteScope,
+        onSuccess: () => {
+            scopesQuery.refetch();
+            message.success(t('general.success'));
+        },
+    });
+
+    const editScope = (scope?: AccessRequestScope) => {
+        scopeForm.setFieldsValue({
+            departmentId: scope?.departmentId,
+            assetGroupIds: scope?.assetGroupIds || [],
+            websiteGroupIds: scope?.websiteGroupIds || [],
+            databaseAssetIds: scope?.databaseAssetIds || [],
+        });
+        setScopeEditOpen(true);
+    };
+
+    const scopeNames = scopeNamesQuery.data;
+    const renderScopeNames = (ids: string[] | undefined, names: Record<string, string> | undefined) =>
+        ids?.length ? ids.map(id => names?.[id] || id).join('、') : t('access_request.scope_empty');
 
     const requestPagingQuery = useQuery({
         queryKey: ['admin-access-requests', pagination.current, pagination.pageSize, sort, status, resourceType, requesterId],
@@ -193,6 +265,12 @@ const AccessRequestPage = () => {
             width: 150,
         },
         {
+            title: t('access_request.start_at_label'),
+            dataIndex: 'requestedStartAt',
+            width: 180,
+            render: (value: number) => value ? dayjs(value).format('YYYY-MM-DD HH:mm') : '-',
+        },
+        {
             title: t('general.status'),
             dataIndex: 'status',
             width: 120,
@@ -275,6 +353,7 @@ const AccessRequestPage = () => {
             <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div className="font-medium">{t('menus.work_order.submenus.access_request')}</div>
                 <Space wrap>
+                    <Button onClick={() => setScopeOpen(true)}>{t('access_request.scope_title')}</Button>
                     <Select
                         allowClear
                         placeholder={t('general.status')}
@@ -323,6 +402,104 @@ const AccessRequestPage = () => {
                 onChange={handleTableChange}
                 scroll={{x: 'max-content'}}
             />
+
+            <Drawer
+                title={t('access_request.scope_title')}
+                extra={<Button type="primary" onClick={() => editScope()}>{t('access_request.scope_new')}</Button>}
+                open={scopeOpen}
+                onClose={() => setScopeOpen(false)}
+                size="min(1100px, 100vw)"
+            >
+                <div className="mb-4 text-sm text-gray-500">{t('access_request.scope_unconfigured_tip')}</div>
+                <Table<AccessRequestScope>
+                    rowKey="departmentId"
+                    loading={scopesQuery.isFetching || scopeNamesQuery.isFetching}
+                    dataSource={scopesQuery.data || []}
+                    pagination={{pageSize: 10}}
+                    scroll={{x: 800}}
+                    columns={[
+                        {
+                            title: t('menus.identity.submenus.department'),
+                            dataIndex: 'departmentId',
+                            width: 180,
+                            render: (id: string) => scopeNames?.departments[id] || id,
+                        },
+                        {
+                            title: t('access_request.asset_groups'),
+                            dataIndex: 'assetGroupIds',
+                            ellipsis: true,
+                            render: (ids: string[]) => renderScopeNames(ids, scopeNames?.assetGroups),
+                        },
+                        {
+                            title: t('access_request.website_groups'),
+                            dataIndex: 'websiteGroupIds',
+                            ellipsis: true,
+                            render: (ids: string[]) => renderScopeNames(ids, scopeNames?.websiteGroups),
+                        },
+                        {
+                            title: t('access_request.databases'),
+                            dataIndex: 'databaseAssetIds',
+                            ellipsis: true,
+                            render: (ids: string[]) => renderScopeNames(ids, scopeNames?.databases),
+                        },
+                        {
+                            title: t('actions.label'),
+                            width: 96,
+                            render: (_, scope) => <Space size={0}>
+                                <Button type="link" size="small" style={{paddingInline: 2}} onClick={() => editScope(scope)}>{t('actions.edit')}</Button>
+                                <Popconfirm
+                                    title={t('access_request.scope_delete_confirm')}
+                                    onConfirm={() => deleteScopeMutation.mutate(scope.departmentId)}
+                                >
+                                    <Button type="link" size="small" style={{paddingInline: 2}} danger loading={deleteScopeMutation.isPending}>{t('actions.delete')}</Button>
+                                </Popconfirm>
+                            </Space>,
+                        },
+                    ]}
+                />
+            </Drawer>
+
+            <Modal
+                title={t('access_request.scope_title')}
+                open={scopeEditOpen}
+                onCancel={() => { setScopeEditOpen(false); scopeForm.resetFields(); }}
+                onOk={() => scopeForm.submit()}
+                confirmLoading={scopeMutation.isPending}
+                forceRender
+            >
+                <Form<AccessRequestScope>
+                    form={scopeForm}
+                    layout="vertical"
+                    preserve={false}
+                    onFinish={(values) => scopeMutation.mutate({
+                        ...values,
+                        assetGroupIds: values.assetGroupIds || [],
+                        websiteGroupIds: values.websiteGroupIds || [],
+                        databaseAssetIds: values.databaseAssetIds || [],
+                    })}
+                >
+                    <Form.Item name="departmentId" label={t('menus.identity.submenus.department')} rules={[{required: true}]}>
+                        <DepartmentTreeSelect style={{width: '100%'}} onChange={(departmentId: string) => {
+                            const scope = scopesQuery.data?.find(item => item.departmentId === departmentId);
+                            scopeForm.setFieldsValue({
+                                assetGroupIds: scope?.assetGroupIds || [],
+                                websiteGroupIds: scope?.websiteGroupIds || [],
+                                databaseAssetIds: scope?.databaseAssetIds || [],
+                            });
+                        }} />
+                    </Form.Item>
+                    <Form.Item name="assetGroupIds" label={t('access_request.asset_groups')}>
+                        <AssetGroupTreeSelect multiple style={{width: '100%'}} />
+                    </Form.Item>
+                    <Form.Item name="websiteGroupIds" label={t('access_request.website_groups')}>
+                        <WebsiteGroupTreeSelect multiple style={{width: '100%'}} />
+                    </Form.Item>
+                    <Form.Item name="databaseAssetIds" label={t('access_request.databases')}>
+                        <DatabaseAssetSelect mode="multiple" style={{width: '100%'}} />
+                    </Form.Item>
+                    <div className="text-sm text-gray-500">{t('access_request.scope_tip')}</div>
+                </Form>
+            </Modal>
 
             <Modal
                 title={t('access_request.approve')}

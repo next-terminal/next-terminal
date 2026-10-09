@@ -177,14 +177,6 @@ const SshAISettings = () => {
 
     return <div>
         <Form.Item
-            name={['attrs', 'ai-enabled']}
-            label={t('assets.ai.enabled')}
-            valuePropName="checked"
-            extra={t('assets.ai.enabled_extra')}
-        >
-            <Switch checkedChildren={t('general.enabled')} unCheckedChildren={t('general.disabled')}/>
-        </Form.Item>
-        <Form.Item
             name={['attrs', 'ai-command-policy']}
             label={t('assets.ai.command_policy')}
             extra={t('assets.ai.command_policy_extra')}

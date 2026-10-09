@@ -171,9 +171,14 @@ const SystemEventPage = () => {
             destroyOnHidden
         >
             <Descriptions
-                column={2}
+                column={{xs: 1, sm: 2}}
                 bordered
                 size="small"
+                className="[&_.ant-descriptions-view>table]:table-fixed"
+                styles={{
+                    label: {width: 120, whiteSpace: 'nowrap'},
+                    content: {overflowWrap: 'anywhere'},
+                }}
                 items={[
                     {key: 'id', label: t('sysops.system_event.id'), span: 2, children: <Text copyable>{detail?.id || '-'}</Text>},
                     {key: 'type', label: t('sysops.system_event.type'), children: detail ? eventTypeLabel(detail.type, t) : '-'},
@@ -190,8 +195,8 @@ const SystemEventPage = () => {
                     {key: 'created-at', label: t('sysops.system_event.created_at'), children: detail?.createdAt ? new Date(detail.createdAt).toLocaleString() : '-'},
                     {key: 'title', label: t('sysops.system_event.title_field'), span: 2, children: detail?.title || '-'},
                     {key: 'summary', label: t('sysops.system_event.summary'), span: 2, children: detail?.summary || '-'},
-                    {key: 'args', label: t('sysops.system_event.args'), span: 2, children: <pre className="m-0 max-h-60 overflow-auto text-xs">{formatJSON(detail?.args)}</pre>},
-                    {key: 'metadata', label: t('sysops.system_event.metadata'), span: 2, children: <pre className="m-0 max-h-60 overflow-auto text-xs">{formatJSON(detail?.metadata)}</pre>},
+                    {key: 'args', label: t('sysops.system_event.args'), span: 2, children: <pre className="m-0 max-h-60 overflow-auto whitespace-pre-wrap break-all text-xs">{formatJSON(detail?.args)}</pre>},
+                    {key: 'metadata', label: t('sysops.system_event.metadata'), span: 2, children: <pre className="m-0 max-h-60 overflow-auto whitespace-pre-wrap break-all text-xs">{formatJSON(detail?.metadata)}</pre>},
                 ]}
             />
             <Space style={{marginTop: 16}}>

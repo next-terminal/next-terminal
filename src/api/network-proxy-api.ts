@@ -35,7 +35,7 @@ class NetworkProxyApi extends Api<NetworkProxy> {
     }
 
     test = async (data: NetworkProxyTestRequest) => {
-        await requests.post(`/${this.group}/test`, data);
+        await requests.post<void>(`/${this.group}/test`, data);
     }
 
     deleteById = async (id: string) => {

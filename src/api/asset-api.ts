@@ -72,7 +72,6 @@ export interface BatchUpdateAssetRequest {
             env?: string;
         };
         ai?: {
-            enabled?: boolean;
             commandPolicy?: AICommandPolicy;
         };
         connection?: {
@@ -110,12 +109,8 @@ class AssetApi extends Api<Asset> {
         return await requests.postForm(`/${this.group}/import`, formData);
     }
 
-    changeOwner = async (data: any) => {
-        return await requests.post(`/${this.group}/change-owner`, data);
-    }
-
     changeGroup = async (data: any) => {
-        return await requests.post(`/${this.group}/change-group`, data);
+        return await requests.post<void>(`/${this.group}/change-group`, data);
     }
 
     batchUpdate = async (data: BatchUpdateAssetRequest) => {
@@ -131,11 +126,11 @@ class AssetApi extends Api<Asset> {
     }
 
     setGroups = async (data: any) => {
-        return await requests.put(`/${this.group}/groups`, data);
+        return await requests.put<void>(`/${this.group}/groups`, data);
     }
 
     deleteGroup = async (groupId: string) => {
-        return await requests.delete(`/${this.group}/groups/${groupId}`);
+        return await requests.delete<void>(`/${this.group}/groups/${groupId}`);
     }
 
     getLogos = async () => {
@@ -154,19 +149,15 @@ class AssetApi extends Api<Asset> {
     }
 
     updateSortPosition = async (req: SortPositionRequest) => {
-        return await requests.post(`/${this.group}/sort`, req);
+        return await requests.post<void>(`/${this.group}/sort`, req);
     }
 
     updateBasic = async (id: string, data: Partial<Asset>) => {
-        return await requests.patch(`/${this.group}/${id}/basic`, data);
-    }
-
-    updateAdvanced = async (id: string, data: { attrs?: Record<string, any> }) => {
-        return await requests.patch(`/${this.group}/${id}/advanced`, data);
+        return await requests.patch<void>(`/${this.group}/${id}/basic`, data);
     }
 
     detectOS = async (id: string) => {
-        return await requests.post(`/${this.group}/${id}/detect-os`);
+        return await requests.post<void>(`/${this.group}/${id}/detect-os`);
     }
 
     wol = async (id: string) => {

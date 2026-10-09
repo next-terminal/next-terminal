@@ -103,7 +103,7 @@ const AccessTerminal = ({assetId, standalone = false, active: activeProp}: Props
     const mfaCheckingRef = useRef(false);
 
     let [session, setSession] = useState<ExportSession>();
-    const aiEnabled = session?.attrs?.['ai-enabled'] === true;
+    const aiEnabled = !!session;
     const restrictedShell = session?.attrs?.['restricted-shell'] === true;
     const fileSystemEnabled = session?.fileSystem === true && !restrictedShell;
     const statsEnabled = Boolean(session?.id) && !restrictedShell;

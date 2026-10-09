@@ -25,10 +25,6 @@ class DashboardApi {
         return await requests.get(`/admin/dashboard/time-counter`) as TimeCounter;
     }
 
-    getDateCounter = async () => {
-        return await requests.get(`/admin/dashboard/date-counter`);
-    }
-
     getDateCounterV2 = async () => {
         return await requests.get(`/admin/dashboard/v2/date-counter`);
     }

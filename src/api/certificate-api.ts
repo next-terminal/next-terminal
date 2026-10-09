@@ -26,7 +26,7 @@ class CertificateApi extends Api<Certificate> {
     }
 
     updateAsDefault = async (id: string) => {
-        await requests.patch(`/${this.group}/${id}/default`)
+        await requests.patch<void>(`/${this.group}/${id}/default`)
     }
 
     download = async (id: string, _commonName: string) => {

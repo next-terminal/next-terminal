@@ -3,6 +3,7 @@ import {Badge, Popover, Spin, Tooltip} from 'antd';
 import {useQuery} from '@tanstack/react-query';
 import clsx from 'clsx';
 import brandingApi from '@/api/branding-api';
+import accountApi from '@/api/account-api';
 import propertyApi from '@/api/property-api';
 import {useLicense} from '@/hook/LicenseContext';
 import {useTranslation} from 'react-i18next';
@@ -23,11 +24,16 @@ const LayoutSidebarLogo: React.FC<LayoutSidebarLogoProps> = ({collapsed = false}
         queryKey: ['branding'],
         queryFn: brandingApi.getBranding,
     });
+    const infoQuery = useQuery({
+        queryKey: ['infoQuery'],
+        queryFn: accountApi.getUserInfo,
+    });
+    const canViewSettings = infoQuery.data?.menus?.some(menu => menu.checked && menu.key === 'setting') ?? false;
 
     const versionQuery = useQuery({
         queryKey: ['version'],
         queryFn: propertyApi.getLatestVersion,
-        enabled: !licenseLoading && !license.isOEM() && !license.isOffline(),
+        enabled: canViewSettings && !licenseLoading && !license.isOEM() && !license.isOffline(),
         staleTime: 30 * 60 * 1000,
         retry: false,
     });

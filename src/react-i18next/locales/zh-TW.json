@@ -1,4 +1,9 @@
 {
+  "errors": {
+    "10013": "內建資料無法刪除",
+    "10028": "系統管理員角色無法編輯",
+    "10029": "該角色仍被使用者使用，無法刪除"
+  },
   "general": {
     "created_at": "建立時間",
     "updated_at": "更新時間",
@@ -369,6 +374,7 @@
       "department_binding_tip": "綁定策略組將對該部門目前和之後加入的直接成員生效，不包含子部門成員。"
     },
     "role": {
+      "system_permission_notice": "系統管理員始終擁有全部權限，權限由系統自動維護。",
       "type": "角色類型",
       "types": {
         "default": "內建角色",
@@ -1121,11 +1127,14 @@
     },
     "access_token": "授權令牌",
     "access_token_create": "建立令牌",
+    "access_token_edit_name": "編輯令牌名稱",
+    "access_token_name_required": "請輸入令牌名稱",
     "access_token_type": "令牌類型",
     "access_token_source": "來源",
     "access_token_source_manual": "手動建立",
     "access_token_expires_at": "過期時間",
     "access_token_expires_never": "永不過期",
+    "access_token_expires_future": "過期時間必須晚於目前時間",
     "access_token_once_tip": "令牌僅顯示一次，請妥善保存。",
     "access_token_type_values": {
       "session": "登入會話",
@@ -1508,7 +1517,7 @@
     "dns_provider_config": "DNS 供應商設定",
     "terminal_settings": "終端設定",
     "restricted_shell": "網路設備 / 受限 Shell",
-    "restricted_shell_extra": "適用於交換機、路由器、防火牆、RouterOS 等非標準 Linux SSH 環境。此類環境不支援開啟 SSH 子工作階段，啟用後將無法使用檔案系統（SFTP）、執行指標（Stats）等功能。",
+    "restricted_shell_extra": "適用於交換機、路由器、防火牆等非標準 Linux SSH 環境。此類環境不支援開啟 SSH 子工作階段，啟用後將無法使用檔案系統（SFTP）、執行指標（Stats）等功能。",
     "sftp_directory_follow": "SFTP 目錄自動跟隨",
     "sftp_directory_follow_extra": "啟用後，SFTP 檔案系統目錄將自動跟隨終端目前目錄。",
     "enable_alive_check": "存活檢查",
@@ -2095,6 +2104,8 @@
       "swap_red_blue": "交換紅藍"
     },
     "mail": {
+      "work_order_enabled": "工單結果郵件通知",
+      "work_order_tip": "開啟後向申請人傳送駁回、執行成功、失敗及結果待核實郵件；需要開啟郵件服務並設定使用者信箱，不依賴通用通知規則。",
       "setting": "郵件服務",
       "enabled": "郵件服務",
       "host": "郵箱伺服器",
@@ -2109,11 +2120,13 @@
       "send": "發送郵件"
     },
     "notification": {
+      "work_order_quiet_tip": "工單事件逐筆傳送，不受靜默時間限制。",
       "channels": "通知渠道",
       "rules": "通知規則",
       "deliveries": "發送記錄",
       "channel": "通知渠道",
       "channel_types": {
+        "work-order-mail": "工單申請人郵件",
         "mail": "郵件",
         "wecom": "企業微信機器人",
         "wecomApp": "企業微信應用",
@@ -2134,6 +2147,9 @@
         "critical": "嚴重"
       },
       "event_types": {
+        "access.request.submitted": "訪問申請已提交",
+        "access.request.approved": "訪問申請已通過",
+        "access.request.rejected": "訪問申請已拒絕",
         "identity.user.created": "使用者已建立",
         "identity.admin.created": "管理員已建立",
         "identity.user.disabled": "使用者已停用",
@@ -2147,10 +2163,16 @@
         "access.recording.failed": "錄影處理失敗",
         "database.sql.blocked": "資料庫 SQL 已阻斷",
         "database.sql.failed": "資料庫 SQL 執行失敗",
+        "database.work_order.created": "資料庫工單已建立",
+        "database.work_order.approved": "資料庫工單審批通過",
+        "database.work_order.rejected": "資料庫工單已駁回",
+        "database.work_order.executed": "資料庫工單執行成功",
+        "database.work_order.failed": "資料庫工單執行失敗",
+        "database.work_order.unknown": "資料庫工單結果待核實",
         "backup.succeeded": "備份成功",
         "backup.failed": "備份失敗",
-        "agent.online": "Agent 上線",
-        "agent.offline": "Agent 離線",
+        "agent.online": "安全閘道上線",
+        "agent.offline": "安全閘道離線",
         "system.cpu.warning": "CPU 使用率過高",
         "system.cpu.critical": "CPU 使用率嚴重過高",
         "system.cpu.recovered": "CPU 使用率已恢復",
@@ -2163,11 +2185,12 @@
         "system.notification.test": "測試通知"
       },
       "event_groups": {
+        "access_request": "訪問申請",
         "identity": "身份認證",
         "access": "訪問會話",
         "database": "資料庫",
         "backup": "備份",
-        "agent": "Agent",
+        "agent": "安全閘道",
         "system": "系統"
       },
       "new_rule": "新建通知規則",
@@ -2199,7 +2222,6 @@
       "test": "測試",
       "test_success": "測試通知已發送",
       "event_types_label": "事件類型",
-      "severities_label": "告警等級",
       "quiet_minutes": "靜默時間（分鐘）",
       "event_type": "事件類型",
       "severity": "告警等級",
@@ -2431,7 +2453,7 @@
     "ai": {
       "setting": "AI 助手",
       "enabled": "啟用 AI 助手",
-      "asset_enable_tip": "啟用全域 AI 後，還需在 SSH 資產的「AI 設定」中開啟「啟用 AI」，AI 助手才能搜尋並操作該主機。",
+      "asset_enable_tip": "啟用全域 AI 後，AI 助手可搜尋並操作目前使用者有權限存取的 SSH 資產。",
       "disclaimer_title": "AI 助手免責聲明",
       "disclaimer_description": "AI 助手生成的內容和命令可能存在錯誤、遺漏、誤導或危險操作，啟用後請自行評估輸出結果，並在執行任何命令前確認其意圖和影響。因使用 AI 助手產生的任何風險和後果由使用者自行承擔。",
       "disclaimer_accepted": "我已了解風險",
@@ -2541,6 +2563,17 @@
   },
   "access_request": {
     "new": "新增申請",
+    "start_at": "指定生效時間（留空則審核後立即生效）",
+    "start_at_label": "申請生效時間",
+    "scope_title": "可申請資源範圍",
+    "scope_new": "新增部門配置",
+    "scope_empty": "未開放",
+    "asset_groups": "可申請的資產組",
+    "website_groups": "可申請的網站組",
+    "databases": "可申請的資料庫",
+    "scope_tip": "沒有匹配的部門配置時可申請全部資源；已配置的空範圍表示不能申請資源。多個部門的範圍合併生效。",
+    "scope_unconfigured_tip": "未配置的使用者可申請全部資源；配置後僅能申請所選範圍。",
+    "scope_delete_confirm": "刪除此部門配置？若使用者沒有其他匹配的配置，將恢復為可申請全部資源。",
     "resource": "申請資源",
     "resource_type": "資源類型",
     "request_reason": "申請原因",
@@ -2572,6 +2605,9 @@
       "type_pg": "PostgreSQL",
       "host": "主機",
       "database": "資料庫",
+      "mysql_database_extra": "選填；留空時不選擇資料庫，填寫時連線至指定資料庫。",
+      "database_access_extra": "此設定不會限制使用者只能存取該資料庫。MySQL 使用者仍可透過 USE 切換資料庫；請在目標資料庫的帳號權限層面限制存取範圍。",
+      "postgres_database_extra": "選填；留空時連線至與使用者名稱同名的資料庫，填寫時連線至指定資料庫。",
       "postgres_ssl_mode": "PostgreSQL 後端 TLS 模式",
       "postgres_ssl_mode_extra": "verify-ca 和 verify-full 使用系統信任的 CA；透過閘道連線時仍依資產主機名稱驗證憑證。"
     },
@@ -2874,5 +2910,35 @@
       "benefit_2": "審批通過後由平台執行，減少人工交接與重複操作。",
       "benefit_3": "集中記錄申請人、審批人與執行結果，方便追溯。"
     }
+  },
+  "agent_access": {
+    "title": "Agent 接入",
+    "description": "為 OpenClaw、Hermes 或自訂 Agent 安裝 Next Terminal Skill。安裝一次，之後透過已安裝的腳本查詢及管理資源。",
+    "create_key": "建立 API Key",
+    "download_skill": "下載 Skill 文件",
+    "download_client": "下載 API 用戶端",
+    "base_url": "API 根位址",
+    "spec_url": "OpenAPI 文件位址",
+    "auth": "驗證請求標頭",
+    "setup": "設定與呼叫",
+    "key_instruction": "在 Agent 的本機環境安全設定 NT_API_KEY，請勿將金鑰貼到對話中。",
+    "setup_tip": "在帳戶的存取權杖頁面建立 api 類型權杖，並在 Agent 的持久環境中設定 NT_API_KEY。使用安裝程式將完整 Skill 與腳本安裝至持久 Skill 目錄。腳本僅需 Python 3；其他金鑰變數名稱可透過 --token-env 指定。",
+    "copy_prompt": "複製安裝指令",
+    "permissions": "Agent 使用 API Key 所屬帳戶的權限。請為權杖設定有效期限；停用 Agent 時，在存取權杖頁面撤銷它。",
+    "heading": "讓你的 Agent 管理資源",
+    "step_key": "建立 API Key",
+    "step_key_tip": "前往存取權杖頁面，選擇「API 權杖」類型並設定有效期限。建立後複製權杖；若已有可用的 API Key，可直接進入下一步。",
+    "step_configure": "設定持久的 API Key",
+    "step_configure_tip": "在 Agent 的環境變數、金鑰設定或啟動設定中新增 NT_API_KEY，值為剛才建立的權杖。儲存後依平台要求重新載入或重新啟動 Agent。",
+    "config_hint": "變數名稱為 NT_API_KEY。請使用能在後續工作階段持續生效的設定，不要只在暫時終端中設定，也不要將金鑰傳送到對話中。",
+    "step_agent": "安裝 Skill 與 API 腳本",
+    "step_agent_tip": "複製安裝指令並傳送給 Agent。它會將完整 Skill 與腳本安裝至自己的持久 Skill 目錄，儲存目前的實例設定，再驗證連線。",
+    "copied": "已複製安裝指令，請傳送給你的 Agent。",
+    "copy_failed": "複製失敗，請展開安裝指令並手動複製。",
+    "verify_tip": "安裝並載入成功後，Agent 會回報安裝位置及連線結果。之後直接交付資源管理任務，無需每次重新接入。",
+    "preview_prompt": "查看安裝指令",
+    "advanced": "API 文件（開發者）",
+    "advanced_tip": "Skill 安裝包含介面探索及呼叫腳本。自行開發整合時，可在此查閱 API 契約。",
+    "prompt": "請為我安裝 Next Terminal 資源管理 Skill，實例位址為 {{url}}。\n\n1. 確認目前 Agent 框架的持久 Skill 目錄，並使用其中的 next-terminal-api 子目錄。不要使用暫存目錄，也不要只在本次對話中讀取文件。\n2. 下載 {{url}}/agent/next-terminal/install.py，在本機執行 python3 install.py --base-url {{url}} --directory <持久Skill目錄>/next-terminal-api。安裝程式會下載 SKILL.md 與 scripts/nt_api.py，並儲存不含金鑰的實例設定。若已有同名 Skill 指向另一實例，請先確認安裝位置，避免覆寫。\n3. 依框架要求載入或重新載入已安裝的 Skill。API Key 已由我設定在持久環境變數 NT_API_KEY 中；不要輸出、儲存或索取金鑰明文。無法讀取時，請告訴我應在哪個執行環境設定。\n4. 使用已安裝的 scripts/nt_api.py check 驗證連線，回報 Skill 安裝位置、載入情況及帳戶名稱；失敗時說明原因，不要宣稱安裝與連線成功。\n5. 後續管理任務使用已安裝的 Skill 與腳本，依需求探索介面並執行我授權的操作。\n\n安裝及驗證完成後，等待我提供具體任務。\n\n並執行 scripts/nt_api.py permissions 取得目前帳號權限與系統授權，後續先檢查權限再選擇介面；完整文件可見不代表可以呼叫。"
   }
 }

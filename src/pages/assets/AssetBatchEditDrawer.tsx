@@ -16,8 +16,6 @@ interface Props {
 }
 
 interface BatchEditFormValues {
-    updateAIEnabled: boolean;
-    aiEnabled: boolean;
     updateRestrictedShell: boolean;
     restrictedShell: boolean;
     updateEnableAliveCheck: boolean;
@@ -42,8 +40,6 @@ interface BatchEditFormValues {
 }
 
 const initialValues: BatchEditFormValues = {
-    updateAIEnabled: false,
-    aiEnabled: true,
     updateRestrictedShell: false,
     restrictedShell: false,
     updateEnableAliveCheck: false,
@@ -72,7 +68,6 @@ const AssetBatchEditDrawer = ({assetIds, open, onClose, onSuccess}: Props) => {
     const {message} = App.useApp();
     const [form] = Form.useForm<BatchEditFormValues>();
 
-    const updateAIEnabled = Form.useWatch('updateAIEnabled', form);
     const updateRestrictedShell = Form.useWatch('updateRestrictedShell', form);
     const restrictedShell = Form.useWatch('restrictedShell', form);
     const updateEnableAliveCheck = Form.useWatch('updateEnableAliveCheck', form);
@@ -85,7 +80,7 @@ const AssetBatchEditDrawer = ({assetIds, open, onClose, onSuccess}: Props) => {
     const updateConnection = Form.useWatch('updateConnection', form);
     const hasTerminalChanges = updateRestrictedShell || updateEnableAliveCheck || updateEnableDetectOS ||
         updateSFTPDirectoryFollow || updateConnectTimeout || updateBackspaceMode || updateEnv;
-    const hasChanges = updateAIEnabled || hasTerminalChanges || updateAICommandPolicy || updateConnection;
+    const hasChanges = hasTerminalChanges || updateAICommandPolicy || updateConnection;
 
     useEffect(() => {
         if (open) {
@@ -145,15 +140,8 @@ const AssetBatchEditDrawer = ({assetIds, open, onClose, onSuccess}: Props) => {
             }
             changes.terminal = terminalChanges;
         }
-        const aiChanges: NonNullable<BatchUpdateAssetRequest['changes']['ai']> = {};
-        if (values.updateAIEnabled) {
-            aiChanges.enabled = values.aiEnabled;
-        }
         if (values.updateAICommandPolicy) {
-            aiChanges.commandPolicy = values.aiCommandPolicy;
-        }
-        if (values.updateAIEnabled || values.updateAICommandPolicy) {
-            changes.ai = aiChanges;
+            changes.ai = {commandPolicy: values.aiCommandPolicy};
         }
         if (values.updateConnection) {
             changes.connection = {
@@ -300,18 +288,6 @@ const AssetBatchEditDrawer = ({assetIds, open, onClose, onSuccess}: Props) => {
                 <Divider/>
                 <div className="mb-3 font-medium">{t('assets.ai.settings')}</div>
                 <Space orientation="vertical" size="middle" className="w-full">
-                    <div className="flex items-center justify-between gap-4">
-                        <Form.Item name="updateAIEnabled" valuePropName="checked" noStyle>
-                            <Checkbox>{t('assets.ai.enabled')}</Checkbox>
-                        </Form.Item>
-                        <Form.Item name="aiEnabled" valuePropName="checked" noStyle>
-                            <Switch
-                                disabled={!updateAIEnabled}
-                                checkedChildren={t('general.enabled')}
-                                unCheckedChildren={t('general.disabled')}
-                            />
-                        </Form.Item>
-                    </div>
                     <div className="flex items-center justify-between gap-4">
                         <Form.Item name="updateAICommandPolicy" valuePropName="checked" noStyle>
                             <Checkbox>{t('assets.ai.command_policy')}</Checkbox>

@@ -8,7 +8,7 @@ export interface DatabaseAsset {
     type: string;
     host: string;
     port: number;
-    database: string;
+    database?: string;
     username: string;
     password: string;
     description: string;
@@ -39,7 +39,7 @@ class DatabaseAssetApi extends Api<DatabaseAsset> {
     }
 
     test = async (values: Partial<DatabaseAsset>) => {
-        return await requests.post(`/${this.group}/test`, values);
+        return await requests.post<void>(`/${this.group}/test`, values);
     }
 }
 

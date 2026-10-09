@@ -27,7 +27,7 @@ class AuthorisedDatabaseAssetApi {
     }
 
     deleteById = async (id: string) => {
-        await requests.delete(`/${this.group}/${id}`);
+        await requests.delete<void>(`/${this.group}/${id}`);
     }
 
     getById = async (id: string) => {
@@ -35,11 +35,11 @@ class AuthorisedDatabaseAssetApi {
     }
 
     update = async (id: string, values: any) => {
-        await requests.put(`/${this.group}/${id}`, values);
+        await requests.put<void>(`/${this.group}/${id}`, values);
     }
 
     post = async (values: any) => {
-        await requests.post(`/${this.group}`, values);
+        await requests.post<void>(`/${this.group}`, values);
     }
 }
 

@@ -45,23 +45,23 @@ class FileSystemApi {
     }
 
     rm = async (sessionId: string, filename: string) => {
-        await requests.post(`/${this.group}/${sessionId}/rm?filename=${filename}`);
+        await requests.post<void>(`/${this.group}/${sessionId}/rm?filename=${filename}`);
     }
 
     mkdir = async (sessionId: string, dir: string) => {
-        await requests.post(`/${this.group}/${sessionId}/mkdir?dir=${dir}`);
+        await requests.post<void>(`/${this.group}/${sessionId}/mkdir?dir=${dir}`);
     }
 
     touch = async (sessionId: string, filename: string) => {
-        await requests.post(`/${this.group}/${sessionId}/touch?filename=${filename}`);
+        await requests.post<void>(`/${this.group}/${sessionId}/touch?filename=${filename}`);
     }
 
     rename = async (sessionId: string, oldName: string, newName: string) => {
-        await requests.post(`/${this.group}/${sessionId}/rename?oldName=${oldName}&newName=${newName}`);
+        await requests.post<void>(`/${this.group}/${sessionId}/rename?oldName=${oldName}&newName=${newName}`);
     }
 
     edit = async (sessionId: string, filename: string, fileContent: string) => {
-        await requests.post(`/${this.group}/${sessionId}/edit`, {
+        await requests.post<void>(`/${this.group}/${sessionId}/edit`, {
             filename,
             fileContent
         });
@@ -78,17 +78,17 @@ class FileSystemApi {
     }
 
     deleteUploadTask = async (filesystemId: string, taskId: string) => {
-        await requests.delete(`/${this.group}/${filesystemId}/upload/tasks/${taskId}`, {errorMode: 'silent'});
+        await requests.delete<void>(`/${this.group}/${filesystemId}/upload/tasks/${taskId}`, {errorMode: 'silent'});
     }
 
     cancelUploadTask = async (filesystemId: string, taskId: string) => {
-        await requests.post(`/${this.group}/${filesystemId}/upload/tasks/${taskId}/cancel`, undefined, {
+        await requests.post<void>(`/${this.group}/${filesystemId}/upload/tasks/${taskId}/cancel`, undefined, {
             errorMode: 'silent',
         });
     }
 
     chmod = async (sessionId: string, filename: string, mode: number) => {
-        await requests.post(`/${this.group}/${sessionId}/chmod?filename=${filename}&mode=${mode}`);
+        await requests.post<void>(`/${this.group}/${sessionId}/chmod?filename=${filename}&mode=${mode}`);
     }
 }
 

@@ -1,9 +1,10 @@
-import {type CSSProperties, useEffect, useLayoutEffect, useRef, useState} from 'react';
+import {type CSSProperties, useEffect, useRef, useState} from 'react';
 import {
     App,
     Button,
     Checkbox,
     Drawer,
+    Dropdown,
     Empty,
     Input,
     Modal,
@@ -28,6 +29,7 @@ import {
     ChevronRightIcon,
     ChevronsDownUpIcon,
     CopyIcon,
+    EllipsisIcon,
     HistoryIcon,
     LoaderCircleIcon,
     MessageSquarePlusIcon,
@@ -36,7 +38,6 @@ import {
     SquareIcon,
     TerminalIcon,
     Trash2Icon,
-    XIcon,
     XCircleIcon,
 } from 'lucide-react';
 import {useTranslation} from 'react-i18next';
@@ -49,15 +50,16 @@ import aiApi, {
     type AIOutboundMessage,
     type AIToolExecution,
 } from '@/api/ai-api';
-import {MarkdownRenderer} from '@/components/MarkdownRenderer';
-import {ScrollArea} from '@/components/ui/scroll-area';
+import {AIMessageMarkdown} from './AIMessageMarkdown';
+import {createAIEventBuffer} from './aiEventBuffer';
+import {createAISocketConnection} from './aiSocketConnection';
 import {MOBILE_TOOL_DRAWER_STYLES} from '@/pages/access/terminal-tool-drawer';
 
 type ConnectionState = 'connecting' | 'open' | 'closed' | 'error';
 
 type ChatItem =
     | {id: string; kind: 'user'; text: string; status?: 'queued' | 'failed'; clientMessageId?: string; persisted?: boolean}
-    | {id: string; kind: 'assistant'; text: string; reasoning: string; streaming: boolean}
+    | {id: string; kind: 'assistant'; text: string; reasoning: string; reasoningStreaming?: boolean; streaming: boolean}
     | {id: string; kind: 'tool'; execution: AIToolExecution}
     | {id: string; kind: 'retry'; attempt: number; maxRetries: number; delayMs: number; reason: string}
     | {id: string; kind: 'error'; text: string};
@@ -87,7 +89,6 @@ interface Props {
 
 let nextId = 1;
 const genId = () => `ai-${Date.now()}-${nextId++}`;
-const formatTokens = (value: number) => value < 1000 ? `${value}` : value < 10_000 ? `${(value / 1000).toFixed(1)}k` : `${Math.round(value / 1000)}k`;
 
 const mergeToolExecution = (previous: AIToolExecution, incoming: AIToolExecution): AIToolExecution => ({
     ...previous,
@@ -118,6 +119,8 @@ const AIAssistant = ({open = true, drawer = false, drawerPlacement = 'right', dr
     const [scrollRequest, setScrollRequest] = useState(0);
     const [connection, setConnection] = useState<ConnectionState>('closed');
     const [conversationId, setConversationId] = useState('');
+    const conversationIdRef = useRef(conversationId);
+    conversationIdRef.current = conversationId;
     const [input, setInput] = useState('');
     const [items, setItems] = useState<ChatItem[]>([]);
     const [busy, setBusy] = useState(false);
@@ -185,28 +188,38 @@ const AIAssistant = ({open = true, drawer = false, drawerPlacement = 'right', dr
 
     useEffect(() => {
         if (!open) return;
-        setConnection('connecting');
-        const ws = new WebSocket(aiApi.buildWebSocketUrl());
-        wsRef.current = ws;
-        ws.onopen = () => setConnection('open');
-        ws.onclose = () => {
-            setConnection('closed');
-            setBusy(false);
-            setItems(current => cancelActiveTools(stopStreaming(current)));
-        };
-        ws.onerror = () => {
-            setConnection('error');
-            message.error(t('ai_assistant.connection_error'));
-        };
-        ws.onmessage = event => {
-            try {
-                handleSocketEvent(JSON.parse(event.data) as AIOutboundMessage);
-            } catch {
-                message.error(t('ai_assistant.invalid_response'));
-            }
-        };
+        let eventBuffer = createAIEventBuffer(handleSocketEvent);
+        const disconnect = createAISocketConnection({
+            createSocket: () => new WebSocket(aiApi.buildWebSocketUrl()),
+            onConnecting: () => setConnection('connecting'),
+            onOpen: (ws, reconnected) => {
+                wsRef.current = ws;
+                setConnection('open');
+                if (reconnected && conversationIdRef.current) {
+                    ws.send(JSON.stringify({type: 'load_history', conversationId: conversationIdRef.current}));
+                }
+            },
+            onClose: () => {
+                wsRef.current = null;
+                eventBuffer.dispose();
+                eventBuffer = createAIEventBuffer(handleSocketEvent);
+                setConnection('closed');
+                setBusy(false);
+                setSubmittingDecisionId('');
+                setItems(current => cancelActiveTools(stopStreaming(current)).map(item =>
+                    item.kind === 'user' && item.status === 'queued' ? {...item, status: 'failed' as const} : item));
+            },
+            onMessage: event => {
+                try {
+                    eventBuffer.push(JSON.parse(event.data) as AIOutboundMessage);
+                } catch {
+                    message.error(t('ai_assistant.invalid_response'));
+                }
+            },
+        });
         return () => {
-            ws.close(1000, 'close ai assistant');
+            disconnect();
+            eventBuffer.dispose();
             wsRef.current = null;
         };
     }, [open]);
@@ -224,11 +237,11 @@ const AIAssistant = ({open = true, drawer = false, drawerPlacement = 'right', dr
         if (last?.kind === 'assistant' && last.streaming) {
             const next = [...current];
             next[next.length - 1] = reasoning
-                ? {...last, reasoning: last.reasoning + delta}
-                : {...last, text: last.text + delta};
+                ? {...last, reasoning: last.reasoning + delta, reasoningStreaming: true}
+                : {...last, text: last.text + delta, reasoningStreaming: false};
             return next;
         }
-        return [...current, {id: genId(), kind: 'assistant', text: reasoning ? '' : delta, reasoning: reasoning ? delta : '', streaming: true}];
+        return [...current, {id: genId(), kind: 'assistant', text: reasoning ? '' : delta, reasoning: reasoning ? delta : '', reasoningStreaming: reasoning, streaming: true}];
     };
 
     const handleSocketEvent = (event: AIOutboundMessage) => {
@@ -447,6 +460,8 @@ const AIAssistant = ({open = true, drawer = false, drawerPlacement = 'right', dr
         (item.title || t('ai_assistant.new_chat')).toLowerCase().includes(historySearch.trim().toLowerCase()),
     );
     const contextTokens = usage?.context?.totalTokens || usage?.total || 0;
+    const contextWindow = modelOptionsQuery.data?.contextWindow || 0;
+    const contextPercent = contextWindow > 0 ? `${((contextTokens / contextWindow) * 100).toFixed(1)}%` : '—';
     const cacheRate = usage?.cache?.inputTokens ? Math.min(100, Math.max(0, (usage.cache.readTokens / usage.cache.inputTokens) * 100)) : null;
     const contextRows = usage?.context ? [
         {key: 'messages', label: t('ai_assistant.context_messages'), tokens: usage.context.messageTokens, color: 'bg-blue-500'},
@@ -454,20 +469,21 @@ const AIAssistant = ({open = true, drawer = false, drawerPlacement = 'right', dr
         {key: 'tools', label: t('ai_assistant.context_tool_definitions'), tokens: usage.context.toolDefinitionTokens, color: 'bg-amber-500'},
     ] : [];
     const contextDetails = (
-        <div className="w-72 space-y-3">
+        <div className="ai-context-details w-72 max-w-[calc(100vw-56px)] space-y-3">
             <div className="space-y-1">
                 <div className="flex items-baseline justify-between gap-3">
-                    <span className="text-xs font-medium">{t('ai_assistant.context_details')}</span>
-                    <span className="text-[11px] tabular-nums text-gray-500">{t('ai_assistant.context_usage_detail', {count: contextTokens.toLocaleString()})}</span>
+                    <span className="text-sm font-medium">{t('ai_assistant.context_details')}</span>
+                    <span className="text-xl font-semibold tabular-nums">{contextPercent}</span>
                 </div>
-                {usage ? <div className="text-[10px] text-gray-500">{usage.context?.estimated || usage.estimated ? t('ai_assistant.context_estimated') : t('ai_assistant.context_actual')}</div> : null}
+                <div className="text-xs tabular-nums text-gray-500">{t('ai_assistant.context_usage_detail', {count: contextTokens.toLocaleString()})}</div>
+                {usage ? <div className="text-[11px] text-gray-500">{usage.context?.estimated || usage.estimated ? t('ai_assistant.context_estimated') : t('ai_assistant.context_actual')}</div> : null}
             </div>
             {contextRows.length > 0 ? (
-                <div className="space-y-2 rounded-md bg-black/[0.035] p-2.5 dark:bg-white/[0.06]">
+                <div className="space-y-2.5 border-t border-gray-200 pt-3 dark:border-white/15">
                     {contextRows.map(row => {
                         const percent = contextTokens > 0 ? Math.round((row.tokens / contextTokens) * 100) : 0;
                         return (
-                            <div key={row.key} className="flex items-center gap-2 text-[11px]">
+                            <div key={row.key} className="flex items-center gap-2 text-xs">
                                 <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${row.color}`}/>
                                 <span className="min-w-0 flex-1 text-gray-500">{row.label}</span>
                                 <span className="tabular-nums">{row.tokens.toLocaleString()}</span>
@@ -477,11 +493,11 @@ const AIAssistant = ({open = true, drawer = false, drawerPlacement = 'right', dr
                     })}
                 </div>
             ) : (
-                <div className="rounded-md bg-black/[0.035] px-2.5 py-2 text-[11px] text-gray-500 dark:bg-white/[0.06]">
+                <div className="border-t border-gray-200 pt-3 text-xs text-gray-500 dark:border-white/15">
                     {t('ai_assistant.context_breakdown_unavailable')}
                 </div>
             )}
-            <div className="space-y-1 border-t border-gray-200 pt-3 dark:border-white/10">
+            <div className="space-y-1.5 border-t border-gray-200 pt-3 dark:border-white/15">
                 <div className="flex items-baseline justify-between gap-3">
                     <span className="text-[11px] text-gray-500">{t('ai_assistant.cache_hit_rate')}</span>
                     <span className="text-sm font-medium tabular-nums">{cacheRate === null ? '—' : `${cacheRate.toFixed(1)}%`}</span>
@@ -500,18 +516,13 @@ const AIAssistant = ({open = true, drawer = false, drawerPlacement = 'right', dr
     );
 
     const usageIndicator = (
-        <Popover content={contextDetails} trigger="click" placement="bottomRight">
-            <button type="button" aria-label={t('ai_assistant.context_details')} className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-gray-200 bg-transparent px-2 text-[10px] text-gray-500 outline-none transition-colors hover:bg-black/[0.035] focus-visible:ring-2 focus-visible:ring-blue-500/30 dark:border-white/10 dark:hover:bg-white/[0.06]">
+        <Popover content={contextDetails} trigger="click" placement="bottomRight" arrow={false} classNames={{container: 'ai-context-popover'}}>
+            <button type="button" aria-label={t('ai_assistant.context_details')} className="inline-flex h-6 shrink-0 items-center gap-1.5 rounded-md px-1.5 text-xs text-gray-500 outline-none transition-colors hover:bg-black/[0.035] hover:text-gray-700 focus-visible:ring-2 focus-visible:ring-blue-500/30 dark:text-gray-400 dark:hover:bg-white/[0.06] dark:hover:text-gray-200">
+                <BrainIcon className="h-3.5 w-3.5"/>
                 <span>{t('ai_assistant.context_usage')}</span>
-                <span className="tabular-nums text-current">{formatTokens(contextTokens)}</span>
-                <ChevronDownIcon className="h-3 w-3 opacity-70"/>
+                <span className="font-medium tabular-nums text-gray-700 dark:text-gray-200">{contextPercent}</span>
             </button>
         </Popover>
-    );
-    const compactAction = (
-        <Tooltip title={t('ai_assistant.compact')}>
-            <Button aria-label={t('ai_assistant.compact')} type="text" size="small" disabled={busy || !conversationId} icon={<ChevronsDownUpIcon className="h-3.5 w-3.5"/>} onClick={compactConversation}/>
-        </Tooltip>
     );
     const assistantTitle = (
         <div className="flex min-w-0 items-center gap-2">
@@ -522,18 +533,29 @@ const AIAssistant = ({open = true, drawer = false, drawerPlacement = 'right', dr
     const assistantActions = (
         <div className="flex shrink-0 items-center gap-0.5">
             {usageIndicator}
-            {compactAction}
             <Tooltip title={t('ai_assistant.history')}>
                 <Button aria-label={t('ai_assistant.history')} type="text" size="small" icon={<HistoryIcon className="h-3.5 w-3.5"/>} onClick={() => setHistoryOpen(true)}/>
             </Tooltip>
             <Tooltip title={t('ai_assistant.new_chat')}>
                 <Button aria-label={t('ai_assistant.new_chat')} type="text" size="small" disabled={!items.length && !busy} icon={<MessageSquarePlusIcon className="h-3.5 w-3.5"/>} onClick={resetConversation}/>
             </Tooltip>
-            {onClose && !drawer ? (
-                <Tooltip title={t('actions.close')}>
-                    <Button aria-label={t('actions.close')} type="text" size="small" icon={<XIcon className="h-3.5 w-3.5"/>} onClick={onClose}/>
-                </Tooltip>
-            ) : null}
+            <Dropdown
+                trigger={['click']}
+                placement="bottomRight"
+                menu={{
+                    items: [{
+                        key: 'compact',
+                        label: t('ai_assistant.compact'),
+                        icon: <ChevronsDownUpIcon className="h-3.5 w-3.5"/>,
+                        disabled: busy || !conversationId,
+                    }],
+                    onClick: ({key}) => {
+                        if (key === 'compact') compactConversation();
+                    },
+                }}
+            >
+                <Button aria-label={t('actions.more')} title={t('actions.more')} type="text" size="small" icon={<EllipsisIcon className="h-3.5 w-3.5"/>}/>
+            </Dropdown>
         </div>
     );
 
@@ -545,7 +567,6 @@ const AIAssistant = ({open = true, drawer = false, drawerPlacement = 'right', dr
                 </div>
             ) : null}
             <MessageList
-                key={conversationId || 'new'}
                 items={items}
                 busy={busy}
                 scrollRequest={scrollRequest}
@@ -584,7 +605,6 @@ const AIAssistant = ({open = true, drawer = false, drawerPlacement = 'right', dr
                         variant="borderless"
                         autoSize={{minRows: 2, maxRows: 7}}
                         value={input}
-                        disabled={connection !== 'open' || Boolean(pendingTool)}
                         onChange={event => setInput(event.target.value)}
                         onKeyDown={event => {
                             const isComposing = event.nativeEvent.isComposing || event.keyCode === 229;
@@ -662,13 +682,13 @@ const AIAssistant = ({open = true, drawer = false, drawerPlacement = 'right', dr
     if (embedded) return <div className="h-full min-h-0 overflow-hidden bg-white dark:bg-[#1e1f22]" style={{...panelStyle, height: embeddedHeight}}>{content}</div>;
     if (!drawer) return <div className="h-full min-h-0 overflow-hidden border-y bg-white dark:bg-transparent" style={panelStyle}>{content}</div>;
     return (
-        <Drawer title={assistantTitle} extra={assistantActions} placement={drawerPlacement} open={open} size={drawerSize} mask={false} closable destroyOnHidden getContainer={getContainer} styles={{...MOBILE_TOOL_DRAWER_STYLES, body: {padding: 0, overflow: 'hidden'}}} onClose={onClose}>
+        <Drawer title={assistantTitle} extra={assistantActions} placement={drawerPlacement} open={open} size={drawerSize} mask={false} closable={false} destroyOnHidden getContainer={getContainer} styles={{...MOBILE_TOOL_DRAWER_STYLES, body: {padding: 0, overflow: 'hidden'}}} onClose={onClose}>
             <div className="h-full min-h-0 overflow-hidden bg-white dark:bg-[#1e1f22]" style={panelStyle}>{content}</div>
         </Drawer>
     );
 };
 
-const stopStreaming = (items: ChatItem[]) => items.map(item => item.kind === 'assistant' && item.streaming ? {...item, streaming: false} : item);
+const stopStreaming = (items: ChatItem[]) => items.map(item => item.kind === 'assistant' && item.streaming ? {...item, streaming: false, reasoningStreaming: false} : item);
 
 interface MessageActions {
     actionsDisabled: boolean;
@@ -691,18 +711,12 @@ const messageListComponents = {
 const MessageList = ({items, busy, scrollRequest, ...actions}: MessageActions & {items: ChatItem[]; busy: boolean; scrollRequest: number}) => {
     const {t} = useTranslation();
     const virtuosoRef = useRef<VirtuosoHandle>(null);
-    const scrollAreaRef = useRef<HTMLDivElement>(null);
+    const atBottomRef = useRef(true);
     const [atBottom, setAtBottom] = useState(true);
-    // ScrollArea(radix) 中真正滚动的元素是内部的 viewport，把它交给 Virtuoso 作为
-    // customScrollParent：滚动条由 ScrollArea 自绘，虚拟化仍由 Virtuoso 负责
-    const [scrollParent, setScrollParent] = useState<HTMLElement | null>(null);
     // 虚拟行离开视口后会卸载，将展开状态保留在列表中。
     const [expanded] = useState(() => new Map<string, boolean>());
-    useLayoutEffect(() => {
-        const viewport = scrollAreaRef.current?.querySelector<HTMLElement>('[data-radix-scroll-area-viewport]');
-        setScrollParent(viewport ?? null);
-    }, []);
     useEffect(() => {
+        atBottomRef.current = true;
         virtuosoRef.current?.scrollToIndex({index: 'LAST', align: 'end'});
     }, [scrollRequest]);
     useEffect(() => {
@@ -712,11 +726,9 @@ const MessageList = ({items, busy, scrollRequest, ...actions}: MessageActions & 
     const context: MessageListContext = {...actions, items, busy, expanded};
     return <div className="relative h-0 min-h-0 flex-1 overflow-hidden pt-3 text-sm">
         {items.length === 0 ? <div className="px-3 pt-10 text-center text-gray-400">{t('ai_assistant.empty')}{busy ? <LoadingBubble items={items}/> : null}</div> : (
-            <ScrollArea ref={scrollAreaRef} className="h-full">
                 <Virtuoso
                     ref={virtuosoRef}
-                    className="overflow-x-hidden"
-                    customScrollParent={scrollParent}
+                    className="h-full overflow-x-hidden"
                     data={items}
                     context={context}
                     computeItemKey={(_index, item) => item.kind === 'user' ? item.clientMessageId || item.id : item.id}
@@ -726,11 +738,16 @@ const MessageList = ({items, busy, scrollRequest, ...actions}: MessageActions & 
                     increaseViewportBy={{top: 400, bottom: 200}}
                     followOutput="auto"
                     atBottomThreshold={4}
-                    atBottomStateChange={setAtBottom}
+                    atBottomStateChange={value => {
+                        atBottomRef.current = value;
+                        setAtBottom(value);
+                    }}
+                    totalListHeightChanged={() => {
+                        if (atBottomRef.current) virtuosoRef.current?.scrollToIndex({index: 'LAST', align: 'end'});
+                    }}
                 />
-            </ScrollArea>
         )}
-        {!atBottom && items.length > 0 ? <div className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2"><Button shape="circle" aria-label={t('ai_assistant.scroll_to_bottom')} title={t('ai_assistant.scroll_to_bottom')} icon={<ChevronDownIcon className="h-4 w-4"/>} onClick={() => virtuosoRef.current?.scrollToIndex({index: 'LAST', align: 'end'})}/></div> : null}
+        {!atBottom && items.length > 0 ? <div className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2"><Button shape="circle" aria-label={t('ai_assistant.scroll_to_bottom')} title={t('ai_assistant.scroll_to_bottom')} icon={<ChevronDownIcon className="h-4 w-4"/>} onClick={() => {atBottomRef.current = true; virtuosoRef.current?.scrollToIndex({index: 'LAST', align: 'end'});}}/></div> : null}
     </div>;
 };
 
@@ -757,7 +774,7 @@ const MessageItem = ({item, expanded, actionsDisabled, onCopy, onSendNow, onRetr
     if (item.kind === 'error') return <div key={item.id} className="rounded bg-red-50 px-3 py-2 text-xs text-red-600 dark:bg-red-950/30 dark:text-red-400">{item.text}</div>;
     if (item.kind === 'user') return (
         <div key={item.id} className="flex min-w-0 justify-end">
-            <div className={`group/message relative min-w-0 max-w-[80%] whitespace-pre-wrap break-words rounded-lg px-3 py-2 pr-8 ${item.status ? 'border border-dashed border-blue-500/40 bg-blue-500/10' : 'bg-blue-500 text-white'}`}>
+            <div className={`group/message relative min-w-0 max-w-[80%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md border px-3.5 py-2.5 pr-8 shadow-sm ${item.status ? 'border-dashed border-blue-500/40 bg-blue-500/10' : 'ai-message-user'}`}>
                 <CopyButton onClick={() => onCopy(item.text)}/>
                 {!item.status && item.persisted ? (
                     <Tooltip title={t('actions.edit')}><button type="button" aria-label={t('actions.edit')} disabled={actionsDisabled} className="absolute right-7 top-1 z-10 flex h-6 w-6 items-center justify-center rounded text-current opacity-0 transition-opacity hover:bg-black/10 focus-visible:opacity-100 disabled:cursor-not-allowed group-hover/message:opacity-70" onClick={() => onEdit(item)}><PencilIcon className="h-3.5 w-3.5"/></button></Tooltip>
@@ -774,45 +791,53 @@ const MessageItem = ({item, expanded, actionsDisabled, onCopy, onSendNow, onRetr
         </div>
     );
     return (
-        <div key={item.id} className="group/message relative w-full max-w-full min-w-0 overflow-hidden break-words rounded-lg bg-[var(--ai-assistant-bubble-background)] px-3 py-2 pr-8 ring-1 ring-inset ring-[var(--ai-assistant-bubble-border)]">
-            <CopyButton onClick={() => onCopy(item.text || item.reasoning)}/>
-            {item.reasoning ? <ReasoningContent expandedStates={expanded} itemId={item.id} text={item.reasoning} streaming={item.streaming} onCopy={onCopy}/> : null}
-            {item.text ? <MarkdownRenderer text={item.text}/> : null}
-            {item.streaming ? <span className="ml-1 inline-block h-3.5 w-1.5 animate-pulse bg-current align-middle opacity-60"/> : null}
+        <div key={item.id} className="ai-message-assistant group/message relative flex w-full min-w-0 flex-col overflow-hidden break-words rounded-2xl rounded-tl-md border px-3 py-3 shadow-sm">
+            {item.reasoning ? <ReasoningContent expandedStates={expanded} itemId={item.id} text={item.reasoning} streaming={item.streaming && Boolean(item.reasoningStreaming)} onCopy={onCopy}/> : null}
+            {item.text ? <AIMessageMarkdown text={item.text}/> : null}
+            {item.streaming && item.text ? <span className="ml-1 inline-block h-3.5 w-1.5 animate-pulse bg-current align-middle opacity-60"/> : null}
+            <div className="mt-1 flex w-full shrink-0 justify-end"><CopyButton placement="footer" onClick={() => onCopy(item.text || item.reasoning)}/></div>
         </div>
     );
 };
 
-const CopyButton = ({onClick}: {onClick: () => void}) => {
+const CopyButton = ({onClick, placement = 'overlay'}: {onClick: () => void; placement?: 'overlay' | 'footer'}) => {
     const {t} = useTranslation();
-    return <Tooltip title={t('actions.copy')}><button type="button" aria-label={t('actions.copy')} className="absolute right-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded text-current opacity-0 transition-opacity hover:bg-black/10 focus-visible:opacity-100 group-hover/message:opacity-70 dark:hover:bg-white/10" onClick={onClick}><CopyIcon className="h-3.5 w-3.5"/></button></Tooltip>;
+    return <Tooltip title={t('actions.copy')}><button type="button" aria-label={t('actions.copy')} className={`flex h-6 w-6 items-center justify-center rounded text-current transition-opacity hover:bg-black/10 focus-visible:opacity-100 dark:hover:bg-white/10 ${placement === 'footer' ? 'ai-message-copy-footer opacity-40 group-hover/message:opacity-100' : 'absolute right-1 top-1 z-10 opacity-0 group-hover/message:opacity-70'}`} onClick={onClick}><CopyIcon className="h-3.5 w-3.5"/></button></Tooltip>;
 };
 
 const ToolItem = ({execution, onCopy, expandedStates, itemId}: {execution: AIToolExecution; onCopy: (text: string) => void; expandedStates: Map<string, boolean>; itemId: string}) => {
     const {t} = useTranslation();
     const failed = ['failed', 'rejected', 'cancelled', 'timed_out', 'needs_revision'].includes(execution.state);
     const active = ['reviewing', 'running'].includes(execution.state);
-    const [expanded, toggleExpanded] = useMessageExpanded(expandedStates, itemId, failed || execution.state === 'awaiting_approval');
     const label = formatToolExecution(execution);
     const result = execution.result;
-    const icon = active ? <LoaderCircleIcon className="h-4 w-4 animate-spin"/> : failed ? <XCircleIcon className="h-4 w-4"/> : execution.state === 'succeeded' ? <CheckCircle2Icon className="h-4 w-4"/> : <TerminalIcon className="h-4 w-4"/>;
-    const canExpand = Boolean(label || result || execution.fileDiff || execution.approvalReview?.rationale);
+    const compactWithoutOutput = execution.name === 'conversation_compact' && !result?.output?.trim();
+    const [expanded, toggleExpanded] = useMessageExpanded(expandedStates, itemId, !result || execution.state === 'awaiting_approval' || result.exitCode !== 0);
+    const icon = active ? <LoaderCircleIcon className="h-3.5 w-3.5 animate-spin"/> : failed ? <XCircleIcon className="h-3.5 w-3.5"/> : execution.state === 'succeeded' ? <CheckCircle2Icon className="h-3.5 w-3.5"/> : <TerminalIcon className="h-3.5 w-3.5"/>;
+    const statusColor = execution.state === 'reviewing' ? 'text-blue-600 dark:text-blue-400'
+        : execution.state === 'awaiting_approval' || execution.state === 'needs_revision' ? 'text-amber-700 dark:text-amber-300'
+            : failed && execution.state !== 'cancelled' ? 'text-red-600 dark:text-red-400'
+                : execution.state === 'succeeded' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500';
+    const canExpand = Boolean(label || (result && !compactWithoutOutput) || execution.fileDiff || execution.approvalReview);
     return (
-        <div className="overflow-hidden rounded-md border border-gray-200 bg-black/[0.02] dark:border-white/10 dark:bg-white/5">
-            <button type="button" disabled={!canExpand} className="flex w-full items-center gap-2 px-2.5 py-2 text-left text-xs outline-none transition-colors hover:bg-black/[0.035] disabled:cursor-default dark:hover:bg-white/[0.06]" onClick={toggleExpanded}>
-                <span className={`flex shrink-0 items-center gap-1 rounded-sm bg-black/[0.05] px-1.5 py-0.5 text-[10px] leading-none dark:bg-white/10 ${failed ? 'text-red-500' : execution.state === 'succeeded' ? 'text-emerald-600 dark:text-emerald-400' : execution.state === 'awaiting_approval' ? 'text-amber-600 dark:text-amber-400' : 'text-gray-500'}`}>
+        <div className="ai-message-tool overflow-hidden rounded-xl border shadow-sm">
+            <button type="button" disabled={!canExpand} title={label || execution.name} className="flex w-full items-center gap-2 px-2.5 py-2 text-left text-xs outline-none transition-colors hover:bg-black/[0.035] disabled:cursor-default dark:hover:bg-white/[0.06]" onClick={toggleExpanded}>
+                <span className={`flex shrink-0 items-center gap-1 rounded-sm bg-black/[0.05] px-1.5 py-0.5 text-[10px] leading-none dark:bg-white/10 ${statusColor}`}>
                     {icon}<span>{t(`ai_assistant.tool_state_${execution.state}`)}</span>
                 </span>
                 <span className="min-w-0 flex-1 truncate font-mono">{label || execution.name}</span>
-                {result ? <span className="shrink-0 tabular-nums text-gray-500">{result.durationMs}ms</span> : null}
+                {result && !compactWithoutOutput ? <span className="shrink-0 tabular-nums text-gray-500">{result.durationMs}ms</span> : null}
                 {canExpand ? expanded ? <ChevronDownIcon className="h-3.5 w-3.5 shrink-0 text-gray-500"/> : <ChevronRightIcon className="h-3.5 w-3.5 shrink-0 text-gray-500"/> : null}
             </button>
             {canExpand && expanded ? (
-                <div className="space-y-2 border-t border-gray-200 bg-black/[0.025] px-2 py-2 dark:border-white/10 dark:bg-white/[0.025]">
+                <div className="ai-message-tool-content space-y-2 border-t px-2.5 py-2.5">
+                    {execution.approvalReview ? <div className="rounded-md border border-blue-500/20 bg-blue-500/5 px-2 py-1.5 text-xs">
+                        <div className="font-medium text-blue-600 dark:text-blue-400">{t('ai_assistant.approval_review')}{execution.approvalReview.riskLevel ? ` · ${execution.approvalReview.riskLevel}` : ''}</div>
+                        {execution.approvalReview.rationale ? <div className="mt-1 whitespace-pre-wrap break-words leading-relaxed text-gray-500">{execution.approvalReview.rationale}</div> : null}
+                    </div> : null}
                     {label ? <ToolTextBlock title={t('ai_assistant.full_command')} text={label} onCopy={() => onCopy(label)}/> : null}
-                    {execution.approvalReview?.rationale ? <ToolTextBlock title={t('ai_assistant.approval_review')} text={execution.approvalReview.rationale} onCopy={() => onCopy(execution.approvalReview?.rationale || '')}/> : null}
                     {execution.fileDiff ? <ToolTextBlock title={t('ai_assistant.file_changes')} text={formatFileDiff(execution)} onCopy={() => onCopy(formatFileDiff(execution))}/> : null}
-                    {result ? <ToolTextBlock title={t('ai_assistant.tool_output')} text={result.output || t('ai_assistant.no_output')} muted={!result.output} onCopy={() => onCopy(result.output)}/> : null}
+                    {result && !compactWithoutOutput ? <ToolTextBlock title={t('ai_assistant.tool_output')} text={result.output || t('ai_assistant.no_output')} muted={!result.output} onCopy={() => onCopy(result.output)}/> : null}
                 </div>
             ) : null}
         </div>
@@ -830,7 +855,7 @@ const LoadingBubble = ({items}: {items: ChatItem[]}) => {
 const ReasoningContent = ({text, streaming, onCopy, expandedStates, itemId}: {text: string; streaming: boolean; onCopy: (text: string) => void; expandedStates: Map<string, boolean>; itemId: string}) => {
     const {t} = useTranslation();
     const [expanded, toggleExpanded] = useMessageExpanded(expandedStates, itemId, streaming);
-    return <div className="mb-2 overflow-hidden rounded-md border border-gray-200 bg-white/45 dark:border-white/10 dark:bg-black/15"><div className="flex min-w-0 items-center gap-1.5 px-2 py-1.5 text-xs text-gray-500"><button type="button" className="flex min-w-0 flex-1 items-center gap-1.5 text-left outline-none" onClick={toggleExpanded}>{expanded ? <ChevronDownIcon className="h-3.5 w-3.5"/> : <ChevronRightIcon className="h-3.5 w-3.5"/>}<BrainIcon className="h-3.5 w-3.5"/><span className="truncate font-medium">{t('ai_assistant.reasoning')}</span>{streaming ? <LoaderCircleIcon className="h-3.5 w-3.5 animate-spin"/> : null}</button><Tooltip title={t('actions.copy')}><Button type="text" size="small" icon={<CopyIcon className="h-3.5 w-3.5"/>} onClick={() => onCopy(text)}/></Tooltip></div>{expanded ? <pre className="max-h-56 overflow-auto whitespace-pre-wrap break-words border-t border-gray-200 px-2 py-2 text-xs leading-relaxed text-gray-500 dark:border-white/10">{text}</pre> : null}</div>;
+    return <div className="mb-2 w-full min-w-0 overflow-hidden rounded-md border border-gray-200 bg-white/45 dark:border-white/10 dark:bg-black/15"><div className="flex min-w-0 items-center gap-1.5 px-2 py-1.5 text-xs text-gray-500"><button type="button" className="flex min-w-0 flex-1 items-center gap-1.5 text-left outline-none" onClick={toggleExpanded}>{expanded ? <ChevronDownIcon className="h-3.5 w-3.5"/> : <ChevronRightIcon className="h-3.5 w-3.5"/>}<BrainIcon className="h-3.5 w-3.5"/><span className="truncate font-medium">{t('ai_assistant.reasoning')}</span>{streaming ? <LoaderCircleIcon className="h-3.5 w-3.5 animate-spin"/> : null}</button><Tooltip title={t('actions.copy')}><Button type="text" size="small" icon={<CopyIcon className="h-3.5 w-3.5"/>} onClick={() => onCopy(text)}/></Tooltip></div>{expanded ? <pre className="max-h-56 w-full min-w-0 overflow-x-hidden overflow-y-auto whitespace-pre-wrap [overflow-wrap:anywhere] border-t border-gray-200 px-2 py-2 text-xs leading-relaxed text-gray-500 dark:border-white/10">{text}</pre> : null}</div>;
 };
 
 const ToolTextBlock = ({title, text, muted, onCopy}: {title: string; text: string; muted?: boolean; onCopy: () => void}) => {

@@ -1,11 +1,27 @@
 import {useEffect, useRef, useState} from "react";
-import {App, Button, Checkbox, Divider, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Switch, Tag, Typography} from "antd";
+import {
+    App,
+    Button,
+    Checkbox,
+    Divider,
+    Form,
+    Input,
+    InputNumber,
+    Modal,
+    Popconfirm,
+    Popover,
+    Select,
+    Space,
+    Switch,
+    Tag,
+    Typography
+} from "antd";
 import {Plus} from "lucide-react";
 import {useMutation, useQuery} from "@tanstack/react-query";
-import {notificationChannelApi, notificationRuleApi, NotificationRule} from "@/api/notification-api";
+import {notificationChannelApi, NotificationRule, notificationRuleApi} from "@/api/notification-api";
 import NTable, {NColumn, NTableActionType} from "@/components/NTable";
 import {getSort} from "@/utils/sort";
-import {channelTypeLabel, eventGroupLabel, eventGroups, eventTypeLabel, severities, severityLabel} from "./constants";
+import {channelTypeLabel, eventGroupLabel, eventGroups, eventTypeLabel} from "./constants";
 import {useTranslation} from "react-i18next";
 
 const NotificationRules = () => {
@@ -40,27 +56,62 @@ const NotificationRules = () => {
         {
             title: t('general.name'),
             dataIndex: 'name',
+            ellipsis: true,
         },
         {
             title: t('settings.notification.event_types_label'),
             dataIndex: 'eventTypes',
             hideInSearch: true,
-            render: (_text, record) => <Space wrap>
-                {(record.eventTypes || []).map(item => <Tag key={item}>{eventTypeLabel(item, t)}</Tag>)}
-            </Space>,
-        },
-        {
-            title: t('settings.notification.severities_label'),
-            dataIndex: 'severities',
-            hideInSearch: true,
-            render: (_text, record) => <Space wrap>
-                {(record.severities || []).map(item => <Tag key={item}>{severityLabel(item, t)}</Tag>)}
-            </Space>,
+            width: 360,
+            render: (_text, record) => {
+                const eventTypes = record.eventTypes || [];
+                return <div className="flex flex-wrap items-center gap-1">
+                    {eventTypes.slice(0, 2).map(item => <Tag key={item} style={{marginInlineEnd: 0, maxWidth: '100%'}}>
+                        <span className="block truncate"
+                              title={eventTypeLabel(item, t)}>{eventTypeLabel(item, t)}</span>
+                    </Tag>)}
+                    {eventTypes.length > 2 && <Popover
+                        title={t('settings.notification.event_types_label')}
+                        trigger="click"
+                        content={<div className="space-y-3" style={{
+                            width: 'min(480px, calc(100vw - 64px))',
+                            maxHeight: 320,
+                            overflowY: 'auto'
+                        }}>
+                            {eventGroups.map(group => {
+                                const selectedEvents = group.events.filter(item => eventTypes.includes(item));
+                                if (selectedEvents.length === 0) {
+                                    return null;
+                                }
+                                return <div key={group.key}>
+                                    <Typography.Text strong>{eventGroupLabel(group.key, t)}</Typography.Text>
+                                    <div className="mt-2 flex flex-wrap gap-1">
+                                        {selectedEvents.map(item => <Tag key={item} style={{marginInlineEnd: 0, whiteSpace: 'normal', overflowWrap: 'anywhere'}}>
+                                            {eventTypeLabel(item, t)}
+                                        </Tag>)}
+                                    </div>
+                                </div>;
+                            })}
+                            <div className="flex flex-wrap gap-1">
+                                {eventTypes.filter(item => !eventGroups.some(group => group.events.includes(item))).map(item => <Tag
+                                    key={item} style={{marginInlineEnd: 0, whiteSpace: 'normal', overflowWrap: 'anywhere'}}
+                                >{eventTypeLabel(item, t)}</Tag>)}
+                            </div>
+                        </div>}
+                    >
+                        <Button type="link" size="small"
+                                aria-label={`${t('settings.notification.event_types_label')} (+${eventTypes.length - 2})`}>
+                            +{eventTypes.length - 2}
+                        </Button>
+                    </Popover>}
+                </div>;
+            },
         },
         {
             title: t('general.status'),
             dataIndex: 'enabled',
             hideInSearch: true,
+            width: 100,
             render: (_text, record) => record.enabled ?
                 <Tag color="success">{t('general.enabled')}</Tag> :
                 <Tag>{t('general.disabled')}</Tag>,
@@ -69,18 +120,27 @@ const NotificationRules = () => {
             title: t('actions.label'),
             valueType: 'option',
             width: 160,
+            fixed: 'end',
             render: (_text, record) => <Space>
-                <Button size="small" onClick={() => {
-                    setSelectedId(record.id);
-                    setOpen(true);
-                }}>
+                <Button size="small"
+                        type={'link'}
+                        style={{margin: 0, padding: 0}}
+                        onClick={() => {
+                            setSelectedId(record.id);
+                            setOpen(true);
+                        }}>
                     {t('actions.edit')}
                 </Button>
                 <Popconfirm title={t('general.confirm_delete')} onConfirm={async () => {
                     await notificationRuleApi.deleteById(record.id);
                     actionRef.current?.reload();
                 }}>
-                    <Button size="small" danger>{t('actions.delete')}</Button>
+                    <Button size="small"
+                            type={'link'}
+                            style={{margin: 0, padding: 0}}
+                            danger>
+                        {t('actions.delete')}
+                    </Button>
                 </Popconfirm>
             </Space>,
         },
@@ -89,6 +149,8 @@ const NotificationRules = () => {
     return <div>
         <NTable
             columns={columns}
+            tableLayout="fixed"
+            scroll={{x: 1100}}
             actionRef={actionRef}
             request={async (params = {}, sort) => {
                 const [sortOrder, sortField] = getSort(sort);
@@ -122,6 +184,56 @@ const NotificationRules = () => {
             }}
             onOk={saveMutation.mutate}
         />
+    </div>;
+};
+
+const EventTypesSelect = ({value = [], onChange}: {
+    value?: string[];
+    onChange?: (value: string[]) => void;
+}) => {
+    const {t} = useTranslation();
+    const allEvents = eventGroups.flatMap(group => group.events);
+    const selectedCount = allEvents.filter(item => value.includes(item)).length;
+
+    const updateGroup = (events: string[], selected: string[]) => {
+        onChange?.([...value.filter(item => !events.includes(item)), ...selected]);
+    };
+
+    return <div className="space-y-3">
+        <Checkbox
+            checked={selectedCount === allEvents.length}
+            indeterminate={selectedCount > 0 && selectedCount < allEvents.length}
+            onChange={event => updateGroup(allEvents, event.target.checked ? allEvents : [])}
+        >
+            {t('dw.select_all')} ({selectedCount}/{allEvents.length})
+        </Checkbox>
+        {eventGroups.map(group => {
+            const selectedEvents = group.events.filter(item => value.includes(item));
+            return <div key={group.key}>
+                <Divider style={{margin: '8px 0'}}/>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                    <Typography.Text strong>{eventGroupLabel(group.key, t)}</Typography.Text>
+                    <Checkbox
+                        checked={selectedEvents.length === group.events.length}
+                        indeterminate={selectedEvents.length > 0 && selectedEvents.length < group.events.length}
+                        onChange={event => updateGroup(group.events, event.target.checked ? group.events : [])}
+                    >
+                        {t('dw.select_all')} ({selectedEvents.length}/{group.events.length})
+                    </Checkbox>
+                </div>
+                <Checkbox.Group
+                    style={{width: '100%'}}
+                    value={selectedEvents}
+                    onChange={selected => updateGroup(group.events, selected)}
+                >
+                    <div className="mt-2 grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2 xl:grid-cols-4">
+                        {group.events.map(item => <Checkbox key={item} value={item}>
+                            {eventTypeLabel(item, t)}
+                        </Checkbox>)}
+                    </div>
+                </Checkbox.Group>
+            </div>;
+        })}
     </div>;
 };
 
@@ -160,7 +272,6 @@ const NotificationRuleModal = ({
             form.setFieldsValue({
                 enabled: true,
                 eventTypes: [],
-                severities: [],
                 channelIds: [],
                 quietMinutes: 0,
                 conditions: {},
@@ -193,26 +304,9 @@ const NotificationRuleModal = ({
             <Form.Item name="enabled" label={t('general.status')} valuePropName="checked">
                 <Switch checkedChildren={t('general.enabled')} unCheckedChildren={t('general.disabled')}/>
             </Form.Item>
-            <Form.Item name="eventTypes" label={t('settings.notification.event_types_label')} rules={[{required: true}]}>
-                <Checkbox.Group style={{width: '100%'}}>
-                    <div className="space-y-3">
-                        {eventGroups.map((group, index) => <div key={group.key}>
-                            {index > 0 && <Divider style={{margin: '8px 0'}}/>}
-                            <Typography.Text strong>{eventGroupLabel(group.key, t)}</Typography.Text>
-                            <div className="mt-2 grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2 xl:grid-cols-4">
-                                {group.events.map(item => <Checkbox key={item} value={item}>
-                                    {eventTypeLabel(item, t)}
-                                </Checkbox>)}
-                            </div>
-                        </div>)}
-                    </div>
-                </Checkbox.Group>
-            </Form.Item>
-            <Form.Item name="severities" label={t('settings.notification.severities_label')}>
-                <Select mode="multiple" options={severities.map(item => ({
-                    label: severityLabel(item, t),
-                    value: item,
-                }))}/>
+            <Form.Item name="eventTypes" label={t('settings.notification.event_types_label')}
+                       rules={[{required: true}]}>
+                <EventTypesSelect/>
             </Form.Item>
             <Form.Item name="channelIds" label={t('settings.notification.channels')} rules={[{required: true}]}>
                 <Select mode="multiple" loading={channelsQuery.isLoading}
@@ -221,7 +315,8 @@ const NotificationRuleModal = ({
                             value: item.type,
                         }))}/>
             </Form.Item>
-            <Form.Item name="quietMinutes" label={t('settings.notification.quiet_minutes')}>
+            <Form.Item name="quietMinutes" label={t('settings.notification.quiet_minutes')}
+                       extra={t('settings.notification.work_order_quiet_tip')}>
                 <InputNumber min={0} precision={0} style={{width: '100%'}}/>
             </Form.Item>
         </Form>

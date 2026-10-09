@@ -38,11 +38,11 @@ class DnsProviderApi {
     }
 
     set = async (values: any) => {
-        return await requests.put(`/${this.group}/config`, values);
+        return await requests.put<void>(`/${this.group}/config`, values);
     }
 
     remove = async () => {
-        await requests.delete(`/${this.group}/config`);
+        await requests.delete<void>(`/${this.group}/config`);
     }
 }
 

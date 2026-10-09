@@ -3,7 +3,6 @@ import requests from "@/api/core/requests";
 import type { TreeDataNode } from 'antd';
 import type {
     ConnectionMode,
-    WebsiteFormData,
     WebsiteOriginHostMode,
     WebsiteResponseModifyRule
 } from "@/pages/assets/website-drawer/types";
@@ -139,24 +138,15 @@ class WebsiteApi extends Api<Website> {
     }
 
     setGroups = async (data: any) => {
-        return await requests.put(`/${this.group}/groups`, data);
+        return await requests.put<void>(`/${this.group}/groups`, data);
     }
 
     deleteGroup = async (groupId: string) => {
-        return await requests.delete(`/${this.group}/groups/${groupId}`);
+        return await requests.delete<void>(`/${this.group}/groups/${groupId}`);
     }
 
     changeGroup = async (data: any) => {
-        return await requests.post(`/${this.group}/change-group`, data);
-    }
-
-    // 统一的修改网关接口，支持 ssh/agent/group 三种类型
-    changeGateway = async (data: { websiteIds: string[], gatewayChain: GatewayHop[] }) => {
-        return await requests.post(`/${this.group}/change-gateway`, data);
-    }
-
-    changeConnection = async (data: { websiteIds: string[], connectionMode: ConnectionMode, gatewayChain: GatewayHop[], proxyId?: string }) => {
-        return await requests.post(`/${this.group}/change-connection`, data);
+        return await requests.post<void>(`/${this.group}/change-group`, data);
     }
 
     batchUpdate = async (data: BatchUpdateWebsiteRequest) => {
@@ -164,7 +154,7 @@ class WebsiteApi extends Api<Website> {
     }
 
     updateSortPosition = async (req: SortPositionRequest) => {
-        return await requests.post(`/${this.group}/sort`, req);
+        return await requests.post<void>(`/${this.group}/sort`, req);
     }
 
     getTags = async () => {
@@ -176,31 +166,11 @@ class WebsiteApi extends Api<Website> {
     }
 
     updateEnabled = async (id: string, enabled: boolean) => {
-        return await requests.patch(`/${this.group}/${id}/enabled`, {enabled});
+        return await requests.patch<void>(`/${this.group}/${id}/enabled`, {enabled});
     }
 
     updateBasic = async (id: string, data: WebsiteBasicUpdateRequest) => {
-        return await requests.patch(`/${this.group}/${id}/basic`, data);
-    }
-
-    updatePublic = async (id: string, data: { public?: WebsiteFormData['public'] }) => {
-        return await requests.patch(`/${this.group}/${id}/public`, data);
-    }
-
-    updateTempAllow = async (id: string, data: { tempAllow?: WebsiteFormData['tempAllow'] }) => {
-        return await requests.patch(`/${this.group}/${id}/temp-allow`, data);
-    }
-
-    updateHeaders = async (id: string, data: { headers?: Website['headers'] }) => {
-        return await requests.patch(`/${this.group}/${id}/headers`, data);
-    }
-
-    updateCert = async (id: string, data: { cert?: WebsiteFormData['cert'] }) => {
-        return await requests.patch(`/${this.group}/${id}/cert`, data);
-    }
-
-    updateModifyResponse = async (id: string, data: { modifyRules?: WebsiteResponseModifyRule[] }) => {
-        return await requests.patch(`/${this.group}/${id}/modify-response`, data);
+        return await requests.patch<void>(`/${this.group}/${id}/basic`, data);
     }
 }
 
